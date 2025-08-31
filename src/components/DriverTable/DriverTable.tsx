@@ -43,7 +43,8 @@ const DriverTable = ({ data }: DriverTableProps) => {
   };
 
   const getColumnSearchProps = (
-    dataIndex: DataIndex
+    dataIndex: DataIndex,
+    copyKey?: keyof Driver
   ): TableColumnType<Driver> => ({
     filterDropdown: ({
       setSelectedKeys,
@@ -111,17 +112,36 @@ const DriverTable = ({ data }: DriverTableProps) => {
         }
       },
     },
-    render: (text) =>
-      searchedColumn === dataIndex ? (
-        <Highlighter
-          highlightStyle={{ backgroundColor: "#ffc069", padding: 0 }}
-          searchWords={[searchText]}
-          autoEscape
-          textToHighlight={text ? text.toString() : ""}
-        />
+    render: (text, record) => {
+      const content =
+        searchedColumn === dataIndex ? (
+          <Highlighter
+            highlightStyle={{ backgroundColor: "#ffc069", padding: 0 }}
+            searchWords={[searchText]}
+            autoEscape
+            textToHighlight={text ? text.toString() : ""}
+          />
+        ) : (
+          text
+        );
+
+      return copyKey ? (
+        <div className="flex gap-6 items-center">
+          <span>{content}</span>
+          <Tooltip title={`Copy ${String(copyKey)}`}>
+            <CopyOutlined
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                navigator.clipboard.writeText(record[copyKey] as string);
+                message.success(`${String(copyKey)} copied!`);
+              }}
+            />
+          </Tooltip>
+        </div>
       ) : (
-        text
-      ),
+        content
+      );
+    },
   });
 
   const columns: TableColumnsType<Driver> = useMemo(
@@ -144,8 +164,9 @@ const DriverTable = ({ data }: DriverTableProps) => {
         dataIndex: "full_name",
         key: "full_name",
         minWidth: 160,
+        ...getColumnSearchProps("full_name", "driver_id"),
         render: (text: string, record: Driver) => (
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className="flex gap-6">
             <span>{text}</span>
             <Tooltip title="Copy Driver ID">
               <CopyOutlined
@@ -158,7 +179,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
             </Tooltip>
           </div>
         ),
-        ...getColumnSearchProps("full_name"),
+
         sorter: (a: Driver, b: Driver) =>
           a.full_name.localeCompare(b.full_name),
       },
