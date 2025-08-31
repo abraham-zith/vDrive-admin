@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Input, Typography,Flex } from "antd";
-import '../signup/signupStyle.css'
+import { Button, Input, Typography } from "antd";
 
 const { Text } = Typography;
 
@@ -46,7 +45,7 @@ const Login =()=>{
  }
 
  const handleForgotPassword =()=>{
-    navigate('/')
+    navigate('/reset-password')
  }
 
  const handleSignUp =()=>{
@@ -54,9 +53,9 @@ const Login =()=>{
  }
 
  return (
-   <div className="signup-container">
+   <div className="max-w-[400px] border border-gray-300 rounded-xl shadow-md bg-white flex flex-col gap-4 p-6 my-10 mx-auto">
      <div>
-       <Text strong>UserName<Text className="mandatory">*</Text></Text>
+       <Text>Username<Text type ="danger">*</Text></Text>
        <Input
          name="userName"
          placeholder="Enter registered Email/Mobile Number"
@@ -64,11 +63,11 @@ const Login =()=>{
          onChange={handleLogin}
        />
         {errors?.userName && (
-          <div className ="err-msg">{errors?.userName}</div>
+          <div className="text-red-500 text-xs pt-1.5">{errors?.userName}</div>
         )}
      </div>
      <div>
-       <Text strong>Password<Text className="mandatory">*</Text></Text>
+       <Text>Password<Text type ="danger">*</Text></Text>
        <Input.Password
          name="password"
          placeholder="Enter Password"
@@ -76,13 +75,11 @@ const Login =()=>{
          onChange={handleLogin}
        />
         {errors?.password && (
-          <div className ="err-msg">{errors?.password}</div>
+          <div className="text-red-500 text-xs pt-1.5">{errors?.password}</div>
         )}
      </div>
         <Button type="link" block onClick={handleForgotPassword} style={{display:"flex",justifyContent:"flex-end"}}>Forgot password?</Button>
-    <div className="button-container">
-
-  
+    <div className="flex flex-col items-center gap-[10px]">
     <Button
         type="primary"
         block

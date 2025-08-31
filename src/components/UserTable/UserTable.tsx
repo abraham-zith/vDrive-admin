@@ -3,8 +3,8 @@ import type { InputRef, TableColumnsType, TableColumnType } from "antd";
 import { Button, Input, Space, Table } from "antd";
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import Highlighter from "react-highlight-words";
-import moment from "moment";
 import { useMemo, useRef, useState } from "react";
+import { format } from "date-fns-tz";
 import { useGetHeight } from "../../utilities/customheightWidth";
 import type { User } from "../../pages/Users";
 
@@ -176,23 +176,28 @@ const UserTable = ({ data }: UserTableProps) => {
         dataIndex: "lastLogin",
         minWidth: 240,
         key: "lastLogin",
-        render: (text: string) => moment(text).format("MMMM Do YYYY, h:mm a"),
+        render: (text: string) =>
+          format(new Date(text), "MMMM do yyyy, h:mm a", {
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
         sorter: (a: User, b: User) =>
-          moment(a.lastLogin).unix() - moment(b.lastLogin).unix(),
+          new Date(a.lastLogin).getTime() - new Date(b.lastLogin).getTime(),
       },
       {
         title: "Created At",
         minWidth: 240,
         dataIndex: "createdAt",
         key: "createdAt",
-        render: (text: string) => moment(text).format("MMMM Do YYYY, h:mm a"),
+        render: (text: string) =>
+          format(new Date(text), "MMMM do yyyy, h:mm a", {
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
         sorter: (a: User, b: User) =>
-          moment(a.createdAt).unix() - moment(b.createdAt).unix(),
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       },
     ],
     [searchText, searchedColumn]
   );
-  console.log("tableHeight", tableHeight);
 
   return (
     <div ref={contentRef} className="h-full w-full">
@@ -203,6 +208,7 @@ const UserTable = ({ data }: UserTableProps) => {
         dataSource={data}
         rowKey="userId"
         pagination={false}
+        showSorterTooltip={false}
         tableLayout="auto"
         scroll={{ y: Math.floor(tableHeight || 0) }}
       />

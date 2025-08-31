@@ -1,5 +1,5 @@
 import { Card, Tag } from "antd";
-import moment from "moment";
+import { format } from "date-fns-tz";
 import type { Filters } from "../Filter/Filter";
 import type { UserRole, UserStatus } from "../../pages/Users";
 import { capitalize } from "../../utilities/capitalize";
@@ -68,7 +68,11 @@ const AppliedFilters = ({ filters, setFilters }: AppliedFiltersProps) => {
           }
 
           const label: string =
-            value instanceof Date ? moment(value).format("L") : String(value);
+            value instanceof Date
+              ? format(value, "MM/dd/yyyy", {
+                  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                })
+              : String(value);
           return (
             <Tag
               key={key}
