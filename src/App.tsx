@@ -11,7 +11,8 @@ import logo from "/logo1.png";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Users from "./pages/Users";
 import Drivers from "./pages/Drivers";
-import DriverIcon  from "./assets/DriverIcon";
+import { PiSteeringWheel } from "react-icons/pi";
+
 const PlaceholderContent: React.FC<{
   title: string;
   children?: React.ReactNode;
@@ -59,7 +60,7 @@ const AppContent: React.FC = () => {
     {
       label: <Link to="/drivers">Drivers</Link>,
       key: "/drivers",
-      icon: <Icon component={DriverIcon} />,
+      icon: <PiSteeringWheel/>,
     },
   ];
   return (

@@ -1,14 +1,24 @@
 import { SearchOutlined } from "@ant-design/icons";
 import type { InputRef, TableColumnsType, TableColumnType } from "antd";
-import { Button, Input, Space, Table , Avatar,Tooltip ,message, Image} from "antd";
+import {
+  Button,
+  Input,
+  Space,
+  Table,
+  Avatar,
+  Tooltip,
+  message,
+  Image,
+} from "antd";
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import Highlighter from "react-highlight-words";
 import { format } from "date-fns-tz";
 import { useMemo, useRef, useState } from "react";
 import { useGetHeight } from "../../utilities/customheightWidth";
 import type { Driver } from "../../pages/Drivers";
-import { UserOutlined,CopyOutlined } from "@ant-design/icons";
+import { UserOutlined, CopyOutlined } from "@ant-design/icons";
 import { capitalize } from "../../utilities/capitalize";
+import { parseISO, compareAsc } from "date-fns";
 interface DriverTableProps {
   data: Driver[];
 }
@@ -144,11 +154,9 @@ const DriverTable = ({ data }: DriverTableProps) => {
             </Tooltip>
           </div>
         ),
-        // sorter: (a: Driver, b: Driver) =>
-        //   a.full_name.localeCompare(b.full_name),
-        // ...getColumnSearchProps("full_name"),
+        sorter: (a: Driver, b: Driver) =>
+          a.full_name.localeCompare(b.full_name),
       },
-
       {
         title: "Phone Number",
         dataIndex: "phone_number",
@@ -173,7 +181,11 @@ const DriverTable = ({ data }: DriverTableProps) => {
         minWidth: 200,
         key: "license_expiry_date",
         width: 190,
-    
+        sorter: (a: Driver, b: Driver) => {
+          const dateA = parseISO(a.license_expiry_date);
+          const dateB = parseISO(b.license_expiry_date);
+          return compareAsc(dateA, dateB);
+        },
       },
       {
         title: "Rating",
@@ -195,14 +207,14 @@ const DriverTable = ({ data }: DriverTableProps) => {
         dataIndex: "total_trips",
         minWidth: 120,
         key: "total_trips",
-      sorter: (a: Driver, b: Driver) => a.total_trips - b.total_trips,
+        sorter: (a: Driver, b: Driver) => a.total_trips - b.total_trips,
       },
       {
         title: "Joined At",
         minWidth: 240,
         dataIndex: "joined_at",
         key: "joined_at",
-      render: (text: string) =>
+        render: (text: string) =>
           format(new Date(text), "MMMM do yyyy, h:mm a", {
             timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           }),
@@ -216,9 +228,8 @@ const DriverTable = ({ data }: DriverTableProps) => {
         minWidth: 130,
         render: (url: string) => (
           <Avatar
-
             src={url}
-            // icon={!url ? <UserOutlined /> : undefined}
+            icon={!url ? <UserOutlined /> : undefined}
             size="large"
           />
         ),
