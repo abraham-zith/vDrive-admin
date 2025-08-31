@@ -8,7 +8,7 @@ import {
   TeamOutlined,
   LogoutOutlined,
 } from "@ant-design/icons";
-import logo from "/public/logo1.png"; // Assuming logo1.png is the desired logo
+import logo from "/logo1.png";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
