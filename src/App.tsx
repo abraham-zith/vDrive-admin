@@ -4,12 +4,14 @@ import {
   UserOutlined,
   HomeOutlined,
   LogoutOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { Layout, Menu, Avatar } from "antd";
 import logo from "/logo1.png";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Users from "./pages/Users";
+import LocationPricing from "./components/LocationPricing/LocationPricing";
 
 const PlaceholderContent: React.FC<{
   title: string;
@@ -54,6 +56,11 @@ const AppContent: React.FC = () => {
       label: <Link to="/users">Users</Link>,
       key: "/users",
       icon: <TeamOutlined />,
+    },
+    {
+      label: <Link to="/pricing">Pricing</Link>,
+      key: "/pricing",
+      icon: <DollarOutlined />,
     },
   ];
   return (
@@ -123,6 +130,7 @@ const AppContent: React.FC = () => {
                 element={<PlaceholderContent title="Dashboard" />}
               />
               <Route path="/users" element={<Users />} />
+              <Route path="/pricing" element={<LocationPricing />} />
             </Routes>
           </div>
         </Content>
