@@ -1,14 +1,6 @@
 import { SearchOutlined } from "@ant-design/icons";
 import type { InputRef, TableColumnsType, TableColumnType } from "antd";
-import {
-  Button,
-  Input,
-  Space,
-  Table,
-  Avatar,
-  Tooltip,
-  message,
-} from "antd";
+import { Button, Input, Space, Table, Avatar, Tooltip, message } from "antd";
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import Highlighter from "react-highlight-words";
 import { format } from "date-fns-tz";
@@ -135,6 +127,19 @@ const DriverTable = ({ data }: DriverTableProps) => {
   const columns: TableColumnsType<Driver> = useMemo(
     () => [
       {
+        title: "Profile",
+        dataIndex: "profile_url",
+        key: "profile_url",
+        minWidth: 100,
+        render: (url: string) => (
+          <Avatar
+            src={url}
+            icon={!url ? <UserOutlined /> : undefined}
+            size="large"
+          />
+        ),
+      },
+      {
         title: "Full Name",
         dataIndex: "full_name",
         key: "full_name",
@@ -153,6 +158,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
             </Tooltip>
           </div>
         ),
+        ...getColumnSearchProps("full_name"),
         sorter: (a: Driver, b: Driver) =>
           a.full_name.localeCompare(b.full_name),
       },
@@ -220,23 +226,9 @@ const DriverTable = ({ data }: DriverTableProps) => {
         sorter: (a: Driver, b: Driver) =>
           new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime(),
       },
-      {
-        title: "Profile",
-        dataIndex: "profile_url",
-        key: "profile_url",
-        minWidth: 130,
-        render: (url: string) => (
-          <Avatar
-            src={url}
-            icon={!url ? <UserOutlined /> : undefined}
-            size="large"
-          />
-        ),
-      },
     ],
     [searchText, searchedColumn]
   );
-
 
   return (
     <div ref={contentRef} className="h-full w-full">
