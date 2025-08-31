@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   TeamOutlined,
   UserOutlined,
@@ -6,15 +6,9 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
-import { Layout, Menu, theme, Avatar } from "antd";
+import { Layout, Menu, Avatar } from "antd";
 import logo from "/logo1.png";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Link,
-  useLocation,
-} from "react-router-dom";
+import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Users from "./pages/Users";
 
 const PlaceholderContent: React.FC<{
@@ -27,7 +21,7 @@ const PlaceholderContent: React.FC<{
   </div>
 );
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Content, Sider } = Layout;
 
 const Logo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => (
   <div className="flex items-center justify-center gap-3 px-4 h-[64px] border-b border-gray-700">
