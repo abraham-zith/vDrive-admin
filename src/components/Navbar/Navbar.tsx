@@ -56,6 +56,15 @@ const Navbar: React.FC = () => {
       icon: <TeamOutlined />,
     },
     {
+      label: (
+        <Link to="/drivers" onClick={onCloseDrawer}>
+          Drivers
+        </Link>
+      ),
+      key: "/drivers",
+      icon: <TeamOutlined />,
+    },
+    {
       key: "/admin",
       label: (
         <Link to="/admin" onClick={onCloseDrawer}>

@@ -1,106 +1,98 @@
-import { Button, DatePicker, Select, Row, Col } from "antd";
+import { Button, DatePicker, Select, Row, Col, Input } from "antd";
 import { useState, useEffect } from "react";
 import moment from "moment";
 import type { Moment } from "moment";
-import type { UserRole, UserStatus } from "../../pages/Users";
 
-// --- Constants remain the same ---
-const ROLES: UserRole[] = [
-  "Admin",
-  "Manager",
-  "Developer",
-  "Tester",
-  "Support",
-  "Designer",
-  "Analyst",
-];
-const STATUSES: UserStatus[] = ["Active", "Inactive", "Suspended"];
+export type FilterFieldType = "select" | "date";
 
-export interface Filters {
-  role: UserRole[];
-  status: UserStatus[];
-  lastLogin: Date | null;
-  createdAt: Date | null;
+export interface FilterField {
+  key: string;
+  label: string;
+  type: FilterFieldType;
+  options?: { label: string; value: string }[];
+  mode?: "multiple" | "tags";
 }
 
-interface FilterProps {
-  setFilters: (filters: Filters) => void;
+interface FilterProps<T extends Record<string, any>> {
+  fields: FilterField[];
+  initialValues?: T;
+  onChange: (filters: T) => void;
 }
 
-const initialState: Filters = {
-  role: [],
-  status: [],
-  lastLogin: null,
-  createdAt: null,
-};
-
-const Filter = ({ setFilters }: FilterProps) => {
-  const [localFilters, setLocalFilters] = useState<Filters>(initialState);
+const Filter = <T extends Record<string, any>>({
+  fields,
+  initialValues = {} as T,
+  onChange,
+}: FilterProps<T>) => {
+  const [localFilters, setLocalFilters] = useState<T>(initialValues);
 
   useEffect(() => {
-    setFilters(localFilters);
-  }, [localFilters, setFilters]);
+    onChange(localFilters);
+  }, [localFilters, onChange]);
 
-  const handleFilterChange = <K extends keyof Filters>(
-    key: K,
-    value: Filters[K]
-  ) => {
-    setLocalFilters((prevFilters) => ({
-      ...prevFilters,
+  const handleFilterChange = (key: keyof T, value: any) => {
+    setLocalFilters((prev) => ({
+      ...prev,
       [key]: value,
     }));
   };
 
   const handleReset = () => {
-    setLocalFilters(initialState);
+    const resetValues = fields.reduce((acc, field) => {
+      acc[field.key as keyof T] = (
+        field.type === "select" ? [] : null
+      ) as T[keyof T];
+      return acc;
+    }, {} as T);
+    setLocalFilters(resetValues);
   };
 
   return (
     <Row gutter={[16, 16]} align="bottom" justify="end">
-      <Col xs={24} sm={12} md={6} lg={5}>
-        <Select
-          style={{ width: "100%" }}
-          allowClear
-          mode="multiple"
-          value={localFilters.role}
-          maxTagCount="responsive"
-          options={ROLES.map((role) => ({ label: role, value: role }))}
-          onChange={(value) => handleFilterChange("role", value)}
-          placeholder="Role"
-        />
-      </Col>
-      <Col xs={24} sm={12} md={6} lg={5}>
-        <Select
-          style={{ width: "100%" }}
-          allowClear
-          mode="multiple"
-          value={localFilters.status}
-          maxTagCount="responsive"
-          options={STATUSES.map((status) => ({ label: status, value: status }))}
-          onChange={(value) => handleFilterChange("status", value)}
-          placeholder="Status"
-        />
-      </Col>
-      <Col xs={24} sm={12} md={6} lg={5}>
-        <DatePicker
-          style={{ width: "100%" }}
-          value={localFilters.lastLogin ? moment(localFilters.lastLogin) : null}
-          onChange={(date: Moment | null) =>
-            handleFilterChange("lastLogin", date ? date.toDate() : null)
-          }
-          placeholder="Last Login"
-        />
-      </Col>
-      <Col xs={24} sm={12} md={6} lg={5}>
-        <DatePicker
-          style={{ width: "100%" }}
-          value={localFilters.createdAt ? moment(localFilters.createdAt) : null}
-          onChange={(date: Moment | null) =>
-            handleFilterChange("createdAt", date ? date.toDate() : null)
-          }
-          placeholder="Created At"
-        />
-      </Col>
+      {fields.map((field) => (
+        <Col xs={24} sm={12} md={6} lg={5} key={field.key}>
+          {field.type === "select" ? (
+            <Select
+              style={{ width: "100%" }}
+              allowClear
+              mode={field.mode || "multiple"}
+              value={localFilters[field.key as keyof T]}
+              maxTagCount="responsive"
+              options={field.options}
+              onChange={(value) =>
+                handleFilterChange(field.key as keyof T, value)
+              }
+              placeholder={field.label}
+            />
+          ) : field.type === "date" ? (
+            <DatePicker
+              style={{ width: "100%" }}
+              value={
+                localFilters[field.key as keyof T]
+                  ? moment(localFilters[field.key as keyof T])
+                  : null
+              }
+              onChange={(date: Moment | null) =>
+                handleFilterChange(
+                  field.key as keyof T,
+                  date ? date.toDate() : null
+                )
+              }
+              placeholder={field.label}
+            />
+          ) : (
+            <Input
+              style={{ width: "100%" }}
+              value={localFilters[field.key as keyof T] || ""}
+              onChange={(e) =>
+                handleFilterChange(field.key as keyof T, e.target.value)
+              }
+              placeholder={field.label}
+              allowClear
+            />
+          )}
+        </Col>
+      ))}
       <Col>
         <Button onClick={handleReset}>Reset</Button>
       </Col>

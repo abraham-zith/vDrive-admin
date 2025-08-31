@@ -1,88 +1,85 @@
 import { Card, Tag } from "antd";
 import moment from "moment";
-import type { Filters } from "../Filter/Filter";
-import type { UserRole, UserStatus } from "../../pages/Users";
+import React from "react";
+
+export type FilterValue =
+  | string
+  | number
+  | Date
+  | null
+  | Array<string | number>;
 import { capitalize } from "../../utilities/capitalize";
-
-type FilterKey = keyof Filters;
-
-interface AppliedFiltersProps {
-  filters: Filters;
-  setFilters: (filters: Filters) => void;
+export interface AppliedFiltersProps<T extends object> {
+  filters: T;
+  setFilters: React.Dispatch<React.SetStateAction<T>>;
+  labels?: Partial<Record<keyof T, string>>;
+  colors?: Partial<Record<keyof T, string>>;
 }
 
-const filterColors: Record<FilterKey, string> = {
-  role: "blue",
-  status: "green",
-  lastLogin: "purple",
-  createdAt: "orange",
-};
+const AppliedFilters = <T extends object>({
+  filters,
+  setFilters,
+  labels = {},
+  colors = {},
+}: AppliedFiltersProps<T>) => {
+  const handleRemove = (key: keyof T, valueToRemove?: string | number) => {
+    const current = filters[key] as any;
 
-const AppliedFilters = ({ filters, setFilters }: AppliedFiltersProps) => {
-  const handleRemove = (
-    key: FilterKey,
-    valueToRemove?: UserRole | UserStatus
-  ) => {
-    const currentFilter = filters[key];
-    if (Array.isArray(currentFilter)) {
+    if (Array.isArray(current)) {
       setFilters({
         ...filters,
-        [key]: currentFilter.filter((v) => v !== valueToRemove) as any, // Type assertion needed due to complex union type
+        [key]: current.filter((v) => v !== valueToRemove),
       });
     } else {
       setFilters({ ...filters, [key]: null });
     }
   };
 
-  const hasFilters = Object.values(filters).some((value) => {
-    if (Array.isArray(value)) {
-      return value.length > 0;
-    }
-    return value !== null;
-  });
+  const hasFilters = Object.values(filters).some((v) =>
+    Array.isArray(v) ? v.length > 0 : v !== null
+  );
 
-  if (!hasFilters) {
-    return null;
-  }
+  if (!hasFilters) return null;
 
   return (
     // <Badge.Ribbon text="Applied Filters" >
     <Card size="small" className="w-full">
-      <div className="w-full p-4 flex items-center gap-[6px] flex-wrap">
+      <div className="w-full p-4 flex items-center gap-2 flex-wrap">
         {Object.entries(filters).map(([key, value]) => {
           if (!value) return null;
 
-          const tagColor = filterColors[key as FilterKey];
+          const tagColor = colors[key as keyof T] || "blue";
+          const label = labels[key as keyof T] || key;
 
           if (Array.isArray(value)) {
-            return value.map((item: UserRole | UserStatus) => (
+            return value.map((item) => (
               <Tag
                 key={`${key}-${item}`}
                 closable
-                onClose={() => handleRemove(key as FilterKey, item)}
                 color={tagColor}
+                onClose={() => handleRemove(key as keyof T, item)}
               >
-                {`${capitalize(key)}: ${capitalize(item)}`}
+                {`${capitalize(label)}: ${capitalize(item)}`}
               </Tag>
             ));
           }
 
-          const label: string =
-            value instanceof Date ? moment(value).format("L") : String(value);
+          const displayValue =
+            value instanceof Date ? moment(value).format("L") : value;
+
           return (
             <Tag
               key={key}
               closable
-              onClose={() => handleRemove(key as FilterKey)}
               color={tagColor}
+              onClose={() => handleRemove(key as keyof T)}
             >
-              {`${capitalize(key)}: ${capitalize(label)}`}
+              {`${capitalize(label)}: ${capitalize(displayValue)}`}
             </Tag>
           );
         })}
       </div>
     </Card>
-    // </Badge.Ribbon>
   );
 };
 

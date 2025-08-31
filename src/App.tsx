@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar";
 
 const Users = lazy(() => import("./pages/Users"));
+const Drivers = lazy(() => import("./pages/Drivers"));
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Routes>
             <Route path="/" element={<div>Coming soon</div>} />
             <Route path="/users" element={<Users />} />
+            <Route path="/drivers" element={<Drivers />} />
           </Routes>
         </Suspense>
       </div>
