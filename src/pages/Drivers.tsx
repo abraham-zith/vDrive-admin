@@ -110,8 +110,12 @@ const Users = () => {
       options: STATUSES.map((s) => ({ label: s, value: s })),
       mode: "multiple" as const,
     },
-    { key: "joined_at", label: "Last Login", type: "date" as const },
-    { key: "license_expiry_date", label: "Created At", type: "date" as const },
+    { key: "joined_at", label: "Joined At", type: "date" as const },
+    {
+      key: "license_expiry_date",
+      label: "License Expiry Date",
+      type: "date" as const,
+    },
   ];
 
   const filteredData = DATA.filter((user) => {
