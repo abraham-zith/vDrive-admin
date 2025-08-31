@@ -329,7 +329,7 @@ const DATA: User[] = [
   },
 ];
 
-interface Filters {
+export interface Filters {
   role: UserRole[];
   status: UserStatus[];
   lastLogin: Date | null;
@@ -342,6 +342,36 @@ const Users = () => {
     lastLogin: null,
     createdAt: null,
   });
+
+  const ROLES = [
+    "Admin",
+    "Manager",
+    "Developer",
+    "Tester",
+    "Support",
+    "Designer",
+    "Analyst",
+  ];
+  const STATUSES = ["Active", "Inactive", "Suspended"];
+
+  const filterFields = [
+    {
+      key: "role",
+      label: "Role",
+      type: "select" as const,
+      options: ROLES.map((r) => ({ label: r, value: r })),
+      mode: "multiple" as const,
+    },
+    {
+      key: "status",
+      label: "Status",
+      type: "select" as const,
+      options: STATUSES.map((s) => ({ label: s, value: s })),
+      mode: "multiple" as const,
+    },
+    { key: "lastLogin", label: "Last Login", type: "date" as const },
+    { key: "createdAt", label: "Created At", type: "date" as const },
+  ];
 
   const filteredData = DATA.filter((user) => {
     if (filters.role.length > 0 && !filters.role.includes(user.role)) {
@@ -366,10 +396,31 @@ const Users = () => {
   });
   return (
     <div className="w-full h-full flex flex-col p-[10px] gap-[6px]">
-      <Filter setFilters={setFilters} />
-      <AppliedFilters filters={filters} setFilters={setFilters} />
+      <Filter<Filters>
+        fields={filterFields}
+        initialValues={filters}
+        onChange={setFilters}
+      />
+
+      <AppliedFilters<Filters>
+        filters={filters}
+        setFilters={setFilters}
+        labels={{
+          role: "Role",
+          status: "Status",
+          lastLogin: "Last Login",
+          createdAt: "Created At",
+        }}
+        colors={{
+          role: "blue",
+          status: "green",
+          lastLogin: "purple",
+          createdAt: "orange",
+        }}
+      />
+
       <div className="flex-grow overflow-hidden">
-        <UserTable data={filteredData} key={JSON.stringify(filters)} />
+        <UserTable data={filteredData} />
       </div>
     </div>
   );
