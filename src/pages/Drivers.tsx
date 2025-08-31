@@ -2,7 +2,7 @@ import { useState } from "react";
 import DriverTable from "../components/DriverTable/DriverTable";
 import Filter from "../components/Filter/Filter";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
-import moment from "moment";
+import { isSameDay } from "date-fns";
 
 
 export type UserStatus = "active" | "inactive" | "suspended";
@@ -121,18 +121,19 @@ const Users = () => {
     if (filters.status.length > 0 && !filters.status.includes(user.status)) {
       return false;
     }
-    if (
-      filters.joined_at &&
-      !moment(user.joined_at).isSame(filters.joined_at, "day")
-    ) {
-      return false;
-    }
-    if (
-      filters.license_expiry_date &&
-      !moment(user.license_expiry_date).isSame(filters.license_expiry_date, "day")
-    ) {
-      return false;
-    }
+  
+        if (
+          filters.joined_at &&
+          !isSameDay(new Date(user.joined_at), filters.joined_at)
+        ) {
+          return false;
+        }
+        if (
+          filters.license_expiry_date &&
+          !isSameDay(new Date(user.license_expiry_date), filters.license_expiry_date)
+        ) {
+          return false;
+        }
     return true;
   });
   return (

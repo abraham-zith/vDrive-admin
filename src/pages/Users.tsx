@@ -2,7 +2,7 @@ import { useState } from "react";
 import UserTable from "../components/UserTable/UserTable";
 import Filter from "../components/Filter/Filter";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
-import moment from "moment";
+import { isSameDay } from "date-fns";
 
 export type UserRole =
   | "Admin"
@@ -382,13 +382,13 @@ const Users = () => {
     }
     if (
       filters.lastLogin &&
-      !moment(user.lastLogin).isSame(filters.lastLogin, "day")
+      !isSameDay(new Date(user.lastLogin), filters.lastLogin)
     ) {
       return false;
     }
     if (
       filters.createdAt &&
-      !moment(user.createdAt).isSame(filters.createdAt, "day")
+      !isSameDay(new Date(user.createdAt), filters.createdAt)
     ) {
       return false;
     }

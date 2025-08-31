@@ -1,7 +1,6 @@
 import { Button, DatePicker, Select, Row, Col, Input } from "antd";
 import { useState, useEffect } from "react";
-import moment from "moment";
-import type { Moment } from "moment";
+
 
 export type FilterFieldType = "select" | "date";
 
@@ -68,14 +67,12 @@ const Filter = <T extends Record<string, any>>({
             <DatePicker
               style={{ width: "100%" }}
               value={
-                localFilters[field.key as keyof T]
-                  ? moment(localFilters[field.key as keyof T])
-                  : null
+             localFilters[field.key as keyof T]
               }
-              onChange={(date: Moment | null) =>
+              onChange={(date: Date | null) =>
                 handleFilterChange(
                   field.key as keyof T,
-                  date ? date.toDate() : null
+                  date 
                 )
               }
               placeholder={field.label}

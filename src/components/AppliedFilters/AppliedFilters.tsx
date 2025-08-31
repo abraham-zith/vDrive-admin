@@ -1,5 +1,5 @@
 import { Card, Tag } from "antd";
-import moment from "moment";
+import { format } from "date-fns-tz";
 import React from "react";
 
 export type FilterValue =
@@ -65,8 +65,11 @@ const AppliedFilters = <T extends object>({
           }
 
           const displayValue =
-            value instanceof Date ? moment(value).format("L") : value;
-
+            value instanceof Date
+              ? format(value, "MM/dd/yyyy", {
+                  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                })
+              : String(value);
           return (
             <Tag
               key={key}

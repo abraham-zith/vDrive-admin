@@ -3,7 +3,7 @@ import type { InputRef, TableColumnsType, TableColumnType } from "antd";
 import { Button, Input, Space, Table , Avatar,Tooltip ,message, Image} from "antd";
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import Highlighter from "react-highlight-words";
-import moment from "moment";
+import { format } from "date-fns-tz";
 import { useMemo, useRef, useState } from "react";
 import { useGetHeight } from "../../utilities/customheightWidth";
 import type { Driver } from "../../pages/Drivers";
@@ -173,9 +173,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
         minWidth: 200,
         key: "license_expiry_date",
         width: 190,
-        sorter: (a: Driver, b: Driver) =>
-          moment(a.license_expiry_date).unix() -
-          moment(b.license_expiry_date).unix(),
+    
       },
       {
         title: "Rating",
@@ -197,17 +195,19 @@ const DriverTable = ({ data }: DriverTableProps) => {
         dataIndex: "total_trips",
         minWidth: 120,
         key: "total_trips",
-        sorter: (a: Driver, b: Driver) =>
-          moment(a.total_trips).unix() - moment(b.total_trips).unix(),
+      sorter: (a: Driver, b: Driver) => a.total_trips - b.total_trips,
       },
       {
         title: "Joined At",
         minWidth: 240,
         dataIndex: "joined_at",
         key: "joined_at",
-        render: (text: string) => moment(text).format("MMMM Do YYYY, h:mm a"),
+      render: (text: string) =>
+          format(new Date(text), "MMMM do yyyy, h:mm a", {
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
         sorter: (a: Driver, b: Driver) =>
-          moment(a.joined_at).unix() - moment(b.joined_at).unix(),
+          new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime(),
       },
       {
         title: "Profile",
