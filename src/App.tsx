@@ -41,23 +41,18 @@ const Logo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => (
   </div>
 );
 
+const siderStyle: React.CSSProperties = {
+  height: "100vh",
+  position: "fixed",
+  left: 0,
+  top: 0,
+  bottom: 0,
+  zIndex: 100,
+};
+
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const [currentPath, setCurrentPath] = useState(location.pathname);
   const [collapsed, setCollapsed] = useState(true);
-
-  useEffect(() => {
-    setCurrentPath(location.pathname);
-  }, [location.pathname]);
-
-  const siderStyle: React.CSSProperties = {
-    height: "100vh",
-    position: "fixed",
-    left: 0,
-    top: 0,
-    bottom: 0,
-    zIndex: 100,
-  };
 
   const menuItems: MenuProps["items"] = [
     { label: <Link to="/">Dashboard</Link>, key: "/", icon: <HomeOutlined /> },
@@ -85,7 +80,7 @@ const AppContent: React.FC = () => {
             <Menu
               theme="dark"
               mode="inline"
-              selectedKeys={[currentPath]}
+              selectedKeys={[location.pathname]}
               items={menuItems}
             />
           </div>
@@ -142,10 +137,6 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => (
-  <Router>
-    <AppContent />
-  </Router>
-);
+const App: React.FC = () => <AppContent />;
 
 export default App;

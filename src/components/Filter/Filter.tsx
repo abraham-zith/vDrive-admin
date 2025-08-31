@@ -1,7 +1,5 @@
 import { Button, DatePicker, Select, Row, Col } from "antd";
 import { useState, useEffect } from "react";
-import moment from "moment";
-import type { Moment } from "moment";
 import type { UserRole, UserStatus } from "../../pages/Users";
 
 // --- Constants remain the same ---
@@ -84,9 +82,9 @@ const Filter = ({ setFilters }: FilterProps) => {
       <Col xs={24} sm={12} md={6} lg={5}>
         <DatePicker
           style={{ width: "100%" }}
-          value={localFilters.lastLogin ? moment(localFilters.lastLogin) : null}
-          onChange={(date: Moment | null) =>
-            handleFilterChange("lastLogin", date ? date.toDate() : null)
+          value={localFilters.lastLogin}
+          onChange={(date: Date | null) =>
+            handleFilterChange("lastLogin", date)
           }
           placeholder="Last Login"
         />
@@ -94,9 +92,9 @@ const Filter = ({ setFilters }: FilterProps) => {
       <Col xs={24} sm={12} md={6} lg={5}>
         <DatePicker
           style={{ width: "100%" }}
-          value={localFilters.createdAt ? moment(localFilters.createdAt) : null}
-          onChange={(date: Moment | null) =>
-            handleFilterChange("createdAt", date ? date.toDate() : null)
+          value={localFilters.createdAt}
+          onChange={(date: Date | null) =>
+            handleFilterChange("createdAt", date)
           }
           placeholder="Created At"
         />
