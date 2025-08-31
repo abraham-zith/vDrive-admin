@@ -4,6 +4,8 @@ import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar";
 
 const Users = lazy(() => import("./pages/Users"));
+const SignUp = lazy(()=>import("./signup/Signup"));
+const Login =lazy(()=>import("./login/login"));
 
 function App() {
   return (
@@ -14,6 +16,8 @@ function App() {
           <Routes>
             <Route path="/" element={<div>Coming soon</div>} />
             <Route path="/users" element={<Users />} />
+            <Route path ="/signup" element ={<SignUp/>}/>
+            <Route path ="/login" element={<Login/>}/>
           </Routes>
         </Suspense>
       </div>
