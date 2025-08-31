@@ -203,6 +203,7 @@ const UserTable = ({ data }: UserTableProps) => {
         dataSource={data}
         rowKey="userId"
         pagination={false}
+        showSorterTooltip={false}
         tableLayout="auto"
         scroll={{ y: Math.floor(tableHeight || 0) }}
       />
