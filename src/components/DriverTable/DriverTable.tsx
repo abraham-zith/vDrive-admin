@@ -237,7 +237,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
     ],
     [searchText, searchedColumn]
   );
-  console.log("tableHeight", tableHeight);
+
 
   return (
     <div ref={contentRef} className="h-full w-full">
