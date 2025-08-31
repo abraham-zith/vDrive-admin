@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Icon, {
+import  {
   TeamOutlined,
   UserOutlined,
   HomeOutlined,

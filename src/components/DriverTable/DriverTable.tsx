@@ -8,7 +8,6 @@ import {
   Avatar,
   Tooltip,
   message,
-  Image,
 } from "antd";
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import Highlighter from "react-highlight-words";
