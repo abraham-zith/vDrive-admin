@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {
+import  {
   TeamOutlined,
   UserOutlined,
   HomeOutlined,
@@ -10,6 +10,8 @@ import { Layout, Menu, Avatar } from "antd";
 import logo from "/logo1.png";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Users from "./pages/Users";
+import Drivers from "./pages/Drivers";
+import { PiSteeringWheel } from "react-icons/pi";
 
 const PlaceholderContent: React.FC<{
   title: string;
@@ -25,7 +27,7 @@ const { Content, Sider } = Layout;
 
 const Logo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => (
   <div className="flex items-center justify-center gap-3 px-4 h-[64px] border-b border-gray-700">
-    <img height={32} width={32} src={logo} />
+    <img height={32} width={32} src={logo} alt="" />
 
     {!collapsed && (
       <span className="font-semibold text-xl text-white whitespace-nowrap">
@@ -54,6 +56,11 @@ const AppContent: React.FC = () => {
       label: <Link to="/users">Users</Link>,
       key: "/users",
       icon: <TeamOutlined />,
+    },
+    {
+      label: <Link to="/drivers">Drivers</Link>,
+      key: "/drivers",
+      icon: <PiSteeringWheel/>,
     },
   ];
   return (
@@ -123,6 +130,7 @@ const AppContent: React.FC = () => {
                 element={<PlaceholderContent title="Dashboard" />}
               />
               <Route path="/users" element={<Users />} />
+              <Route path="/drivers" element={<Drivers />} />
             </Routes>
           </div>
         </Content>
