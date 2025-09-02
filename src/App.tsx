@@ -7,12 +7,12 @@ import {
   DollarOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
-import { Layout, Menu, Avatar } from "antd";
+import { Layout, Menu, Avatar, ConfigProvider } from "antd";
 import logo from "/logo1.png";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Users from "./pages/Users";
 import { PiSteeringWheel } from "react-icons/pi";
-import LocationPricing from "./components/LocationPricing/LocationPricing";
+import DriverPricing from "./pages/DriverPricing";
 import Drivers from "./pages/Drivers";
 
 const PlaceholderContent: React.FC<{
@@ -71,79 +71,106 @@ const AppContent: React.FC = () => {
     },
   ];
   return (
-    <Layout hasSider>
-      <Sider
-        style={siderStyle}
-        collapsed={collapsed}
-        width={250}
-        onMouseEnter={() => setCollapsed(false)}
-        onMouseLeave={() => setCollapsed(true)}
-      >
-        <div className="flex flex-col h-full">
-          <div className="flex-shrink-0">
-            <Logo collapsed={collapsed} />
-          </div>
-
-          <div className="flex-grow overflow-y-auto">
-            <Menu
-              theme="dark"
-              mode="inline"
-              selectedKeys={[location.pathname]}
-              items={menuItems}
-            />
-          </div>
-
-          <div
-            className={`flex-shrink-0 p-4 border-t border-gray-700 ${
-              collapsed ? "hidden" : "block"
-            }`}
-          >
-            <div className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer">
-              <Avatar size="large" icon={<UserOutlined />} />
-              <div className="flex flex-col text-white">
-                <span className="font-medium">Admin User</span>
-                <span className="text-xs text-gray-400">admin@example.com</span>
-              </div>
+    <ConfigProvider
+      theme={{
+        components: {
+          Segmented: {
+            trackBg: "rgb(241,245,249)",
+          },
+        },
+      }}
+    >
+      <Layout hasSider>
+        <Sider
+          style={siderStyle}
+          collapsed={collapsed}
+          width={250}
+          onMouseEnter={() => setCollapsed(false)}
+          onMouseLeave={() => setCollapsed(true)}
+        >
+          <div className="flex flex-col h-full">
+            <div className="flex-shrink-0">
+              <Logo collapsed={collapsed} />
             </div>
-            <Menu
-              theme="dark"
-              mode="inline"
-              selectable={false}
-              items={[
-                {
-                  key: "logout",
-                  label: "Logout",
-                  icon: <LogoutOutlined />,
-                  danger: true,
-                },
-              ]}
-              className="bg-transparent border-0 mt-2"
-            />
-          </div>
-        </div>
-      </Sider>
 
-      <Layout
-        style={{
-          marginLeft: collapsed ? 80 : 250,
-          transition: "margin-left 0.2s",
-        }}
-      >
-        <Content>
-          <div className="p-1 h-[100dvh] w-full  rounded-lg">
-            <Routes>
-              <Route
-                path="/"
-                element={<PlaceholderContent title="Dashboard" />}
+            <div className="flex-grow overflow-y-auto">
+              <Menu
+                theme="dark"
+                mode="inline"
+                selectedKeys={[location.pathname]}
+                items={menuItems}
               />
-              <Route path="/users" element={<Users />} />
-              <Route path="/pricing" element={<LocationPricing />} />
-              <Route path="/drivers" element={<Drivers />} />
-            </Routes>
+            </div>
+
+            <div className={`flex-shrink-0 p-4 border-t border-gray-700 block`}>
+              <div
+                className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer ${
+                  collapsed ? "justify-center" : "gap-3"
+                }`}
+              >
+                {collapsed ? null : (
+                  <Avatar size="large" icon={<UserOutlined />} />
+                )}
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    collapsed
+                      ? "grid-rows-[0fr] opacity-0"
+                      : "grid-rows-[1fr] opacity-100"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="flex flex-col text-white">
+                      <span className="font-medium whitespace-nowrap">
+                        Admin User
+                      </span>
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
+                        admin@example.com
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <Menu
+                theme="dark"
+                mode="inline"
+                selectable={false}
+                inlineCollapsed={collapsed}
+                items={[
+                  {
+                    key: "logout",
+                    label: "Logout",
+                    icon: <LogoutOutlined />,
+                    danger: true,
+                  },
+                ]}
+                className="bg-transparent border-0 mt-2"
+              />
+            </div>
           </div>
-        </Content>
+        </Sider>
+
+        <Layout
+          style={{
+            marginLeft: collapsed ? 80 : 250,
+            transition: "margin-left 0.2s",
+          }}
+        >
+          <Content>
+            <div className="p-1 h-[100dvh] w-full  rounded-lg bg-[#F7F8FB]">
+              <Routes>
+                <Route
+                  path="/"
+                  element={<PlaceholderContent title="Dashboard" />}
+                />
+                <Route path="/users" element={<Users />} />
+                <Route path="/pricing" element={<DriverPricing />} />
+                <Route path="/drivers" element={<Drivers />} />
+              </Routes>
+            </div>
+          </Content>
+        </Layout>
       </Layout>
-    </Layout>
+    </ConfigProvider>
   );
 };
 
