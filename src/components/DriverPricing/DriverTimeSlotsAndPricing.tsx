@@ -9,15 +9,19 @@ import {
   Select,
   Tag,
   TimePicker,
-  Form,
 } from "antd";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BsClock } from "react-icons/bs";
 import { FaRegStar } from "react-icons/fa";
 import { FiUsers } from "react-icons/fi";
-import type { Dayjs } from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
+import { LuZap } from "react-icons/lu";
+import {
+  mockHotspotApi,
+  type HotspotType,
+} from "../../utilities/mockHotspotApi";
 
-type Day =
+export type Day =
   | "monday"
   | "tuesday"
   | "wednesday"
@@ -26,11 +30,19 @@ type Day =
   | "saturday"
   | "sunday";
 
-interface TimeSlot {
+export interface TimeSlot {
   id: number;
   day: Day;
-  timeRange: [Dayjs | null, Dayjs | null];
+  timeRange: [Dayjs, Dayjs] | null;
   price: number;
+}
+
+export type UserType = "normal-user" | "premium-user" | "elite-user";
+
+export interface UserTimeSlots {
+  "normal-user": TimeSlot[];
+  "premium-user": TimeSlot[];
+  "elite-user": TimeSlot[];
 }
 
 const dayOptions = [
@@ -55,54 +67,48 @@ const TimeSlotItem = ({
   removeTimeSlot: (id: number) => void;
 }) => {
   return (
-    <div className="w-full p-4 flex flex-wrap gap-4 items-center justify-center md:justify-around">
+    <div className="w-full p-4 flex flex-wrap gap-4 items-center justify-center md:justify-around bg-[#F8F9FA] rounded-md">
       <span>Slot {index + 1}</span>
       <div className="flex gap-1 items-center">
         <span>Day</span>
-        <div>
-          <Select
-            value={slot.day}
-            options={dayOptions}
-            className="w-32"
-            onChange={(day) => updateTimeSlot(index, { day })}
-          />
-        </div>
+        <Select
+          value={slot.day}
+          options={dayOptions}
+          className="w-32"
+          onChange={(day) => updateTimeSlot(index, { day })}
+        />
       </div>
       <div className="flex gap-1 items-center">
-        <div>
-          <TimePicker.RangePicker
-            placeholder={["From", "To"]}
-            format={"HH:mm A"}
-            needConfirm={false}
-            value={slot.timeRange}
-            onChange={(timeRange) =>
-              updateTimeSlot(index, {
-                timeRange: timeRange as [Dayjs | null, Dayjs | null],
-              })
-            }
-          />
-        </div>
+        {/* <span>Time Range</span> */}
+        <TimePicker.RangePicker
+          value={slot.timeRange}
+          format="h:mm A"
+          onChange={(timeRange) =>
+            updateTimeSlot(index, { timeRange: timeRange || null })
+          }
+          className="w-48"
+          use12Hours
+        />
       </div>
       <div className="flex gap-1 items-center">
-        <span>Price(₹)</span>
-        <div>
-          <Input
-            style={{
-              width: 100,
-            }}
-            value={slot.price}
-            onChange={(e) =>
-              updateTimeSlot(index, { price: Number(e.target.value) })
-            }
-            type="number"
-          />
-        </div>
+        <span>Price</span>
+        <Input
+          style={{
+            width: 110,
+          }}
+          value={slot.price}
+          onChange={(e) =>
+            updateTimeSlot(index, { price: Number(e.target.value) })
+          }
+          type="number"
+          addonBefore="₹"
+        />
       </div>
       <div className="flex gap-1 items-center">
-        <span>₹{slot.price || "0"}</span>
+        <span className="font-bold text-green-600">₹{slot.price || "0"}</span>
         <Badge
           status="success"
-          count={"+90 %"}
+          count={"+13%"}
           overflowCount={1000}
           style={{ backgroundColor: "#52c41a" }}
         />
@@ -116,34 +122,101 @@ const TimeSlotItem = ({
   );
 };
 
-const DriverTimeSlotsAndPricing = () => {
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([
-    { id: 1, day: "monday", timeRange: [null, null], price: 1000 },
-  ]);
+interface DriverTimeSlotsAndPricingProps {
+  timeSlots: UserTimeSlots;
+  setTimeSlots: (timeSlots: UserTimeSlots) => void;
+  hotspotEnabled: boolean;
+  hotspotType: string;
+  multiplier: number;
+}
+
+const DriverTimeSlotsAndPricing = ({
+  timeSlots,
+  setTimeSlots,
+  hotspotEnabled,
+  hotspotType,
+  multiplier,
+}: DriverTimeSlotsAndPricingProps) => {
+  const [userType, setUserType] = useState<UserType>("elite-user");
+  const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
+
+  // Load hotspot types on component mount
+  useEffect(() => {
+    loadHotspotTypes();
+  }, []);
+
+  const loadHotspotTypes = async () => {
+    try {
+      const types = await mockHotspotApi.getHotspotTypes();
+      setHotspotTypes(types);
+    } catch (error) {
+      console.error("Failed to load hotspot types");
+    }
+  };
+
+  // Get selected hotspot type details
+  const selectedHotspotType = hotspotTypes.find(
+    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType
+  );
+
+  const userTypeDetails = {
+    "normal-user": {
+      tag: "Normal User",
+      description: "Standard ride pricing",
+      icon: <FiUsers />,
+      color: "#5599FF",
+      badge: "+5%",
+    },
+    "premium-user": {
+      tag: "Premium User",
+      description: "Enhanced service features",
+      icon: <FaRegStar className="text-yellow-400" />,
+      color: "gold",
+      badge: "+10%",
+    },
+    "elite-user": {
+      tag: "Elite User",
+      description: "Luxury ride experience",
+      icon: <FaRegStar className="text-blue-400" />,
+      color: "#5599FF",
+      badge: "+8%",
+    },
+  };
 
   const addTimeSlot = () => {
-    setTimeSlots([
+    const currentUserTimeSlots = timeSlots[userType];
+    const newTimeSlot = {
+      id:
+        currentUserTimeSlots.length > 0
+          ? Math.max(...currentUserTimeSlots.map((t) => t.id)) + 1
+          : 1,
+      day: "monday" as Day,
+      timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")] as [
+        Dayjs,
+        Dayjs
+      ],
+      price: 500,
+    };
+    setTimeSlots({
       ...timeSlots,
-      {
-        id:
-          timeSlots.length > 0
-            ? Math.max(...timeSlots.map((t) => t.id)) + 1
-            : 1,
-        day: "monday",
-        timeRange: [null, null],
-        price: 0,
-      },
-    ]);
+      [userType]: [...currentUserTimeSlots, newTimeSlot],
+    });
   };
 
   const updateTimeSlot = (index: number, updatedSlot: Partial<TimeSlot>) => {
-    const newTimeSlots = [...timeSlots];
-    newTimeSlots[index] = { ...newTimeSlots[index], ...updatedSlot };
+    const newTimeSlots = { ...timeSlots };
+    newTimeSlots[userType][index] = {
+      ...newTimeSlots[userType][index],
+      ...updatedSlot,
+    };
     setTimeSlots(newTimeSlots);
   };
 
   const removeTimeSlot = (id: number) => {
-    setTimeSlots(timeSlots.filter((slot) => slot.id !== id));
+    setTimeSlots({
+      ...timeSlots,
+      [userType]: timeSlots[userType].filter((slot) => slot.id !== id),
+    });
   };
 
   return (
@@ -154,7 +227,7 @@ const DriverTimeSlotsAndPricing = () => {
             <div>
               <BsClock className="text-[20px] text-[#0080FF]" />
             </div>
-            <div>
+            <div className="flex items-center">
               <span className="text-[19px] font-semibold p-0 m-0">
                 Driver Time Slots & Pricing
               </span>
@@ -201,24 +274,24 @@ const DriverTimeSlotsAndPricing = () => {
               },
             ]}
             size="large"
-            defaultValue="normal-user"
+            value={userType}
             className="w-full "
-            onChange={(value) => {
-              console.log(value); // string
-            }}
+            onChange={(value) => setUserType(value as UserType)}
           />
         </div>
         <div className="flex gap-1 justify-between items-center">
           <div className="flex gap-2">
             <div>
-              <Tag color="#5599FF">
+              <Tag color={userTypeDetails[userType].color}>
                 <div className="flex gap-1 items-center">
-                  <FiUsers />
-                  <span>Normal User</span>
+                  {userTypeDetails[userType].icon}
+                  <span>{userTypeDetails[userType].tag}</span>
                 </div>
               </Tag>
             </div>
-            <span className="text-[#535454]">Standard ride pricing</span>
+            <span className="text-[#535454]">
+              {userTypeDetails[userType].description}
+            </span>
           </div>
           <div>
             <Button icon={<PlusOutlined />} onClick={addTimeSlot}>
@@ -228,7 +301,7 @@ const DriverTimeSlotsAndPricing = () => {
         </div>
         <List
           itemLayout="horizontal"
-          dataSource={timeSlots}
+          dataSource={timeSlots[userType]}
           renderItem={(item, index) => (
             <List.Item>
               <TimeSlotItem
@@ -240,6 +313,23 @@ const DriverTimeSlotsAndPricing = () => {
             </List.Item>
           )}
         />
+        {hotspotEnabled && selectedHotspotType && (
+          <div className="w-full p-4 flex flex-col gap-2 bg-[#F8F9FA] rounded-md">
+            <div className="flex gap-2 items-center">
+              <Tag color="processing">
+                <div className="flex gap-1 items-center">
+                  <LuZap />
+                  <span>{selectedHotspotType.name}</span>
+                </div>
+              </Tag>
+              <span className="text-sm">Active Hotspot Configuration</span>
+            </div>
+            <span className="text-sm">
+              Addition: +₹{selectedHotspotType.addition} • Multiplier:{" "}
+              {multiplier}x
+            </span>
+          </div>
+        )}
       </div>
     </Card>
   );
