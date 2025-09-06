@@ -150,9 +150,16 @@ const HotspotTypes = () => {
             </span>
           </div>
         </div>
-        <div className="flex justify-between items-center">
-          <Typography.Title level={5}>Manage Hotspot Types</Typography.Title>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <Typography.Title level={5} className="text-lg sm:text-xl">
+            Manage Hotspot Types
+          </Typography.Title>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+            className="w-full sm:w-auto"
+          >
             Add Hotspot Type
           </Button>
         </div>
@@ -162,17 +169,20 @@ const HotspotTypes = () => {
           dataSource={hotspotTypes}
           renderItem={(item) => (
             <List.Item>
-              <div className="w-full flex justify-between items-center p-4 bg-white rounded-md border">
-                <div className="flex items-center gap-3">
+              <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 bg-white rounded-md border">
+                <div className="flex items-center gap-3 flex-1">
                   <LuZap
                     className={`text-lg ${
                       item.isActive ? "text-yellow-500" : "text-gray-400"
                     }`}
                   />
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <span className="font-semibold">{item.name}</span>
-                      <Tag color={item.isActive ? "green" : "red"}>
+                      <Tag
+                        color={item.isActive ? "green" : "red"}
+                        className="w-fit"
+                      >
                         {item.isActive ? "Active" : "Inactive"}
                       </Tag>
                     </div>
@@ -181,7 +191,7 @@ const HotspotTypes = () => {
                     </span>
                   </div>
                 </div>
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center justify-end sm:justify-start">
                   <Switch
                     checked={item.isActive}
                     onChange={() => handleToggleActive(item.id)}
@@ -190,6 +200,7 @@ const HotspotTypes = () => {
                   <Button
                     icon={<EditOutlined />}
                     onClick={() => handleEdit(item)}
+                    size="small"
                   />
                   <Popconfirm
                     title="Delete hotspot type"
@@ -198,7 +209,7 @@ const HotspotTypes = () => {
                     okText="Yes"
                     cancelText="No"
                   >
-                    <Button icon={<DeleteOutlined />} danger />
+                    <Button icon={<DeleteOutlined />} danger size="small" />
                   </Popconfirm>
                 </div>
               </div>

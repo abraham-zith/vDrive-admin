@@ -17,6 +17,7 @@ const DriverPricing = () => {
   const [area, setArea] = useState("Madippakkam");
   const [pincode, setPincode] = useState("60091");
   const [hotspotArea, setHotspotArea] = useState(false);
+  const [globalPrice, setGlobalPrice] = useState(1000);
 
   const [timeSlots, setTimeSlots] = useState<UserTimeSlots>({
     "normal-user": [
@@ -51,12 +52,12 @@ const DriverPricing = () => {
 
   return (
     <div className="h-full w-full overflow-y-auto">
-      <div className="flex justify-center">
-        <div className="w-4/5 flex flex-col">
-          <Typography.Title level={2}>
+      <div className="flex justify-center px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
+        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col">
+          <Typography.Title level={2} className="text-xl sm:text-2xl">
             Driver Pricing Management
           </Typography.Title>
-          <Typography.Text>
+          <Typography.Text className="text-sm sm:text-base">
             Configure dynamic pricing rules for different locations and time
             periods
           </Typography.Text>
@@ -82,8 +83,8 @@ const DriverPricing = () => {
             />
           </div>
           {activeTab === "configuration" ? (
-            <div className="w-full flex gap-10 my-4">
-              <div className="w-2/3 flex flex-col gap-4">
+            <div className="w-full flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-8 my-4">
+              <div className="w-full lg:w-2/3 flex flex-col gap-4">
                 <LocationConfiguration
                   country={country}
                   setCountry={setCountry}
@@ -95,15 +96,8 @@ const DriverPricing = () => {
                   setArea={setArea}
                   pincode={pincode}
                   setPincode={setPincode}
-                  hotspotArea={hotspotArea}
-                  setHotspotArea={setHotspotArea}
-                />
-                <DriverTimeSlotsAndPricing
-                  timeSlots={timeSlots}
-                  setTimeSlots={setTimeSlots}
-                  hotspotEnabled={hotspotEnabled}
-                  hotspotType={hotspotType}
-                  multiplier={multiplier}
+                  globalPrice={globalPrice}
+                  setGlobalPrice={setGlobalPrice}
                 />
                 <HotspotConfiguration
                   hotspotEnabled={hotspotEnabled}
@@ -113,8 +107,16 @@ const DriverPricing = () => {
                   multiplier={multiplier}
                   setMultiplier={setMultiplier}
                 />
+                <DriverTimeSlotsAndPricing
+                  timeSlots={timeSlots}
+                  setTimeSlots={setTimeSlots}
+                  hotspotEnabled={hotspotEnabled}
+                  hotspotType={hotspotType}
+                  multiplier={multiplier}
+                  globalPrice={globalPrice}
+                />
               </div>
-              <div className="w-1/3">
+              <div className="w-full lg:w-1/3">
                 <PricingPreview
                   country={country}
                   state={state}

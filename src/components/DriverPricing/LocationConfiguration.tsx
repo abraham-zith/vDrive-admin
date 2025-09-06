@@ -1,4 +1,4 @@
-import { Card, Input, Select, Switch } from "antd";
+import { Card, Input, InputNumber, Select, Switch } from "antd";
 import { MdOutlineLocationOn } from "react-icons/md";
 
 interface LocationConfigurationProps {
@@ -12,8 +12,8 @@ interface LocationConfigurationProps {
   setArea: (area: string) => void;
   pincode: string;
   setPincode: (pincode: string) => void;
-  hotspotArea: boolean;
-  setHotspotArea: (hotspotArea: boolean) => void;
+  globalPrice: number;
+  setGlobalPrice: (globalPrice: number) => void;
 }
 
 const LocationConfiguration = ({
@@ -27,8 +27,8 @@ const LocationConfiguration = ({
   setArea,
   pincode,
   setPincode,
-  hotspotArea,
-  setHotspotArea,
+  globalPrice,
+  setGlobalPrice,
 }: LocationConfigurationProps) => {
   return (
     <Card className="w-full" size="small">
@@ -46,34 +46,41 @@ const LocationConfiguration = ({
           </div>
           <div className=""></div>
         </div>
-        <div className="w-full flex gap-4">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="w-full flex flex-col">
-            <span>Country</span>
+            <span className="text-sm font-medium mb-1">Country</span>
             <Select value={country} onChange={setCountry} options={[]} />
           </div>
           <div className="w-full flex flex-col">
-            <span>State</span>
+            <span className="text-sm font-medium mb-1">State</span>
             <Select value={state} onChange={setState} options={[]} />
           </div>
           <div className="w-full flex flex-col">
-            <span>District</span>
+            <span className="text-sm font-medium mb-1">District</span>
             <Select value={district} onChange={setDistrict} options={[]} />
           </div>
         </div>
-        <div className="w-full flex gap-4">
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="w-full flex flex-col">
-            <span>Area</span>
+            <span className="text-sm font-medium mb-1">Area</span>
             <Input value={area} onChange={(e) => setArea(e.target.value)} />
           </div>
           <div className="w-full flex flex-col">
-            <span>Pincode</span>
+            <span className="text-sm font-medium mb-1">Pincode</span>
             <Input
               value={pincode}
               onChange={(e) => setPincode(e.target.value)}
             />
           </div>
+          <div className="w-full flex flex-col">
+            <span className="text-sm font-medium mb-1">Global Price</span>
+            <InputNumber
+              value={globalPrice}
+              onChange={(e) => setGlobalPrice(e || 0)}
+            />
+          </div>
         </div>
-        <Card variant="borderless" size="small" className="w-full">
+        {/* <Card variant="borderless" size="small" className="w-full">
           <div className="w-full flex items-center gap-2 justify-between">
             <div className="flex flex-col gap-2 ">
               <span className="text-[16px] font-semibold p-0 m-0">
@@ -89,7 +96,7 @@ const LocationConfiguration = ({
               </div>
             </div>
           </div>
-        </Card>
+        </Card> */}
       </div>
     </Card>
   );

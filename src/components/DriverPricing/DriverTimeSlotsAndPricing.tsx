@@ -60,64 +60,85 @@ const TimeSlotItem = ({
   index,
   updateTimeSlot,
   removeTimeSlot,
+  globalPrice,
 }: {
   slot: TimeSlot;
   index: number;
   updateTimeSlot: (index: number, updatedSlot: Partial<TimeSlot>) => void;
   removeTimeSlot: (id: number) => void;
+  globalPrice: number;
 }) => {
   return (
-    <div className="w-full p-4 flex flex-wrap gap-4 items-center justify-center md:justify-around bg-[#F8F9FA] rounded-md">
-      <span>Slot {index + 1}</span>
-      <div className="flex gap-1 items-center">
-        <span>Day</span>
-        <Select
-          value={slot.day}
-          options={dayOptions}
-          className="w-32"
-          onChange={(day) => updateTimeSlot(index, { day })}
+    <div className="w-full p-3 sm:p-4 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-start sm:items-center justify-start sm:justify-center bg-[#F8F9FA] rounded-md">
+      <div className="flex items-center gap-2 w-full sm:w-auto">
+        <span className="font-medium">Slot {index + 1}</span>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:flex-1">
+        <div className="flex gap-2 items-center w-full sm:w-auto">
+          <span className="text-sm font-medium min-w-fit">Day:</span>
+          <Select
+            value={slot.day}
+            options={dayOptions}
+            className="w-full sm:w-32"
+            onChange={(day) => updateTimeSlot(index, { day })}
+          />
+        </div>
+
+        <div className="flex gap-2 items-center w-full sm:w-auto">
+          <span className="text-sm font-medium min-w-fit">Time:</span>
+          <TimePicker.RangePicker
+            value={slot.timeRange}
+            format="h:mm A"
+            onChange={(timeRange) =>
+              updateTimeSlot(index, {
+                timeRange: timeRange as [Dayjs, Dayjs] | null,
+              })
+            }
+            className="w-full sm:w-48"
+            use12Hours
+          />
+        </div>
+
+        <div className="flex gap-2 items-center w-full sm:w-auto">
+          <span className="text-sm font-medium min-w-fit">Price:</span>
+          <Input
+            style={{
+              width: 110,
+            }}
+            value={slot.price}
+            onChange={(e) =>
+              updateTimeSlot(index, { price: Number(e.target.value) })
+            }
+            type="number"
+            addonBefore="₹"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-baseline justify-between w-full sm:w-auto gap-2">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-green-600 text-sm sm:text-base">
+            ₹{slot.price || "0"}
+          </span>
+          <Badge
+            status="success"
+            count={`${
+              globalPrice > 0
+                ? Math.round(((slot.price - globalPrice) / globalPrice) * 100)
+                : 0
+            }%`}
+            overflowCount={1000}
+            style={{ backgroundColor: "#52c41a" }}
+          />
+        </div>
+        <Button
+          icon={<DeleteOutlined />}
+          onClick={() => removeTimeSlot(slot.id)}
+          danger
+          size="small"
         />
       </div>
-      <div className="flex gap-1 items-center">
-        {/* <span>Time Range</span> */}
-        <TimePicker.RangePicker
-          value={slot.timeRange}
-          format="h:mm A"
-          onChange={(timeRange) =>
-            updateTimeSlot(index, { timeRange: timeRange || null })
-          }
-          className="w-48"
-          use12Hours
-        />
-      </div>
-      <div className="flex gap-1 items-center">
-        <span>Price</span>
-        <Input
-          style={{
-            width: 110,
-          }}
-          value={slot.price}
-          onChange={(e) =>
-            updateTimeSlot(index, { price: Number(e.target.value) })
-          }
-          type="number"
-          addonBefore="₹"
-        />
-      </div>
-      <div className="flex gap-1 items-center">
-        <span className="font-bold text-green-600">₹{slot.price || "0"}</span>
-        <Badge
-          status="success"
-          count={"+13%"}
-          overflowCount={1000}
-          style={{ backgroundColor: "#52c41a" }}
-        />
-      </div>
-      <Button
-        icon={<DeleteOutlined />}
-        onClick={() => removeTimeSlot(slot.id)}
-        danger
-      />
     </div>
   );
 };
@@ -128,6 +149,7 @@ interface DriverTimeSlotsAndPricingProps {
   hotspotEnabled: boolean;
   hotspotType: string;
   multiplier: number;
+  globalPrice: number;
 }
 
 const DriverTimeSlotsAndPricing = ({
@@ -136,6 +158,7 @@ const DriverTimeSlotsAndPricing = ({
   hotspotEnabled,
   hotspotType,
   multiplier,
+  globalPrice,
 }: DriverTimeSlotsAndPricingProps) => {
   const [userType, setUserType] = useState<UserType>("elite-user");
   const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
@@ -241,7 +264,7 @@ const DriverTimeSlotsAndPricing = ({
               {
                 className: "w-full",
                 label: (
-                  <div className="flex gap-1 items-center justify-center">
+                  <div className="flex gap-1 items-center justify-center flex-wrap py-1 sm:py-0 ">
                     <FiUsers />
                     <span>Normal User</span>
                   </div>
@@ -251,11 +274,11 @@ const DriverTimeSlotsAndPricing = ({
               {
                 className: "w-full",
                 label: (
-                  <div className="flex gap-1 items-center justify-center">
+                  <div className="flex gap-1 items-center justify-center flex-wrap py-1 sm:py-0">
                     <span>
                       <FaRegStar className="text-yellow-400" />
                     </span>
-                    Premium User
+                    <span>Premium User</span>
                   </div>
                 ),
                 value: "premium-user",
@@ -263,11 +286,11 @@ const DriverTimeSlotsAndPricing = ({
               {
                 className: "w-full",
                 label: (
-                  <div className="flex gap-1 items-center justify-center">
+                  <div className="flex gap-1 items-center justify-center flex-wrap py-1 sm:py-0">
                     <span>
                       <FaRegStar className="text-yellow-400" />
                     </span>
-                    Elite User
+                    <span>Elite User</span>
                   </div>
                 ),
                 value: "elite-user",
@@ -280,7 +303,7 @@ const DriverTimeSlotsAndPricing = ({
           />
         </div>
         <div className="flex gap-1 justify-between items-center">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <div>
               <Tag color={userTypeDetails[userType].color}>
                 <div className="flex gap-1 items-center">
@@ -309,6 +332,7 @@ const DriverTimeSlotsAndPricing = ({
                 index={index}
                 updateTimeSlot={updateTimeSlot}
                 removeTimeSlot={removeTimeSlot}
+                globalPrice={globalPrice}
               />
             </List.Item>
           )}

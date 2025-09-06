@@ -72,7 +72,9 @@ const PricingPreview = ({
   return (
     <Card size="small" className="w-full">
       <div className="w-full flex flex-col gap-4">
-        <Typography.Title level={5}>Pricing Preview</Typography.Title>
+        <Typography.Title level={5} className="text-lg sm:text-xl">
+          Pricing Preview
+        </Typography.Title>
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
@@ -80,7 +82,7 @@ const PricingPreview = ({
             <span className="font-semibold">Location</span>
           </div>
           <div className="p-2 bg-[#F8F9FA] rounded-md">
-            <span>
+            <span className="text-sm break-all">
               {country}-{state}-{district}-{area}-{pincode}
             </span>
           </div>
@@ -96,11 +98,11 @@ const PricingPreview = ({
               slots.map((slot: TimeSlot) => (
                 <div key={`${userType}-${slot.id}`}>
                   {userTypeTags[userType as UserType]}
-                  <div className="p-2 bg-[#F8F9FA] rounded-md flex justify-between">
-                    <div>
-                      <span className="capitalize">{slot.day}</span>
+                  <div className="p-2 bg-[#F8F9FA] rounded-md flex flex-col sm:flex-row sm:justify-between gap-2">
+                    <div className="flex-1">
+                      <span className="capitalize font-medium">{slot.day}</span>
                       <br />
-                      <span className="text-[12px]">
+                      <span className="text-[12px] text-gray-600">
                         {slot.timeRange
                           ? `${slot.timeRange[0].format(
                               "h:mm A"
@@ -108,9 +110,11 @@ const PricingPreview = ({
                           : "No time set"}
                       </span>
                       <br />
-                      <span className="text-[12px]">Base: ₹{slot.price}</span>
+                      <span className="text-[12px] text-gray-600">
+                        Base: ₹{slot.price}
+                      </span>
                     </div>
-                    <div className="font-semibold">
+                    <div className="font-semibold text-green-600 sm:text-right">
                       Final: ₹
                       {hotspotEnabled
                         ? slot.price * multiplier + hotspotAddition
@@ -131,9 +135,11 @@ const PricingPreview = ({
             </div>
             <div className="p-2 bg-[#F8F9FA] rounded-md">
               <Tag color="blue">{selectedHotspotType?.name || "Hotspot"}</Tag>
-              <div>Addition: +₹{hotspotAddition}</div>
-              <div>Multiplier: {multiplier}x</div>
-              <div className="text-green-500">Base rate increase applied</div>
+              <div className="text-sm">Addition: +₹{hotspotAddition}</div>
+              <div className="text-sm">Multiplier: {multiplier}x</div>
+              <div className="text-green-500 text-sm">
+                Base rate increase applied
+              </div>
             </div>
           </div>
         )}
@@ -148,10 +154,16 @@ const PricingPreview = ({
           ))}
         </div>
 
-        <div className="flex justify-end gap-2">
-          <Button>Cancel</Button>
-          <Button type="primary">Save Rule</Button>
-          <Button type="primary" style={{ background: "#4CAF50" }}>
+        <div className="flex flex-col sm:flex-row justify-end gap-2">
+          <Button className="w-full sm:w-auto">Cancel</Button>
+          <Button type="primary" className="w-full sm:w-auto">
+            Save Rule
+          </Button>
+          <Button
+            type="primary"
+            className="w-full sm:w-auto"
+            style={{ background: "#4CAF50" }}
+          >
             Save & Add Another
           </Button>
         </div>

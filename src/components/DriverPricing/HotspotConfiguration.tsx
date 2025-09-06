@@ -110,19 +110,24 @@ const HotspotConfiguration = ({
               />
             </div>
             {selectedHotspotType && (
-              <div className="w-full flex gap-4">
-                <div className="w-full flex flex-col">
-                  <Tag color="blue">{selectedHotspotType.name}</Tag>
-                  <span>Addition: +₹{selectedHotspotType.addition}</span>
+              <div className="w-full flex flex-col sm:flex-row gap-4">
+                <div className="w-full sm:w-1/2 flex flex-col">
+                  <Tag color="blue" className="mb-2">
+                    {selectedHotspotType.name}
+                  </Tag>
+                  <span className="text-sm text-gray-600">
+                    Addition: +₹{selectedHotspotType.addition}
+                  </span>
                 </div>
-                <div className="w-full flex flex-col">
-                  <span>Multiplier:</span>
+                <div className="w-full sm:w-1/2 flex flex-col">
+                  <span className="text-sm font-medium mb-1">Multiplier:</span>
                   <InputNumber
                     min={0.1}
                     step={0.1}
                     value={multiplier}
                     onChange={(value) => setMultiplier(value || 1)}
                     addonAfter="x"
+                    className="w-full"
                   />
                 </div>
               </div>
