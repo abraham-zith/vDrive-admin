@@ -12,9 +12,11 @@ import { Layout, Menu, Avatar, ConfigProvider, Button, Drawer } from "antd";
 import logo from "/logo1.png";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Users from "./pages/Users";
+import Admins from "./pages/Admins";
 import { PiSteeringWheel } from "react-icons/pi";
 import DriverPricing from "./pages/DriverPricing";
 import Drivers from "./pages/Drivers";
+import { RiAdminLine } from "react-icons/ri";
 
 const PlaceholderContent: React.FC<{
   title: string;
@@ -107,6 +109,11 @@ const AppContent: React.FC = () => {
       label: <Link to="/drivers">Drivers</Link>,
       key: "/drivers",
       icon: <PiSteeringWheel />,
+    },
+    {
+      label: <Link to="/admins">Admins</Link>,
+      key: "/admins",
+      icon: <RiAdminLine />,
     },
   ];
   return (
@@ -247,6 +254,7 @@ const AppContent: React.FC = () => {
                 <Route path="/users" element={<Users />} />
                 <Route path="/pricing" element={<DriverPricing />} />
                 <Route path="/drivers" element={<Drivers />} />
+                <Route path="/admins" element={<Admins />} />
               </Routes>
             </div>
           </Content>
