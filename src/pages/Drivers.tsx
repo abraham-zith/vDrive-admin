@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Typography } from "antd";
 import DriverTable from "../components/DriverTable/DriverTable";
 import Filter from "../components/Filter/Filter";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
@@ -93,7 +94,7 @@ export interface Filters {
   joined_at: Date | null;
   license_expiry_date: Date | null;
 }
-const Users = () => {
+const Drivers = () => {
   const [filters, setFilters] = useState<Filters>({
     status: [],
     joined_at: null,
@@ -141,33 +142,43 @@ const Users = () => {
     return true;
   });
   return (
-    <div className="w-full h-full flex flex-col p-[10px] gap-[6px]">
-      <Filter<Filters>
-        fields={filterFields}
-        initialValues={filters}
-        onChange={setFilters}
-      />
+    <div className="h-full w-full flex flex-col">
+      <div className="h-full w-full flex justify-center px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
+        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col">
+          <Typography.Title level={2} className="text-xl sm:text-2xl">
+            Driver Management
+          </Typography.Title>
 
-      <AppliedFilters<Filters>
-        filters={filters}
-        setFilters={setFilters}
-        labels={{
-          status: "Status",
-          joined_at: "Joined At",
-          license_expiry_date: "License Expiry Date",
-        }}
-        colors={{
-          status: "green",
-          joined_at: "purple",
-          license_expiry_date: "orange",
-        }}
-      />
+          <div className="w-full flex flex-col gap-[6px] my-4 flex-grow">
+            <Filter<Filters>
+              fields={filterFields}
+              initialValues={filters}
+              onChange={setFilters}
+            />
 
-      <div className="flex-grow overflow-hidden">
-        <DriverTable data={filteredData} />
+            <AppliedFilters<Filters>
+              filters={filters}
+              setFilters={setFilters}
+              labels={{
+                status: "Status",
+                joined_at: "Joined At",
+                license_expiry_date: "License Expiry Date",
+              }}
+              colors={{
+                status: "green",
+                joined_at: "purple",
+                license_expiry_date: "orange",
+              }}
+            />
+
+            <div className="flex-grow overflow-hidden">
+              <DriverTable data={filteredData} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-export default Users;
+export default Drivers;

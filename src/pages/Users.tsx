@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Typography } from "antd";
 import UserTable from "../components/UserTable/UserTable";
 import Filter from "../components/Filter/Filter";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
@@ -395,32 +396,44 @@ const Users = () => {
     return true;
   });
   return (
-    <div className="w-full h-full flex flex-col p-[10px] gap-[6px]">
-      <Filter<Filters>
-        fields={filterFields}
-        initialValues={filters}
-        onChange={setFilters}
-      />
+    <div className="h-full w-full flex flex-col">
+      <div className="h-full w-full flex justify-center px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
+        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col">
+          <div className="w-full">
+            <Typography.Title level={2} className="text-xl sm:text-2xl">
+              User Management
+            </Typography.Title>
+          </div>
 
-      <AppliedFilters<Filters>
-        filters={filters}
-        setFilters={setFilters}
-        labels={{
-          role: "Role",
-          status: "Status",
-          lastLogin: "Last Login",
-          createdAt: "Created At",
-        }}
-        colors={{
-          role: "blue",
-          status: "green",
-          lastLogin: "purple",
-          createdAt: "orange",
-        }}
-      />
+          <div className="w-full h-full flex flex-col gap-[6px] my-4 ">
+            <Filter<Filters>
+              fields={filterFields}
+              initialValues={filters}
+              onChange={setFilters}
+            />
 
-      <div className="flex-grow overflow-hidden">
-        <UserTable data={filteredData} />
+            <AppliedFilters<Filters>
+              filters={filters}
+              setFilters={setFilters}
+              labels={{
+                role: "Role",
+                status: "Status",
+                lastLogin: "Last Login",
+                createdAt: "Created At",
+              }}
+              colors={{
+                role: "blue",
+                status: "green",
+                lastLogin: "purple",
+                createdAt: "orange",
+              }}
+            />
+
+            <div className="flex-grow overflow-hidden">
+              <UserTable data={filteredData} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

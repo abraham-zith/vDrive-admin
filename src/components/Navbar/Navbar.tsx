@@ -86,7 +86,7 @@ const Navbar: React.FC = () => {
   ];
 
   return (
-    <nav className="bg-gradient-to-r from-gray-900 to-gray-700 p-4 shadow-lg">
+    <nav className="fixed top-0 left-0 right-0 bg-gradient-to-r from-gray-900 to-gray-700 p-4 shadow-lg z-50">
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center">
           <Link to="/">
@@ -120,13 +120,13 @@ const Navbar: React.FC = () => {
                     <span>vDrive Admin</span>
                   </div>
                 }
-                placement="top"
-                closeIcon={false}
+                placement="left"
                 onClose={onCloseDrawer}
                 open={drawerVisible}
                 styles={{
                   body: { padding: 0 },
                 }}
+                width={250}
               >
                 <Menu
                   theme="light"
