@@ -16,7 +16,6 @@ const DriverPricing = () => {
   const [district, setDistrict] = useState("Kanchipuram");
   const [area, setArea] = useState("Madippakkam");
   const [pincode, setPincode] = useState("60091");
-  const [hotspotArea, setHotspotArea] = useState(false);
   const [globalPrice, setGlobalPrice] = useState(1000);
 
   const [timeSlots, setTimeSlots] = useState<UserTimeSlots>({

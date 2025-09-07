@@ -1,4 +1,4 @@
-import { Card, Input, InputNumber, Select, Switch } from "antd";
+import { Card, Input, InputNumber, Select } from "antd";
 import { MdOutlineLocationOn } from "react-icons/md";
 
 interface LocationConfigurationProps {
@@ -80,23 +80,6 @@ const LocationConfiguration = ({
             />
           </div>
         </div>
-        {/* <Card variant="borderless" size="small" className="w-full">
-          <div className="w-full flex items-center gap-2 justify-between">
-            <div className="flex flex-col gap-2 ">
-              <span className="text-[16px] font-semibold p-0 m-0">
-                Hotspot Area
-              </span>
-              <span className="text-[10px]  p-0 m-0">
-                Enable dynamic pricing for this location
-              </span>
-            </div>
-            <div>
-              <div>
-                <Switch checked={hotspotArea} onChange={setHotspotArea} />
-              </div>
-            </div>
-          </div>
-        </Card> */}
       </div>
     </Card>
   );

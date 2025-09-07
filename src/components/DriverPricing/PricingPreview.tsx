@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, Typography, Tag, Button, Spin } from "antd";
+import { Card, Typography, Tag, Button } from "antd";
 import { MdOutlineLocationOn } from "react-icons/md";
 import { BsClock } from "react-icons/bs";
-import { ThunderboltOutlined, LoadingOutlined } from "@ant-design/icons";
+import { ThunderboltOutlined } from "@ant-design/icons";
 import {
   type UserTimeSlots,
   type UserType,
@@ -37,7 +37,6 @@ const PricingPreview = ({
   multiplier,
 }: PricingPreviewProps) => {
   const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
-  const [loading, setLoading] = useState(true);
 
   // Load hotspot types on component mount
   useEffect(() => {
@@ -46,13 +45,10 @@ const PricingPreview = ({
 
   const loadHotspotTypes = async () => {
     try {
-      setLoading(true);
       const types = await mockHotspotApi.getHotspotTypes();
       setHotspotTypes(types);
     } catch (error) {
       console.error("Failed to load hotspot types");
-    } finally {
-      setLoading(false);
     }
   };
 
