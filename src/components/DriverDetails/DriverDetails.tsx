@@ -448,11 +448,12 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
                 Activate
               </Button>
               <Button icon={<EditOutlined />}>Edit</Button>
-            </Space>
-
-            <Button type="default" icon={<SendOutlined />} className="mb-4">
+               <Button type="default" icon={<SendOutlined />} className="mb-4">
               Reset Password
             </Button>
+            </Space>
+
+           
           </>
         );
       default:
