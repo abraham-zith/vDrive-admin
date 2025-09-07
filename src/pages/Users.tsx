@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Typography } from "antd";
 import UserTable from "../components/UserTable/UserTable";
 import Filter from "../components/Filter/Filter";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
@@ -329,7 +330,7 @@ const DATA: User[] = [
   },
 ];
 
-interface Filters {
+export interface Filters {
   role: UserRole[];
   status: UserStatus[];
   lastLogin: Date | null;
@@ -342,6 +343,36 @@ const Users = () => {
     lastLogin: null,
     createdAt: null,
   });
+
+  const ROLES = [
+    "Admin",
+    "Manager",
+    "Developer",
+    "Tester",
+    "Support",
+    "Designer",
+    "Analyst",
+  ];
+  const STATUSES = ["Active", "Inactive", "Suspended"];
+
+  const filterFields = [
+    {
+      key: "role",
+      label: "Role",
+      type: "select" as const,
+      options: ROLES.map((r) => ({ label: r, value: r })),
+      mode: "multiple" as const,
+    },
+    {
+      key: "status",
+      label: "Status",
+      type: "select" as const,
+      options: STATUSES.map((s) => ({ label: s, value: s })),
+      mode: "multiple" as const,
+    },
+    { key: "lastLogin", label: "Last Login", type: "date" as const },
+    { key: "createdAt", label: "Created At", type: "date" as const },
+  ];
 
   const filteredData = DATA.filter((user) => {
     if (filters.role.length > 0 && !filters.role.includes(user.role)) {
@@ -365,11 +396,44 @@ const Users = () => {
     return true;
   });
   return (
-    <div className="w-full h-full flex flex-col p-[10px] gap-[6px]">
-      <Filter setFilters={setFilters} />
-      <AppliedFilters filters={filters} setFilters={setFilters} />
-      <div className="flex-grow overflow-hidden">
-        <UserTable data={filteredData} key={JSON.stringify(filters)} />
+    <div className="h-full w-full flex flex-col">
+      <div className="h-full w-full flex justify-center px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
+        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col">
+          <div className="w-full">
+            <Typography.Title level={2} className="text-xl sm:text-2xl">
+              User Management
+            </Typography.Title>
+          </div>
+
+          <div className="w-full h-full flex flex-col gap-[6px] my-4 ">
+            <Filter<Filters>
+              fields={filterFields}
+              initialValues={filters}
+              onChange={setFilters}
+            />
+
+            <AppliedFilters<Filters>
+              filters={filters}
+              setFilters={setFilters}
+              labels={{
+                role: "Role",
+                status: "Status",
+                lastLogin: "Last Login",
+                createdAt: "Created At",
+              }}
+              colors={{
+                role: "blue",
+                status: "green",
+                lastLogin: "purple",
+                createdAt: "orange",
+              }}
+            />
+
+            <div className="flex-grow overflow-hidden">
+              <UserTable data={filteredData} />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
