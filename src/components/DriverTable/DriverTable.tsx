@@ -1,16 +1,37 @@
 // components/DriverTable/DriverTable.tsx
-import { useMemo, useRef, useState  } from "react";
-import { Table, Tag, Progress, Drawer, Rate, Avatar, Tooltip, message,  Button, Input, Space,} from "antd";
+import { useMemo, useRef, useState } from "react";
+import {
+  Table,
+  Tag,
+  Progress,
+  Rate,
+  Avatar,
+  Tooltip,
+  message,
+  Button,
+  Input,
+  Space,
+   Dropdown, Menu
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EyeOutlined } from "@ant-design/icons";
+
 import Highlighter from "react-highlight-words";
 import type { Driver } from "../../pages/Drivers";
-import { UserOutlined, CopyOutlined } from "@ant-design/icons";
+import {
+
+  CopyOutlined,
+  EllipsisOutlined,
+  EyeOutlined,
+  EditOutlined,
+  StopOutlined,
+  ClockCircleOutlined,
+} from "@ant-design/icons";
 import { capitalize } from "../../utilities/capitalize";
 import type { FilterDropdownProps } from "antd/es/table/interface";
-import type { InputRef, TableColumnsType, TableColumnType } from "antd";
+import type { InputRef, TableColumnType } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import DriverDetails from "../DriverDetails/DriverDetails";
+import { useGetHeight } from "../../utilities/customheightWidth";
 interface DriverTableProps {
   data: Driver[];
 }
@@ -18,6 +39,8 @@ interface DriverTableProps {
 type DataIndex = keyof Driver;
 
 const DriverTable = ({ data }: DriverTableProps) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const tableHeight = useGetHeight(contentRef);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -27,7 +50,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
     setSelectedDriver(driver);
     setDrawerOpen(true);
   };
-    const handleSearch = (
+  const handleSearch = (
     selectedKeys: string[],
     confirm: FilterDropdownProps["confirm"],
     dataIndex: DataIndex
@@ -46,10 +69,6 @@ const DriverTable = ({ data }: DriverTableProps) => {
     confirm();
   };
 
-  const closeDrawer = () => {
-    setSelectedDriver(null);
-    setDrawerOpen(false);
-  };
   const getColumnSearchProps = (
     dataIndex: DataIndex,
     copyKey?: keyof Driver
@@ -93,15 +112,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
           >
             Reset
           </Button>
-          {/* <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              close();
-            }}
-          >
-            close
-          </Button> */}
+        
         </Space>
       </div>
     ),
@@ -156,7 +167,8 @@ const DriverTable = ({ data }: DriverTableProps) => {
       title: "Driver",
       dataIndex: "fullName",
       key: "driver",
-        ...getColumnSearchProps("fullName", "driverId"),
+      minWidth: 180,
+      ...getColumnSearchProps("fullName", "driverId"),
       render: (_, record) => (
         <div className="flex items-center gap-3">
           <Avatar src={record.profilePicUrl} size={40}>
@@ -175,6 +187,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
     {
       title: "Contact",
       key: "contact",
+      minWidth: 160,
       render: (_, record) => (
         <div>
           <div className="text-sm">{record.phoneNumber}</div>
@@ -186,6 +199,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
       title: "Role",
       dataIndex: "role",
       key: "role",
+      minWidth: 120,
       render: (role: string) => {
         const colors: Record<string, string> = {
           premium: "purple",
@@ -198,6 +212,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
     {
       title: "Status",
       dataIndex: "status",
+      minWidth: 120,
       key: "status",
       render: (status: string) => {
         const colors: Record<string, string> = {
@@ -207,13 +222,13 @@ const DriverTable = ({ data }: DriverTableProps) => {
           pending: "gold",
           blocked: "volcano",
         };
-       return <Tag color={colors[status]}>{capitalize(status)}</Tag>;
-
+        return <Tag color={colors[status]}>{capitalize(status)}</Tag>;
       },
     },
     {
       title: "Rating",
       dataIndex: "rating",
+      minWidth: 160,
       key: "rating",
       render: (rating: number) => (
         <div className="flex items-center gap-1">
@@ -225,11 +240,13 @@ const DriverTable = ({ data }: DriverTableProps) => {
     {
       title: "Total Trips",
       dataIndex: "totalTrips",
+      minWidth: 120,
       key: "totalTrips",
     },
     {
       title: "Earnings",
       dataIndex: ["payments", "totalEarnings"],
+      minWidth: 160,
       key: "earnings",
       render: (earnings: number) => (
         <span className="text-green-600 font-medium">
@@ -240,14 +257,12 @@ const DriverTable = ({ data }: DriverTableProps) => {
     {
       title: "Credits",
       key: "credits",
+      minWidth: 180,
       render: (_, record) => {
         const total = record.credit.limit;
         const percent = (record.credit.balance / total) * 100;
         return (
-          <div
-            className="cursor-pointer"
-            onClick={() => openDrawer(record)}
-          >
+          <div className="cursor-pointer" onClick={() => openDrawer(record)}>
             <div className="flex justify-between text-xs font-medium">
               <span>
                 {record.credit.balance}/{total}
@@ -267,6 +282,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
     {
       title: "Joined",
       dataIndex: "createdAt",
+      minWidth: 160,
       key: "joined",
       render: (date: string) =>
         new Date(date).toLocaleDateString("en-US", {
@@ -276,34 +292,79 @@ const DriverTable = ({ data }: DriverTableProps) => {
         }),
     },
     {
-      title: "",
+      title: "Action",
       key: "action",
-      render: (_, record) => (
-        <EyeOutlined
-          onClick={() => openDrawer(record)}
-          className="cursor-pointer text-gray-500 hover:text-black"
-        />
-      ),
+      render: (_, record) => {
+        const menu = (
+          <Menu>
+            <Menu.Item
+              key="view"
+              icon={<EyeOutlined />}
+            >
+              View Details
+            </Menu.Item>
+            <Menu.Item key="edit" icon={<EditOutlined />}>
+              Edit Profile
+            </Menu.Item>
+            <Menu.Item key="block" icon={<StopOutlined />} danger>
+              Block Driver
+            </Menu.Item>
+            <Menu.Item
+              key="suspend"
+              icon={<ClockCircleOutlined />}
+              style={{ color: "#fa8c16" }}
+            >
+              Suspend Driver
+            </Menu.Item>
+          </Menu>
+        );
+        return (
+          <Space className="driver-action">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => openDrawer(record)}
+            />
+            <Dropdown overlay={menu} trigger={["click"]}>
+              <Button type="text" icon={<EllipsisOutlined />} />
+            </Dropdown>
+          </Space>
+        );
+      },
     },
   ];
 
   return (
     <>
-      <Table
-        rowKey="driverId"
-        columns={columns}
-        dataSource={data}
-        pagination={false}
+      <div ref={contentRef} className="h-full w-full">
+        <Table
+          key={tableHeight}
+          rowKey="driverId"
+          columns={columns}
+          dataSource={data}
+          showSorterTooltip={false}
+          tableLayout="auto"
+          scroll={{ y: Math.floor(tableHeight || 0) }}
+          pagination={false}
+          onRow={(record) => ({
+            onClick: (event) => {
+              const isActionClick = (event.target as HTMLElement).closest(
+                ".driver-action"
+              );
+              if (!isActionClick) {
+                openDrawer(record);
+              }
+            },
+          })}
+        />
+      </div>
+      <DriverDetails
+        driver={selectedDriver}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
       />
-
-<DriverDetails
-  driver={selectedDriver}
-  open={drawerOpen}
-  onClose={() => setDrawerOpen(false)}
-/>
-
     </>
   );
 };
 
-export default DriverTable; 
+export default DriverTable;
