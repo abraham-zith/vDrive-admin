@@ -17,6 +17,9 @@ import { PiSteeringWheel } from "react-icons/pi";
 import DriverPricing from "./pages/DriverPricing";
 import Drivers from "./pages/Drivers";
 import { RiAdminLine } from "react-icons/ri";
+import SignUp from "./signup/Signup";
+import Login from "./login/Login";
+import ResetPassword from "./login/ResetPassword";
 
 const PlaceholderContent: React.FC<{
   title: string;
@@ -255,6 +258,9 @@ const AppContent: React.FC = () => {
                 <Route path="/pricing" element={<DriverPricing />} />
                 <Route path="/drivers" element={<Drivers />} />
                 <Route path="/admins" element={<Admins />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
               </Routes>
             </div>
           </Content>
