@@ -1,5 +1,5 @@
 // components/DriverTable/DriverTable.tsx
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Table,
   Tag,
@@ -79,7 +79,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
       confirm,
       clearFilters,
     }) => (
-      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+      <div className="p-4" onKeyDown={(e) => e.stopPropagation()}>
         <Input
           ref={searchInput}
           placeholder={`Search ${String(dataIndex)}`}

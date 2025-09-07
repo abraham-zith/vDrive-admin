@@ -505,7 +505,7 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
       open={open}
       closable={false}
     >
-      <div style={{ marginBottom: "1rem" }}>{renderStatusActions()}</div>
+      <div>{renderStatusActions()}</div>
 
 
       <div className="w-full p-3 bg-white rounded-lg shadow">
