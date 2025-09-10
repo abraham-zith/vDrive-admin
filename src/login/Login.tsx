@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Input, Typography } from "antd";
+import axios from "axios";
 
 
-const { Text } = Typography;
+// const { Text } = Typography;
 
 export interface Login {
   userName: string;
@@ -17,6 +18,7 @@ const Login = () => {
     password: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = evt?.target;
@@ -38,15 +40,23 @@ const Login = () => {
     return Object.keys(newErrors)?.length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validate()) {
-      try{
-        
-        navigate("/");
-      }catch(error){
+      try {
+        setLoading(true);
+        const res = await axios.post(`http://localhost:1234/api/auth/signin`, {
+          user_name: login?.userName,
+          password: login?.password,
+        });
 
+        if (res?.data?.success) {
+          navigate("/");
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false); 
       }
-      
     }
   };
 
@@ -116,11 +126,12 @@ const Login = () => {
           size="large"
           className="!bg-blue-600 hover:!bg-blue-700"
           onClick={handleSubmit}
+          loading={loading}
         >
           Sign In
         </Button>
       </div>
-      <div className="text-center mt-6 text-sm">
+      {/* <div className="text-center mt-6 text-sm">
         <Text className="text-gray-500">Don't have an account? </Text>
         <Button
           type="link"
@@ -129,7 +140,7 @@ const Login = () => {
         >
           Sign up
         </Button>
-      </div>
+      </div> */}
     </div>
   );
 };
