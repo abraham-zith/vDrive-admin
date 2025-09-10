@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Input, Typography } from "antd";
 
-const { Text } = Typography;
 
 export interface Signup {
   name: string;
@@ -110,86 +109,100 @@ const SignUp = () => {
   const isPhone = phoneRegex?.test(signupFields?.contact);
 
   return (
-    <div className="max-w-[400px] border border-gray-300 rounded-xl shadow-md bg-white flex flex-col gap-4 p-6 my-10 mx-auto">
-      <div>
-        <Text>
-          Name<Text type="danger">*</Text>
-        </Text>
-        <Input
-          name="name"
-          placeholder="Enter name"
+<div className="max-w-[480px] w-full border border-gray-200 rounded-2xl shadow-sm bg-white p-10 mt-20 mx-auto">
+    <div className="flex flex-col text-center space-y-2 mb-6">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
+          V Drive
+        </h1>
+        <h3 className="tracking-tight text-2xl font-bold">Create Account</h3>
+        <p className="text-sm text-gray-500">Sign up for your admin account</p>
+      </div>
+      <div className="flex flex-col gap-y-4">
+      <div className="flex flex-col gap-y-2">
+         <label className="font-bold text-sm">
+           Name<span className="text-red-500">*</span>
+         </label>
+         <Input
+         size="large"
+           name="name"
+           placeholder="Enter name"
           value={signupFields?.name}
-          onChange={handleChange}
-        />
-        {errors?.name && (
-          <div className="text-red-500 text-xs pt-1.5">{errors?.name}</div>
-        )}
-      </div>
-      <div>
-        <Text>
-          Password<Text type="danger">*</Text>
-        </Text>
-        <Input.Password
-          name="password"
-          placeholder="Enter password"
-          value={signupFields?.password}
-          onChange={handleChange}
-        />
-        <p className="text-xs text-gray-500">
-          (Password must be 8-18 characters, include at least one uppercase
-          letter, one digit, and one special character.)
-        </p>
-        {errors?.password && (
-          <div className="text-red-500 text-xs pt-1.5">{errors?.password}</div>
-        )}
-      </div>
-      <div>
-        <Text>
-          Confirm Password<Text type="danger">*</Text>
-        </Text>
-        <Input.Password
-          name="confirmPassword"
-          placeholder="Re-enter password"
-          value={signupFields?.confirmPassword}
-          onChange={handleChange}
-        />
-        {errors?.confirmPassword && (
-          <div className="text-red-500 text-xs pt-1.5">
-            {errors?.confirmPassword}
-          </div>
-        )}
-      </div>
-      <div>
-        <Text>
-          Email / Mobile Number<Text type="danger">*</Text>
-        </Text>
-        <Input
-          name="contact"
-          placeholder="Enter Email or Mobile number"
-          value={signupFields?.contact}
-          onChange={handleChange}
-        />
-        {errors?.contact && (
-          <div className="text-red-500 text-xs pt-1.5">{errors?.contact}</div>
-        )}
-      </div>
+           onChange={handleChange}
+         />
+         {errors?.name && (
+           <div className="text-red-500 text-xs pt-1.5">{errors?.name}</div>
+         )}
+       </div>
+
+       <div className="flex flex-col gap-y-2">
+         <label className="font-bold text-sm">
+           Email / Mobile Number<span className="text-red-500">*</span>
+         </label>
+         <Input
+          size="large"
+           name="contact"
+           placeholder="Enter Email or Mobile number"
+           value={signupFields?.contact}
+           onChange={handleChange}
+         />
+         {errors?.contact && (
+           <div className="text-red-500 text-xs pt-1.5">{errors?.contact}</div>
+         )}
+       </div>
       {isPhone && (
-        <div>
-          <Text>Alternate Mobile Number:</Text>
-          <Input
-            name="alternateContact"
-            placeholder="Enter alternate number"
-            value={signupFields?.alternateContact}
-            onChange={handleChange}
-          />
-          {errors?.alternateContact && (
-            <div className="text-red-500 text-xs pt-1.5">
-              {errors?.alternateContact}
-            </div>
-          )}
-        </div>
-      )}
-      <Button
+         <div className="flex flex-col gap-y-2">
+           <label className="font-bold text-sm">Alternate Mobile Number</label>
+           <Input
+           size="large"
+             name="alternateContact"
+             placeholder="Enter alternate number"
+             value={signupFields?.alternateContact}
+             onChange={handleChange}
+           />
+           {errors?.alternateContact && (
+             <div className="text-red-500 text-xs pt-1.5">
+               {errors?.alternateContact}
+             </div>
+           )}
+         </div>
+       )}
+        <div className="flex flex-col gap-y-2">
+         <label className="font-bold text-sm">
+           Password<span className="text-red-500">*</span>
+         </label>
+         <Input.Password
+         size="large"
+           name="password"
+           placeholder="Enter password"
+           value={signupFields?.password}
+           onChange={handleChange}
+         />
+         <p className="text-xs text-gray-500">
+           (Password must be 8-18 characters, include at least one uppercase
+           letter, one digit, and one special character.)
+         </p>
+         {errors?.password && (
+           <div className="text-red-500 text-xs pt-1.5">{errors?.password}</div>
+         )}
+       </div>
+       <div className="flex flex-col gap-y-2">
+         <label className="font-bold text-sm">
+           Confirm Password<span className="text-red-500">*</span>
+         </label>
+         <Input.Password
+         size="large"
+           name="confirmPassword"
+           placeholder="Re-enter password"
+           value={signupFields?.confirmPassword}
+           onChange={handleChange}
+         />
+         {errors?.confirmPassword && (
+           <div className="text-red-500 text-xs pt-1.5">
+             {errors?.confirmPassword}
+           </div>
+         )}
+       </div>
+       <Button
         type="primary"
         block
         onClick={handleSubmit}
@@ -197,7 +210,9 @@ const SignUp = () => {
       >
         Sign Up
       </Button>
-    </div>
+      </div>
+      </div>
+      
   );
 };
 
