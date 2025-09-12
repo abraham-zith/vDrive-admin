@@ -6,7 +6,7 @@ import type { Login } from "../login/Login";
 interface AuthContextType {
   isAuthenticated: boolean;
   login: (credentials: Login) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,7 +40,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await axios.get("/api/auth/signout");
     Cookies.remove("auth_token");
     setIsAuthenticated(false);
   };

@@ -64,6 +64,7 @@ const Login = () => {
           Username<Text type="danger">*</Text>
         </Text>
         <Input
+          size="large"
           name="userName"
           placeholder="Enter registered Email/Mobile Number"
           value={login?.userName}
@@ -78,6 +79,7 @@ const Login = () => {
           Password<Text type="danger">*</Text>
         </Text>
         <Input.Password
+          size="large"
           name="password"
           placeholder="Enter Password"
           value={login?.password}
@@ -87,16 +89,17 @@ const Login = () => {
           <div className="text-red-500 text-xs pt-1.5">{errors?.password}</div>
         )}
       </div>
-      <Button
+      {/* <Button
         type="link"
         block
         onClick={handleForgotPassword}
         style={{ display: "flex", justifyContent: "flex-end" }}
       >
         Forgot password?
-      </Button>
+      </Button> */}
       <div className="flex flex-col items-center gap-[10px]">
         <Button
+          size="large"
           type="primary"
           block
           onClick={handleSubmit}
@@ -104,7 +107,7 @@ const Login = () => {
         >
           Login
         </Button>
-        <div>
+        {/* <div>
           <Text>
             Or Sign Up using
             <Text>
@@ -119,7 +122,7 @@ const Login = () => {
               </Button>
             </Text>
           </Text>{" "}
-        </div>
+        </div> */}
       </div>
     </div>
   );

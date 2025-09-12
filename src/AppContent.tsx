@@ -203,8 +203,8 @@ const AppContent: React.FC = () => {
                       label: "Logout",
                       icon: <LogoutOutlined />,
                       danger: true,
-                      onClick: () => {
-                        logout();
+                      onClick: async () => {
+                        await logout();
                         navigate("/login");
                       },
                     },
