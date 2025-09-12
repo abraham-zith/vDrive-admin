@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Button, Modal, Form, Input, Table } from "antd";
+import {
+  Button,
+  Modal,
+  Form,
+  Input,
+  Table,
+  Typography,
+  Tag,
+  Select,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useGetHeight } from "../utilities/customheightWidth";
 import { EditOutlined } from "@ant-design/icons";
@@ -12,6 +21,8 @@ type User = {
   email: string;
   phoneNumber: string;
   alternativePhone?: string;
+  role: string;
+  status: string;
   password: string;
   createdAt: string;
   updatedAt: string;
@@ -28,6 +39,8 @@ export default function AdminPage() {
       email: "john@example.com",
       phoneNumber: "1234567890",
       alternativePhone: "9876543210",
+      role: "Admin",
+      status: "Active",
       password: "password123",
       createdAt: "2025-08-22T14:22:33.000Z",
       updatedAt: "2025-08-22T14:22:33.000Z",
@@ -115,6 +128,25 @@ export default function AdminPage() {
       minWidth: 160,
     },
     {
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+      render: (role: string) => <Tag color="blue">{role}</Tag>,
+      minWidth: 100,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status: string) => {
+        let color = "green";
+        if (status === "Inactive") color = "orange";
+        if (status === "Suspended") color = "red";
+        return <Tag color={color}>{status}</Tag>;
+      },
+      minWidth: 100,
+    },
+    {
       title: "Created At",
       dataIndex: "createdAt",
       key: "createdAt",
@@ -149,25 +181,37 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="h-full w-full flex flex-col p-[10px] gap-[6px]">
-      <div className="w-full flex justify-end mb-4">
-        <div>
-          <Button type="primary" onClick={showAddModal}>
-            Create Admin User
-          </Button>
+    <div className="h-full w-full flex flex-col">
+      <div className="h-full w-full flex justify-center px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
+        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col">
+          <div className="w-full">
+            <Typography.Title level={2} className="text-xl sm:text-2xl">
+              Admin Management
+            </Typography.Title>
+          </div>
+
+          <div className="w-full h-full flex flex-col gap-[6px] my-4 ">
+            <div className="w-full flex justify-end mb-4">
+              <div>
+                <Button type="primary" onClick={showAddModal}>
+                  Create Admin User
+                </Button>
+              </div>
+            </div>
+            <div ref={contentRef} className="flex-grow overflow-hidden">
+              <Table
+                key={tableHeight}
+                dataSource={users}
+                columns={columns}
+                rowKey="id"
+                pagination={false}
+                showSorterTooltip={false}
+                tableLayout="auto"
+                scroll={{ y: Math.floor(tableHeight || 0) }}
+              />
+            </div>
+          </div>
         </div>
-      </div>
-      <div ref={contentRef} className="h-full w-full">
-        <Table
-          key={tableHeight}
-          dataSource={users}
-          columns={columns}
-          rowKey="id"
-          pagination={false}
-          showSorterTooltip={false}
-          tableLayout="auto"
-          scroll={{ y: Math.floor(tableHeight || 0) }}
-        />
       </div>
       <Modal
         title={editingUser ? "Edit Admin User" : "Create Admin User"}
@@ -206,6 +250,32 @@ export default function AdminPage() {
           </Form.Item>
           <Form.Item name="alternativePhone" label="Alternative Phone">
             <Input />
+          </Form.Item>
+          <Form.Item
+            name="role"
+            label="Role"
+            rules={[{ required: true, message: "Please select role" }]}
+          >
+            <Select>
+              <Select.Option value="Admin">Admin</Select.Option>
+              <Select.Option value="Manager">Manager</Select.Option>
+              <Select.Option value="Developer">Developer</Select.Option>
+              <Select.Option value="Tester">Tester</Select.Option>
+              <Select.Option value="Support">Support</Select.Option>
+              <Select.Option value="Designer">Designer</Select.Option>
+              <Select.Option value="Analyst">Analyst</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="status"
+            label="Status"
+            rules={[{ required: true, message: "Please select status" }]}
+          >
+            <Select>
+              <Select.Option value="Active">Active</Select.Option>
+              <Select.Option value="Inactive">Inactive</Select.Option>
+              <Select.Option value="Suspended">Suspended</Select.Option>
+            </Select>
           </Form.Item>
           {!editingUser && (
             <>

@@ -1,9 +1,9 @@
 import { useState } from "react";
+import { Typography } from "antd";
 import DriverTable from "../components/DriverTable/DriverTable";
 import Filter from "../components/Filter/Filter";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
 import { isSameDay } from "date-fns";
-import { Typography} from "antd";
 
 const { Title, Text } = Typography;
 export type DriverStatus =
@@ -102,7 +102,6 @@ export interface Driver {
     createdAt: string;
   }[];
 }
-
 
 export interface Filters {
   status: DriverStatus[];

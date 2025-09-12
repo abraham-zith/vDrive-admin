@@ -11,7 +11,7 @@ import {
   Segmented,
   Avatar,
   Divider,
-  Rate
+  Rate,
 } from "antd";
 import dayjs from "dayjs";
 import type { Driver } from "../../pages/Drivers";
@@ -56,7 +56,8 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
     trip_cancelled: "Trip Cancelled",
   };
 
-  const [activeKey, setActiveKey] = useState("1");  const basicInfo = (
+  const [activeKey, setActiveKey] = useState("1");
+  const basicInfo = (
     <Card
       title="Basic Information"
       bordered={false}
@@ -448,12 +449,10 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
                 Activate
               </Button>
               <Button icon={<EditOutlined />}>Edit</Button>
-               <Button type="default" icon={<SendOutlined />} className="mb-4">
-              Reset Password
-            </Button>
+              <Button type="default" icon={<SendOutlined />} className="mb-4">
+                Reset Password
+              </Button>
             </Space>
-
-           
           </>
         );
       default:
@@ -506,7 +505,6 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
       closable={false}
     >
       <div>{renderStatusActions()}</div>
-
 
       <div className="w-full p-3 bg-white rounded-lg shadow">
         <Segmented
