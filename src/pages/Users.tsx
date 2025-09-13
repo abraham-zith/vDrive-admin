@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Typography } from "antd";
+import { Button } from "antd";
 import { IoMdRefresh } from "react-icons/io";
 import UserTable from "../components/UserTable/UserTable";
 import Filter from "../components/Filter/Filter";
