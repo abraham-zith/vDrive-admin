@@ -29,7 +29,6 @@ import { FiUsers } from "react-icons/fi";
 import { utils, writeFile } from "xlsx"; // ← add this
 
 const { Option } = Select;
-const { RangePicker } = DatePicker;
 const { Panel } = Collapse;
 const { Title, Text } = Typography;
 
@@ -652,21 +651,20 @@ const PricingAndFareRules: React.FC = () => {
       const amtMin = values.waitingFeeAmountMin ?? Number.NEGATIVE_INFINITY;
       const amtMax = values.waitingFeeAmountMax ?? Number.POSITIVE_INFINITY;
 
-      tempData = tempData.filter((item, idx) => {
+      tempData = tempData.filter((item) => {
         const raw = item.waitingFee ?? "";
         const m = raw.match(/(\d+)\s*min\s*\/\s*[^0-9]*([\d.,]+)/i);
         if (!m) {
-          console.log(
-            `[waitingFee] row ${idx} (${item.hotspotId}) → NO MATCH`,
-            { raw }
-          );
+          console.log(`[waitingFee] row (${item.hotspotId}) → NO MATCH`, {
+            raw,
+          });
           return false;
         }
         const per = parseInt(m[1], 10);
         const feeStr = m[2].replace(/,/g, "").trim();
         const fee = parseFloat(feeStr);
         if (!Number.isFinite(fee)) {
-          console.log(`[waitingFee] row ${idx} (${item.hotspotId}) → BAD FEE`, {
+          console.log(`[waitingFee] row (${item.hotspotId}) → BAD FEE`, {
             raw,
             feeStr,
           });
@@ -677,7 +675,7 @@ const PricingAndFareRules: React.FC = () => {
           per <= perMinMax &&
           fee >= amtMin &&
           fee <= amtMax;
-        console.log(`[waitingFee] row ${idx} (${item.hotspotId})`, {
+        console.log(`[waitingFee] row (${item.hotspotId})`, {
           raw,
           per,
           fee,
@@ -712,7 +710,7 @@ const PricingAndFareRules: React.FC = () => {
       console.log("timeFrom mins ->", fromMin, "timeTo mins ->", toMin);
 
       // single-time behavior (containment) when only one side set
-      tempData = tempData.filter((item, idx) => {
+      tempData = tempData.filter((item) => {
         const [rStart, rEnd] = parseRowRangeToMinutes(item.timeRange);
 
         let keep: boolean;
@@ -791,13 +789,6 @@ const PricingAndFareRules: React.FC = () => {
     }
     return null;
   };
-
-  const rangesOverlapInclusive = (
-    start1: number,
-    end1: number,
-    start2: number,
-    end2: number
-  ) => Math.max(start1, start2) <= Math.min(end1, end2);
 
   const handleClearAllFilters = () => {
     filterForm.resetFields();
