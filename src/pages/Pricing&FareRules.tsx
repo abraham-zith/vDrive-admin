@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import dayjs, { Dayjs } from "dayjs";
+import { getHours, getMinutes } from "date-fns";
 import {
   Form,
   Row,
@@ -52,8 +52,8 @@ interface FilterValues {
   waitingFeeAmountMin?: number;
   waitingFeeAmountMax?: number;
   dayOfWeek?: string;
-  timeFrom?: dayjs.Dayjs | null;
-  timeTo?: dayjs.Dayjs | null;
+  timeFrom?: Date | null;
+  timeTo?: Date | null;
   rateRangeMin?: number;
   rateRangeMax?: number;
 }
@@ -765,16 +765,15 @@ const PricingAndFareRules: React.FC = () => {
   };
 
   const toMinutesFromAny = (
-    v: dayjs.Dayjs | Date | number | string | null | undefined
+    v: Date | number | string | null | undefined
   ): number | null => {
     if (v == null) return null;
-    if (dayjs.isDayjs(v)) return v.hour() * 60 + v.minute();
-    if (v instanceof Date) return v.getHours() * 60 + v.getMinutes();
+    if (v instanceof Date) return getHours(v) * 60 + getMinutes(v);
     if (typeof v === "number") {
       const d = new Date(v);
       return Number.isNaN(d.getTime())
         ? null
-        : d.getHours() * 60 + d.getMinutes();
+        : getHours(d) * 60 + getMinutes(d);
     }
     if (typeof v === "string") {
       let m = v.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
@@ -787,7 +786,7 @@ const PricingAndFareRules: React.FC = () => {
         const d = new Date(t);
         return hasZ
           ? d.getUTCHours() * 60 + d.getUTCMinutes()
-          : d.getHours() * 60 + d.getMinutes();
+          : getHours(d) * 60 + getMinutes(d);
       }
     }
     return null;
