@@ -1,6 +1,6 @@
 import { SearchOutlined } from "@ant-design/icons";
 import type { InputRef, TableColumnsType, TableColumnType } from "antd";
-import { Button, Input, Space, Table } from "antd";
+import { Button, Input, Space, Table, Tag } from "antd";
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import Highlighter from "react-highlight-words";
 import { useMemo, useRef, useState } from "react";
@@ -163,6 +163,7 @@ const UserTable = ({ data }: UserTableProps) => {
         dataIndex: "role",
         key: "role",
         sorter: (a: User, b: User) => a.role.localeCompare(b.role),
+        render: (role: string) => <Tag color="blue">{role}</Tag>,
       },
       {
         title: "Status",
@@ -170,6 +171,12 @@ const UserTable = ({ data }: UserTableProps) => {
         minWidth: 120,
         key: "status",
         sorter: (a: User, b: User) => a.status.localeCompare(b.status),
+        render: (status: string) => {
+          let color = "green";
+          if (status === "Inactive") color = "orange";
+          if (status === "Suspended") color = "red";
+          return <Tag color={color}>{status}</Tag>;
+        },
       },
       {
         title: "Last Login",
