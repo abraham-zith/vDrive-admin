@@ -5,7 +5,6 @@ import Filter from "../components/Filter/Filter";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
 import { isSameDay } from "date-fns";
 
-const { Title, Text } = Typography;
 export type DriverStatus =
   | "active"
   | "inactive"
@@ -557,17 +556,14 @@ const Drivers = () => {
   });
 
   return (
-    <div className="w-full h-full flex flex-col gap-[6px]">
-      <div className="flex  p-3 bg-white shadow ">
-        <div>
-          <Title level={3} className="m-0">
-            Driver Management
-          </Title>
-          <Text type="secondary">
-            Manage drivers, view details, and perform administrative actions
-          </Text>
-        </div>
-      </div>
+    <div className=" container mx-auto w-full h-full flex flex-col gap-[6px] px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
+      <Typography.Title level={2} className="text-xl sm:text-2xl">
+        Driver Management
+      </Typography.Title>
+      <Typography.Text className="text-sm sm:text-base">
+        Manage drivers, view details, and perform administrative actions
+      </Typography.Text>
+
       <Filter<Filters>
         fields={filterFields}
         initialValues={filters}
