@@ -12,6 +12,7 @@ import {
   mockHotspotApi,
   type HotspotType,
 } from "../../utilities/mockHotspotApi";
+import axiosIns from "../../api/axios";
 
 interface PricingPreviewProps {
   country: string;
@@ -63,6 +64,14 @@ const PricingPreview = ({
     "normal-user": <Tag color="default">Normal User</Tag>,
     "premium-user": <Tag color="gold">Premium User</Tag>,
     "elite-user": <Tag color="blue">Elite User</Tag>,
+  };
+
+  const handleSave = async () => {
+    try {
+      const response = await axiosIns.get(
+        "/api/price-settings?page=1&limit=10&search=kanchipuram"
+      );
+    } catch (error) {}
   };
 
   return (
@@ -152,7 +161,11 @@ const PricingPreview = ({
 
         <div className="flex flex-col sm:flex-row justify-end gap-2">
           <Button className="w-full sm:w-auto">Cancel</Button>
-          <Button type="primary" className="w-full sm:w-auto">
+          <Button
+            type="primary"
+            className="w-full sm:w-auto"
+            onClick={handleSave}
+          >
             Save Rule
           </Button>
           <Button

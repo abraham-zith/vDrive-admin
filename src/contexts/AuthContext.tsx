@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import Cookies from "js-cookie";
-import axios from "../api/axios";
+import axiosIns from "../api/axios";
 import type { Login } from "../login/Login";
 
 interface AuthContextType {
@@ -15,35 +14,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
-    !!Cookies.get("auth_token")
+    !!localStorage.getItem("accessToken")
   );
 
   useEffect(() => {
-    const token = Cookies.get("auth_token");
+    const token = localStorage.getItem("accessToken");
     setIsAuthenticated(!!token);
   }, []);
 
   const login = async (credentials: Login) => {
-    await axios.post("/api/auth/signIn", {
+    const response = await axiosIns.post("/api/auth/signIn", {
       user_name: credentials.userName,
       password: credentials.password,
     });
-    // After the request, the cookie should be set by the browser.
-    // Let's check for it to confirm authentication.
-    const token = Cookies.get("auth_token");
+
+    const token = response.data.data.accessToken;
+    localStorage.setItem("accessToken", token);
     if (token) {
       setIsAuthenticated(true);
     } else {
-      // This will help in debugging if the cookie is not set or is HttpOnly
       console.error("Login successful, but auth_token cookie not found.");
       throw new Error("Authentication failed: token not found.");
     }
   };
 
   const logout = async () => {
-    await axios.get("/api/auth/signout");
-    Cookies.remove("auth_token");
-    setIsAuthenticated(false);
+    console.log("Logging out...");
+    const { data } = await axiosIns.post("/api/auth/signout");
+    if (data?.success) {
+      localStorage.removeItem("accessToken");
+      setIsAuthenticated(false);
+    }
   };
 
   return (
