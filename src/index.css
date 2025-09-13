@@ -2,3 +2,7 @@
 
 /* Ant Design styles */
 @import "antd/dist/reset.css";
+
+p {
+  margin-bottom: 0;
+}
