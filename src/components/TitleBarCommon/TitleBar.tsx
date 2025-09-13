@@ -16,7 +16,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
 }) => {
   return (
     <div className="w-full h-full flex flex-col gap-2">
-      <div className="flex justify-between items-center p-4 bg-gray-100 border-b border-gray-300">
+      <div className="flex justify-between items-center p-4 bg-white border-b border-gray-300">
         <div>
           <p className="font-bold text-2xl">{title}</p>
           {description && (
