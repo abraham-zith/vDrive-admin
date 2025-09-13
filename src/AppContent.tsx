@@ -44,11 +44,11 @@ const PlaceholderContent: React.FC<{
 const { Content, Sider, Header } = Layout;
 
 const Logo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => (
-  <div className="flex items-center justify-center gap-3 px-4 h-[64px] border-b border-gray-700">
+  <div className="flex items-center justify-center gap-3 px-4 h-[64px] border-b border-gray-200">
     <img height={32} width={32} src={logo} alt="" />
 
     {!collapsed && (
-      <span className="font-semibold text-xl text-white whitespace-nowrap">
+      <span className="font-semibold text-xl text-black whitespace-nowrap">
         vDrive Admin
       </span>
     )}
@@ -139,7 +139,26 @@ const AppContent: React.FC = () => {
   return (
     <ConfigProvider
       theme={{
+        token: {
+          colorPrimary: "#1d2a5c",
+          colorPrimaryBg: "#ffffff",
+        },
         components: {
+          Layout: {
+            siderBg: "#FFFFFF",
+          },
+          Menu: {
+            darkItemBg: "#FFFFFF",
+            darkPopupBg: "#FFFFFF",
+            darkItemSelectedBg: "#1D2A5C",
+            darkItemSelectedColor: "#FFFFFF",
+            darkItemColor: "#8A92A6",
+            darkItemHoverColor: "#1D2A5C",
+          },
+          Typography: {
+            titleMarginBottom: 0,
+            titleMarginTop: 0,
+          },
           Segmented: {
             trackBg: "rgb(241,245,249)",
           },
@@ -166,14 +185,15 @@ const AppContent: React.FC = () => {
                   mode="inline"
                   selectedKeys={[location.pathname]}
                   items={menuItems}
+                  className="font-medium"
                 />
               </div>
 
               <div
-                className={`flex-shrink-0 p-4 border-t border-gray-700 block`}
+                className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
               >
                 <div
-                  className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer ${
+                  className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
                     collapsed ? "justify-center" : "gap-3"
                   }`}
                 >
@@ -188,11 +208,11 @@ const AppContent: React.FC = () => {
                     }`}
                   >
                     <div className="overflow-hidden">
-                      <div className="flex flex-col text-white">
+                      <div className="flex flex-col text-black">
                         <span className="font-medium whitespace-nowrap">
                           Admin User
                         </span>
-                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
                           admin@example.com
                         </span>
                       </div>
@@ -216,7 +236,7 @@ const AppContent: React.FC = () => {
                       },
                     },
                   ]}
-                  className="bg-transparent border-0 mt-2"
+                  className="bg-transparent border-0 mt-2 font-medium"
                 />
               </div>
             </div>
