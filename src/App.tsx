@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { AuthProvider } from "./contexts/AuthContext";
 import {
   TeamOutlined,
   UserOutlined,
@@ -137,235 +136,230 @@ const App: React.FC = () => {
     },
   ];
   return (
-    <AuthProvider>
-      <ConfigProvider
-        theme={{
-          token: {
-            colorPrimary: "#1d2a5c",
-            colorPrimaryBg: "#ffffff",
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: "#1d2a5c",
+          colorPrimaryBg: "#ffffff",
+        },
+        components: {
+          Layout: {
+            siderBg: "#FFFFFF",
           },
-          components: {
-            Layout: {
-              siderBg: "#FFFFFF",
-            },
-            Menu: {
-              darkItemBg: "#FFFFFF",
-              darkPopupBg: "#FFFFFF",
-              darkItemSelectedBg: "#1D2A5C",
-              darkItemSelectedColor: "#FFFFFF",
-              darkItemColor: "#8A92A6",
-              darkItemHoverColor: "#1D2A5C",
-            },
-            Typography: {
-              titleMarginBottom: 0,
-              titleMarginTop: 0,
-            },
-            Segmented: {
-              trackBg: "rgb(241,245,249)",
-            },
+          Menu: {
+            darkItemBg: "#FFFFFF",
+            darkPopupBg: "#FFFFFF",
+            darkItemSelectedBg: "#1D2A5C",
+            darkItemSelectedColor: "#FFFFFF",
+            darkItemColor: "#8A92A6",
+            darkItemHoverColor: "#1D2A5C",
           },
-        }}
-      >
-        <Layout hasSider={!isMobile && isAuthenticated}>
-          {!isMobile && isAuthenticated && (
-            <Sider
-              style={siderStyle}
-              collapsed={collapsed}
-              width={250}
-              onMouseEnter={() => setCollapsed(false)}
-              onMouseLeave={() => setCollapsed(true)}
-            >
-              <div className="flex flex-col h-full">
-                <div className="flex-shrink-0">
-                  <Logo collapsed={collapsed} />
-                </div>
+          Typography: {
+            titleMarginBottom: 0,
+            titleMarginTop: 0,
+          },
+          Segmented: {
+            trackBg: "rgb(241,245,249)",
+          },
+        },
+      }}
+    >
+      <Layout hasSider={!isMobile && isAuthenticated}>
+        {!isMobile && isAuthenticated && (
+          <Sider
+            style={siderStyle}
+            collapsed={collapsed}
+            width={250}
+            onMouseEnter={() => setCollapsed(false)}
+            onMouseLeave={() => setCollapsed(true)}
+          >
+            <div className="flex flex-col h-full">
+              <div className="flex-shrink-0">
+                <Logo collapsed={collapsed} />
+              </div>
 
-                <div className="flex-grow overflow-y-auto">
-                  <Menu
-                    theme="dark"
-                    mode="inline"
-                    selectedKeys={[location.pathname]}
-                    items={menuItems}
-                    className="font-medium"
-                  />
-                </div>
+              <div className="flex-grow overflow-y-auto">
+                <Menu
+                  theme="dark"
+                  mode="inline"
+                  selectedKeys={[location.pathname]}
+                  items={menuItems}
+                  className="font-medium"
+                />
+              </div>
 
+              <div
+                className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
+              >
                 <div
-                  className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
+                  className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
+                    collapsed ? "justify-center" : "gap-3"
+                  }`}
                 >
+                  {collapsed ? null : (
+                    <Avatar size="large" icon={<UserOutlined />} />
+                  )}
                   <div
-                    className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
-                      collapsed ? "justify-center" : "gap-3"
+                    className={`grid transition-all duration-300 ease-in-out ${
+                      collapsed
+                        ? "grid-rows-[0fr] opacity-0"
+                        : "grid-rows-[1fr] opacity-100"
                     }`}
                   >
-                    {collapsed ? null : (
-                      <Avatar size="large" icon={<UserOutlined />} />
-                    )}
-                    <div
-                      className={`grid transition-all duration-300 ease-in-out ${
-                        collapsed
-                          ? "grid-rows-[0fr] opacity-0"
-                          : "grid-rows-[1fr] opacity-100"
-                      }`}
-                    >
-                      <div className="overflow-hidden">
-                        <div className="flex flex-col text-black">
-                          <span className="font-medium whitespace-nowrap">
-                            Admin User
-                          </span>
-                          <span className="text-xs text-gray-500 whitespace-nowrap">
-                            admin@example.com
-                          </span>
-                        </div>
+                    <div className="overflow-hidden">
+                      <div className="flex flex-col text-black">
+                        <span className="font-medium whitespace-nowrap">
+                          Admin User
+                        </span>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                          admin@example.com
+                        </span>
                       </div>
                     </div>
                   </div>
-                  <Menu
-                    theme="dark"
-                    mode="inline"
-                    selectable={false}
-                    inlineCollapsed={collapsed}
-                    items={[
-                      {
-                        key: "logout",
-                        label: "Logout",
-                        icon: <LogoutOutlined />,
-                        danger: true,
-                        onClick: async () => {
-                          await logout();
-                          navigate("/login");
-                        },
+                </div>
+                <Menu
+                  theme="dark"
+                  mode="inline"
+                  selectable={false}
+                  inlineCollapsed={collapsed}
+                  items={[
+                    {
+                      key: "logout",
+                      label: "Logout",
+                      icon: <LogoutOutlined />,
+                      danger: true,
+                      onClick: async () => {
+                        await logout();
+                        navigate("/login");
                       },
-                    ]}
-                    className="bg-transparent border-0 mt-2 font-medium"
-                  />
-                </div>
+                    },
+                  ]}
+                  className="bg-transparent border-0 mt-2 font-medium"
+                />
               </div>
-            </Sider>
-          )}
+            </div>
+          </Sider>
+        )}
 
-          <Layout
-            style={{
-              marginLeft:
-                isMobile || !isAuthenticated ? 0 : collapsed ? 80 : 250,
-              transition: "margin-left 0.2s",
-            }}
-          >
-            {isMobile && isAuthenticated && (
-              <Header
-                style={{
-                  padding: "0 16px",
-                  background: "#fff",
-                  borderBottom: "1px solid #d9d9d9",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  zIndex: 1000,
-                }}
-              >
-                <img height={32} width={32} src={logo} alt="Logo" />
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  <Button
-                    type="text"
-                    icon={<MenuOutlined />}
-                    onClick={showDrawer}
-                    style={{ fontSize: "16px" }}
-                  />
-                  <Button
-                    type="text"
-                    icon={<LogoutOutlined />}
-                    danger
-                    style={{ fontSize: "16px" }}
-                  />
-                </div>
-              </Header>
-            )}
-            <Content>
-              <div
-                className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
-                  isMobile && isAuthenticated
-                    ? "pt-16 h-[100dvh]"
-                    : "h-[100dvh]"
-                }`}
-              >
-                <Routes>
-                  <Route element={<ProtectedRoute />}>
-                    <Route
-                      path="/"
-                      element={<PlaceholderContent title="Dashboard" />}
-                    />
-                    <Route path="/users" element={<Users />} />
-                    <Route path="/pricing" element={<DriverPricing />} />
-                    <Route path="/drivers" element={<Drivers />} />
-                    <Route path="/admins" element={<Admins />} />
-                    <Route
-                      path="/PricingAndFareRules"
-                      element={<PricingAndFareRules />}
-                    />
-                  </Route>
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                </Routes>
-              </div>
-            </Content>
-          </Layout>
-
-          {isAuthenticated && (
-            <Drawer
-              title={
-                <div className="flex items-center gap-2">
-                  <img height={32} width={32} src={logo} alt="" />
-                  <span>vDrive Admin</span>
-                </div>
-              }
-              placement="left"
-              closable={false}
-              onClose={onCloseDrawer}
-              open={drawerVisible}
-              width={250}
+        <Layout
+          style={{
+            marginLeft: isMobile || !isAuthenticated ? 0 : collapsed ? 80 : 250,
+            transition: "margin-left 0.2s",
+          }}
+        >
+          {isMobile && isAuthenticated && (
+            <Header
+              style={{
+                padding: "0 16px",
+                background: "#fff",
+                borderBottom: "1px solid #d9d9d9",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 1000,
+              }}
             >
+              <img height={32} width={32} src={logo} alt="Logo" />
               <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
               >
-                <div style={{ flex: 1 }}>
-                  <Menu
-                    theme="light"
-                    mode="vertical"
-                    selectedKeys={[location.pathname]}
-                    items={menuItems}
+                <Button
+                  type="text"
+                  icon={<MenuOutlined />}
+                  onClick={showDrawer}
+                  style={{ fontSize: "16px" }}
+                />
+                <Button
+                  type="text"
+                  icon={<LogoutOutlined />}
+                  danger
+                  style={{ fontSize: "16px" }}
+                />
+              </div>
+            </Header>
+          )}
+          <Content>
+            <div
+              className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
+                isMobile && isAuthenticated ? "pt-16 h-[100dvh]" : "h-[100dvh]"
+              }`}
+            >
+              <Routes>
+                <Route element={<ProtectedRoute />}>
+                  <Route
+                    path="/"
+                    element={<PlaceholderContent title="Dashboard" />}
                   />
-                </div>
-                <div className="p-4 border-t">
-                  <div className="flex items-center gap-3">
-                    <Avatar size="large" icon={<UserOutlined />} />
-                    <div>
-                      <div className="font-medium">Admin User</div>
-                      <div className="text-xs text-gray-500">
-                        admin@example.com
-                      </div>
+                  <Route path="/users" element={<Users />} />
+                  <Route path="/pricing" element={<DriverPricing />} />
+                  <Route path="/drivers" element={<Drivers />} />
+                  <Route path="/admins" element={<Admins />} />
+                  <Route
+                    path="/PricingAndFareRules"
+                    element={<PricingAndFareRules />}
+                  />
+                </Route>
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+              </Routes>
+            </div>
+          </Content>
+        </Layout>
+
+        {isAuthenticated && (
+          <Drawer
+            title={
+              <div className="flex items-center gap-2">
+                <img height={32} width={32} src={logo} alt="" />
+                <span>vDrive Admin</span>
+              </div>
+            }
+            placement="left"
+            closable={false}
+            onClose={onCloseDrawer}
+            open={drawerVisible}
+            width={250}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div style={{ flex: 1 }}>
+                <Menu
+                  theme="light"
+                  mode="vertical"
+                  selectedKeys={[location.pathname]}
+                  items={menuItems}
+                />
+              </div>
+              <div className="p-4 border-t">
+                <div className="flex items-center gap-3">
+                  <Avatar size="large" icon={<UserOutlined />} />
+                  <div>
+                    <div className="font-medium">Admin User</div>
+                    <div className="text-xs text-gray-500">
+                      admin@example.com
                     </div>
                   </div>
                 </div>
               </div>
-            </Drawer>
-          )}
-        </Layout>
-      </ConfigProvider>
-    </AuthProvider>
+            </div>
+          </Drawer>
+        )}
+      </Layout>
+    </ConfigProvider>
   );
 };
 
