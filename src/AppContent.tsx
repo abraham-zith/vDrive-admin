@@ -22,7 +22,9 @@ import Admins from "./pages/Admins";
 import { PiSteeringWheel } from "react-icons/pi";
 import DriverPricing from "./pages/DriverPricing";
 import Drivers from "./pages/Drivers";
+import PricingAndFareRules from "./pages/Pricing&FareRules";
 import { RiAdminLine } from "react-icons/ri";
+import { FaFileContract } from "react-icons/fa";
 import SignUp from "./signup/Signup";
 import Login from "./login/Login";
 import ResetPassword from "./login/ResetPassword";
@@ -127,6 +129,11 @@ const AppContent: React.FC = () => {
       label: <Link to="/admins">Admins</Link>,
       key: "/admins",
       icon: <RiAdminLine />,
+    },
+    {
+      label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>,
+      key: "/PricingAndFareRules",
+      icon: <FaFileContract />,
     },
   ];
   return (
@@ -273,6 +280,10 @@ const AppContent: React.FC = () => {
                   <Route path="/pricing" element={<DriverPricing />} />
                   <Route path="/drivers" element={<Drivers />} />
                   <Route path="/admins" element={<Admins />} />
+                  <Route
+                    path="/PricingAndFareRules"
+                    element={<PricingAndFareRules />}
+                  />
                 </Route>
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/login" element={<Login />} />
