@@ -1036,7 +1036,7 @@ const PricingAndFareRules: React.FC = () => {
           activeKey={activeFilterPanel}
           onChange={(key) => setActiveFilterPanel(key)}
           style={{ marginBottom: 24, backgroundColor: "white" }}
-          expandIconPosition="right"
+          expandIconPosition="end"
         >
           <Panel
             header={
