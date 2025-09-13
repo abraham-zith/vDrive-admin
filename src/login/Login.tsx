@@ -49,13 +49,13 @@ const Login = () => {
     }
   };
 
-  const handleForgotPassword = () => {
-    navigate("/reset-password");
-  };
+  // const handleForgotPassword = () => {
+  //   navigate("/reset-password");
+  // };
 
-  const handleSignUp = () => {
-    navigate("/signup");
-  };
+  // const handleSignUp = () => {
+  //   navigate("/signup");
+  // };
 
   return (
     <div className="max-w-[400px] border border-gray-300 rounded-xl shadow-md bg-white flex flex-col gap-4 p-6 my-10 mx-auto">

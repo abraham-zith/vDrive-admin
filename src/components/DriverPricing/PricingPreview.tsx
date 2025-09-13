@@ -12,7 +12,6 @@ import {
   mockHotspotApi,
   type HotspotType,
 } from "../../utilities/mockHotspotApi";
-import axiosIns from "../../api/axios";
 
 interface PricingPreviewProps {
   country: string;
@@ -68,9 +67,6 @@ const PricingPreview = ({
 
   const handleSave = async () => {
     try {
-      const response = await axiosIns.get(
-        "/api/price-settings?page=1&limit=10&search=kanchipuram"
-      );
     } catch (error) {}
   };
 
