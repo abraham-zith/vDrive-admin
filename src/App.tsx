@@ -13,6 +13,7 @@ import logo from "/logo1.png";
 import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Users from "./pages/Users";
 import Admins from "./pages/Admins";
+import PricingAndFareRules from "./pages/Pricing&FareRules";
 import { PiSteeringWheel } from "react-icons/pi";
 import DriverPricing from "./pages/DriverPricing";
 import Drivers from "./pages/Drivers";
@@ -20,6 +21,7 @@ import { RiAdminLine } from "react-icons/ri";
 import SignUp from "./signup/Signup";
 import Login from "./login/Login";
 import ResetPassword from "./login/ResetPassword";
+import { FaFileContract } from "react-icons/fa";
 
 const PlaceholderContent: React.FC<{
   title: string;
@@ -117,6 +119,11 @@ const AppContent: React.FC = () => {
       label: <Link to="/admins">Admins</Link>,
       key: "/admins",
       icon: <RiAdminLine />,
+    },
+    {
+      label: <Link to="/pricing-and-fare-Rules">Pricing & Fare Rules</Link>,
+      key: "/pricing-and-fare-Rules",
+      icon: <FaFileContract />,
     },
   ];
   return (
@@ -259,6 +266,11 @@ const AppContent: React.FC = () => {
                 <Route path="/drivers" element={<Drivers />} />
                 <Route path="/admins" element={<Admins />} />
                 <Route path="/signup" element={<SignUp />} />
+                <Route
+                  path="/pricing-and-fare-rules"
+                  element={<PricingAndFareRules />}
+                />
+
                 <Route path="/login" element={<Login />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
               </Routes>
