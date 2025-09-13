@@ -39,7 +39,7 @@ const actions = [
 
 const QuickActions: React.FC = () => {
   return (
-    <div className="p-6 bg-white rounded-lg">
+    <div className="p-6 bg-white  shadow-xl rounded-xl">
       <div className="flex items-center mb-4">
         <ThunderboltOutlined
           style={{ fontSize: 20, color: "#1677ff" }}
@@ -48,7 +48,7 @@ const QuickActions: React.FC = () => {
         <h4 className="text-lg font-semibold">Quick Actions</h4>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 lg:grid-cols-2 gap-4 ">
         {actions.map((item) => (
           <Card
             hoverable
