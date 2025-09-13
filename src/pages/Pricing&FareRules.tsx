@@ -655,19 +655,12 @@ const PricingAndFareRules: React.FC = () => {
         const raw = item.waitingFee ?? "";
         const m = raw.match(/(\d+)\s*min\s*\/\s*[^0-9]*([\d.,]+)/i);
         if (!m) {
-          console.log(`[waitingFee] row (${item.hotspotId}) → NO MATCH`, {
-            raw,
-          });
           return false;
         }
         const per = parseInt(m[1], 10);
         const feeStr = m[2].replace(/,/g, "").trim();
         const fee = parseFloat(feeStr);
         if (!Number.isFinite(fee)) {
-          console.log(`[waitingFee] row (${item.hotspotId}) → BAD FEE`, {
-            raw,
-            feeStr,
-          });
           return false;
         }
         const pass =
@@ -675,13 +668,7 @@ const PricingAndFareRules: React.FC = () => {
           per <= perMinMax &&
           fee >= amtMin &&
           fee <= amtMax;
-        console.log(`[waitingFee] row (${item.hotspotId})`, {
-          raw,
-          per,
-          fee,
-          thresholds: { perMinMin, perMinMax, amtMin, amtMax },
-          pass,
-        });
+
         return pass;
       });
     }
@@ -699,15 +686,10 @@ const PricingAndFareRules: React.FC = () => {
     }
 
     if (values.timeFrom || values.timeTo) {
-      console.log("timeFrom raw ->", values.timeFrom);
-      console.log("timeTo   raw ->", values.timeTo);
-
       const dayMinutes = 24 * 60;
 
       const fromMin = toMinutesFromAny(values.timeFrom) ?? 0;
       const toMin = toMinutesFromAny(values.timeTo) ?? dayMinutes;
-
-      console.log("timeFrom mins ->", fromMin, "timeTo mins ->", toMin);
 
       // single-time behavior (containment) when only one side set
       tempData = tempData.filter((item) => {
@@ -716,24 +698,12 @@ const PricingAndFareRules: React.FC = () => {
         let keep: boolean;
         if (values.timeFrom && !values.timeTo) {
           keep = fromMin >= rStart && fromMin < rEnd;
-          console.log(
-            `[time-filter][from-only] ${item.hotspotId} | "${item.timeRange}"`,
-            { fromMin, rStart, rEnd, keep }
-          );
         } else if (!values.timeFrom && values.timeTo) {
           keep = toMin > rStart && toMin <= rEnd;
-          console.log(
-            `[time-filter][to-only] ${item.hotspotId} | "${item.timeRange}"`,
-            { toMin, rStart, rEnd, keep }
-          );
         } else {
           const fStart = Math.min(fromMin, toMin);
           const fEnd = Math.max(fromMin, toMin);
           keep = Math.max(fStart, rStart) <= Math.min(fEnd, rEnd);
-          console.log(
-            `[time-filter][range] ${item.hotspotId} | "${item.timeRange}"`,
-            { fStart, fEnd, rStart, rEnd, keep }
-          );
         }
         return keep;
       });
@@ -793,7 +763,6 @@ const PricingAndFareRules: React.FC = () => {
   const handleClearAllFilters = () => {
     filterForm.resetFields();
     setFilteredTableData(initialTableData);
-    console.log("Filters Cleared!");
   };
 
   const onFilterValuesChange = (
