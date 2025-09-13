@@ -2,6 +2,7 @@ import QuickActions from "../components/DashBoard/QuickActions";
 import { FiActivity } from "react-icons/fi";
 import { Typography } from "antd";
 import DriverMap from "../components/DashBoard/DriverMap";
+import DashboardCard from "../components/DashBoard/DashBoardCard";
 
 const Dashboard = () => {
   const drivers = [
@@ -26,7 +27,7 @@ const Dashboard = () => {
           </Typography.Text>
         </div>
       </div>
-
+      <DashboardCard />
       <DriverMap driverLocations={drivers} />
       <QuickActions />
     </div>
