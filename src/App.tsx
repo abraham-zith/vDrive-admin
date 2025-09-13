@@ -271,6 +271,11 @@ const AppContent: React.FC = () => {
                 <Route path="/drivers" element={<Drivers />} />
                 <Route path="/admins" element={<Admins />} />
                 <Route path="/signup" element={<SignUp />} />
+                <Route
+                  path="/pricing-and-fare-rules"
+                  element={<PricingAndFareRules />}
+                />
+
                 <Route path="/login" element={<Login />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
               </Routes>
