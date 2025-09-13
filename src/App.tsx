@@ -125,11 +125,6 @@ const AppContent: React.FC = () => {
       key: "/pricing-and-fare-Rules",
       icon: <FaFileContract />,
     },
-    {
-      label: <Link to="/pricing-and-fare-Rules">Pricing & Fare Rules</Link>,
-      key: "/pricing-and-fare-Rules",
-      icon: <FaFileContract />,
-    },
   ];
   return (
     <ConfigProvider
