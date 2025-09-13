@@ -20,7 +20,7 @@ import { RiAdminLine } from "react-icons/ri";
 import SignUp from "./signup/Signup";
 import Login from "./login/Login";
 import ResetPassword from "./login/ResetPassword";
-
+import DashBoard from "./pages/DashBoard"
 const PlaceholderContent: React.FC<{
   title: string;
   children?: React.ReactNode;
@@ -252,7 +252,8 @@ const AppContent: React.FC = () => {
               <Routes>
                 <Route
                   path="/"
-                  element={<PlaceholderContent title="Dashboard" />}
+                  // element={<PlaceholderContent title="Dashboard" />}
+                  element={<DashBoard />}
                 />
                 <Route path="/users" element={<Users />} />
                 <Route path="/pricing" element={<DriverPricing />} />
