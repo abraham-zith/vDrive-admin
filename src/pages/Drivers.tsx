@@ -1,16 +1,18 @@
 import { useState } from "react";
-import { Typography } from "antd";
+import { Button } from "antd";
+import { IoMdRefresh } from "react-icons/io";
 import DriverTable from "../components/DriverTable/DriverTable";
-import Filter from "../components/Filter/Filter";
-import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
-import { isSameDay } from "date-fns";
-
+import dayjs from "dayjs";
+import TitleBar from "../components/TitleBarCommon/TitleBar";
+import AdvancedFilters from "../components/AdvancedFilters/AdvanceFilters";
+import type { FilterField } from "../components/AdvancedFilters/AdvanceFilters";
 export type DriverStatus =
   | "active"
   | "inactive"
   | "suspended"
   | "pending"
   | "blocked";
+export type DriverRole = "premium" | "elite" | "normal";
 
 export interface Driver {
   driverId: string;
@@ -27,7 +29,7 @@ export interface Driver {
     country: string;
     pincode: string;
   };
-  role: "premium" | "elite" | "normal";
+  role: DriverRole;
   status: DriverStatus;
   rating: number;
   totalTrips: number;
@@ -104,24 +106,44 @@ export interface Driver {
 
 export interface Filters {
   status: DriverStatus[];
+  role: DriverRole[];
   joined_at: Date | null;
-  license_expiry_date: Date | null;
 }
+const fields: FilterField[] = [
+  {
+    name: "status",
+    label: "Status",
+    type: "select",
+    options: [
+      { value: "active", label: "Active" },
+      { value: "inactive", label: "Inactive" },
+      { value: "suspended", label: "Suspended" },
+      { value: "pending", label: "Pending" },
+      { value: "blocked", label: "Blocked" },
+    ],
+  },
+  {
+    name: "role",
+    label: "Role",
+    type: "select",
+    options: [
+      { value: "premium", label: "Premium" },
+      { value: "elite", label: "Elite" },
+      { value: "normal", label: "Normal" },
+    ],
+  },
+  {
+    name: "rating",
+    label: "Rating",
+    type: "slider",
+    min: 0,
+    max: 5,
+    step: 0.1,
+  },
+  { name: "joined", label: "Joined", type: "date" },
+];
 
 const Drivers = () => {
-  const [filters, setFilters] = useState<Filters>({
-    status: [],
-    joined_at: null,
-    license_expiry_date: null,
-  });
-
-  const STATUSES: DriverStatus[] = [
-    "active",
-    "inactive",
-    "suspended",
-    "pending",
-    "blocked",
-  ];
   const DATA: Driver[] = [
     {
       driverId: "drv-001",
@@ -519,76 +541,65 @@ const Drivers = () => {
       activityLogs: [],
     },
   ];
-  const filterFields = [
-    {
-      key: "status",
-      label: "Status",
-      type: "select" as const,
-      options: STATUSES.map((s) => ({ label: s, value: s })),
-      mode: "multiple" as const,
-    },
-    { key: "joined_at", label: "Joined At", type: "date" as const },
-  ];
+  const [filteredData, setFilteredData] = useState<Driver[]>(DATA);
 
-  const filteredData = DATA.filter((user) => {
-    if (
-      filters.status.length > 0 &&
-      !filters.status.includes(user.status as DriverStatus)
-    ) {
-      return false;
+  const applyFilters = (values: Record<string, any>) => {
+    let tempData = DATA;
+    if (values.status) {
+      const selectedStatuses = Array.isArray(values.status)
+        ? values.status
+        : [values.status];
+      tempData = tempData.filter((user) =>
+        selectedStatuses.includes(user.status)
+      );
     }
-    if (
-      filters.joined_at &&
-      !isSameDay(new Date(user.createdAt), filters.joined_at)
-    ) {
-      return false;
+    if (values.role) {
+      const selectedRole = Array.isArray(values.role)
+        ? values.role
+        : [values.role];
+      tempData = tempData.filter((user) => selectedRole.includes(user.role));
     }
-    if (
-      filters.license_expiry_date &&
-      !isSameDay(
-        new Date(user.documents?.[0]?.expiryDate),
-        filters.license_expiry_date
-      )
-    ) {
-      return false;
+    if (values.joined) {
+      tempData = tempData.filter((user) =>
+        dayjs(user.createdAt).isSame(values.joined, "day")
+      );
     }
-    return true;
-  });
 
+    if (values.rating && Array.isArray(values.rating)) {
+      const [min, max] = values.rating;
+      tempData = tempData.filter((item) => {
+        const itemValue = Number(item.rating ?? 0);
+        return itemValue >= min && itemValue <= max;
+      });
+    }
+
+    setFilteredData(tempData);
+  };
   return (
-    <div className=" container mx-auto w-full h-full flex flex-col gap-[6px] px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
-      <Typography.Title level={2} className="text-xl sm:text-2xl">
-        Driver Management
-      </Typography.Title>
-      <Typography.Text className="text-sm sm:text-base">
-        Manage drivers, view details, and perform administrative actions
-      </Typography.Text>
-
-      <Filter<Filters>
-        fields={filterFields}
-        initialValues={filters}
-        onChange={setFilters}
-      />
-
-      <AppliedFilters<Filters>
-        filters={filters}
-        setFilters={setFilters}
-        labels={{
-          status: "Status",
-          joined_at: "Joined At",
-          license_expiry_date: "License Expiry Date",
-        }}
-        colors={{
-          status: "green",
-          joined_at: "purple",
-          license_expiry_date: "orange",
-        }}
-      />
-
-      <div className="flex-grow overflow-hidden">
-        <DriverTable data={filteredData} />
+    <TitleBar
+      title="Driver Management"
+      description="Manage drivers, view details, and perform administrative actions."
+      extraContent={
+        <div>
+          <Button
+            icon={<IoMdRefresh />}
+            loading={false}
+            type="primary"
+            onClick={() => {}}
+          >
+            Refresh
+          </Button>
+        </div>
+      }
+    >
+      <div className="w-full h-full flex flex-col gap-4">
+        {" "}
+        <AdvancedFilters filterFields={fields} applyFilters={applyFilters} />
+        <div className="flex-grow overflow-hidden">
+          <DriverTable data={filteredData} />
+        </div>
       </div>
-    </div>
+    </TitleBar>
   );
 };
 
