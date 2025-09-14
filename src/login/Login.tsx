@@ -12,7 +12,7 @@ export interface Login {
 }
 const Login = () => {
   const navigate = useNavigate();
-  const { login: authLogin } = useAuth();
+  const { login: authLogin, loading } = useAuth();
   const [login, setLogin] = useState<Login>({
     userName: "",
     password: "",
@@ -143,6 +143,7 @@ const Login = () => {
             type="primary"
             block
             onClick={handleSubmit}
+            disabled={loading}
             style={{ marginTop: 16, width: 75 }}
           >
             Login

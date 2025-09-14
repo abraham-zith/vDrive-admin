@@ -47,7 +47,7 @@ const Filter = <T extends Record<string, any>>({
   };
 
   return (
-    <Row gutter={[16, 16]} align="bottom" justify="end">
+    <Row gutter={[16, 16]} align="bottom" justify="end" className="my-4">
       {fields.map((field) => (
         <Col xs={24} sm={12} md={6} lg={5} key={field.key}>
           {field.type === "select" ? (

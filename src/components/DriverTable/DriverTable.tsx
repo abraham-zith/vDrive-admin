@@ -1,15 +1,37 @@
-import { SearchOutlined } from "@ant-design/icons";
-import type { InputRef, TableColumnsType, TableColumnType } from "antd";
-import { Button, Input, Space, Table, Avatar, Tooltip, message } from "antd";
-import type { FilterDropdownProps } from "antd/es/table/interface";
+// components/DriverTable/DriverTable.tsx
+import { useRef, useState } from "react";
+import {
+  Table,
+  Tag,
+  Progress,
+  Rate,
+  Avatar,
+  Tooltip,
+  message,
+  Button,
+  Input,
+  Space,
+   Dropdown, Menu
+} from "antd";
+import type { ColumnsType } from "antd/es/table";
+
 import Highlighter from "react-highlight-words";
-import { format } from "date-fns-tz";
-import { useMemo, useRef, useState } from "react";
-import { useGetHeight } from "../../utilities/customheightWidth";
 import type { Driver } from "../../pages/Drivers";
-import { UserOutlined, CopyOutlined } from "@ant-design/icons";
+import {
+
+  CopyOutlined,
+  EllipsisOutlined,
+  EyeOutlined,
+  EditOutlined,
+  StopOutlined,
+  ClockCircleOutlined,
+} from "@ant-design/icons";
 import { capitalize } from "../../utilities/capitalize";
-import { parseISO, compareAsc } from "date-fns";
+import type { FilterDropdownProps } from "antd/es/table/interface";
+import type { InputRef, TableColumnType } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
+import DriverDetails from "../DriverDetails/DriverDetails";
+import { useGetHeight } from "../../utilities/customheightWidth";
 interface DriverTableProps {
   data: Driver[];
 }
@@ -19,10 +41,15 @@ type DataIndex = keyof Driver;
 const DriverTable = ({ data }: DriverTableProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const tableHeight = useGetHeight(contentRef);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
   const searchInput = useRef<InputRef>(null);
-
+  const openDrawer = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setDrawerOpen(true);
+  };
   const handleSearch = (
     selectedKeys: string[],
     confirm: FilterDropdownProps["confirm"],
@@ -52,7 +79,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
       confirm,
       clearFilters,
     }) => (
-      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+      <div className="p-4" onKeyDown={(e) => e.stopPropagation()}>
         <Input
           ref={searchInput}
           placeholder={`Search ${String(dataIndex)}`}
@@ -85,15 +112,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
           >
             Reset
           </Button>
-          {/* <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              close();
-            }}
-          >
-            close
-          </Button> */}
+        
         </Space>
       </div>
     ),
@@ -101,7 +120,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
       <SearchOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
     ),
     onFilter: (value, record) =>
-      record[dataIndex]
+      (record[dataIndex] ?? "")
         .toString()
         .toLowerCase()
         .includes((value as string).toLowerCase()),
@@ -143,127 +162,208 @@ const DriverTable = ({ data }: DriverTableProps) => {
       );
     },
   });
-
-  const columns: TableColumnsType<Driver> = useMemo(
-    () => [
-      {
-        title: "Profile",
-        dataIndex: "profile_url",
-        key: "profile_url",
-        minWidth: 100,
-        render: (url: string) => (
-          <Avatar
-            src={url}
-            icon={!url ? <UserOutlined /> : undefined}
-            size="large"
-          />
-        ),
-      },
-      {
-        title: "Full Name",
-        dataIndex: "full_name",
-        key: "full_name",
-        minWidth: 160,
-        ...getColumnSearchProps("full_name", "driver_id"),
-        render: (text: string, record: Driver) => (
-          <div className="flex gap-6">
-            <span>{text}</span>
-            <Tooltip title="Copy Driver ID">
-              <CopyOutlined
-                style={{ cursor: "pointer" }}
-                onClick={() => {
-                  navigator.clipboard.writeText(record.driver_id);
-                  message.success("Driver ID copied!");
-                }}
-              />
-            </Tooltip>
+  const columns: ColumnsType<Driver> = [
+    {
+      title: "Driver",
+      dataIndex: "fullName",
+      key: "driver",
+      minWidth: 180,
+      ...getColumnSearchProps("fullName", "driverId"),
+      render: (_, record) => (
+        <div className="flex items-center gap-3">
+          <Avatar src={record.profilePicUrl} size={40}>
+            {record.fullName?.charAt(0)}
+          </Avatar>
+          <div>
+            <div className="font-semibold">{record.fullName}</div>
+            <div className="text-xs text-gray-500">{record.driverId}</div>
+            <div className="text-xs text-gray-400">
+              {record.address.city}, {record.address.state}
+            </div>
           </div>
-        ),
-
-        sorter: (a: Driver, b: Driver) =>
-          a.full_name.localeCompare(b.full_name),
+        </div>
+      ),
+    },
+    {
+      title: "Contact",
+      key: "contact",
+      minWidth: 160,
+      render: (_, record) => (
+        <div>
+          <div className="text-sm">{record.phoneNumber}</div>
+          <div className="text-xs text-gray-500">{record.email}</div>
+        </div>
+      ),
+    },
+    {
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+      minWidth: 120,
+      render: (role: string) => {
+        const colors: Record<string, string> = {
+          premium: "purple",
+          elite: "orange",
+          normal: "gray",
+        };
+        return <Tag color={colors[role]}>{capitalize(role)}</Tag>;
       },
-      {
-        title: "Phone Number",
-        dataIndex: "phone_number",
-        key: "phone_number",
-        minWidth: 200,
-        sorter: (a: Driver, b: Driver) =>
-          a.phone_number.localeCompare(b.phone_number),
-        ...getColumnSearchProps("phone_number"),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      minWidth: 120,
+      key: "status",
+      render: (status: string) => {
+        const colors: Record<string, string> = {
+          active: "green",
+          inactive: "default",
+          suspended: "red",
+          pending: "gold",
+          blocked: "volcano",
+        };
+        return <Tag color={colors[status]}>{capitalize(status)}</Tag>;
       },
-      {
-        title: "License Number",
-        dataIndex: "license_number",
-        minWidth: 200,
-        key: "license_number",
-        sorter: (a: Driver, b: Driver) =>
-          a.license_number.localeCompare(b.license_number),
-        ...getColumnSearchProps("license_number"),
+    },
+    {
+      title: "Rating",
+      dataIndex: "rating",
+      minWidth: 160,
+      key: "rating",
+      render: (rating: number) => (
+        <div className="flex items-center gap-1">
+          <Rate disabled allowHalf value={rating} style={{ fontSize: 14 }} />
+          <span className="text-sm text-gray-600">{rating}</span>
+        </div>
+      ),
+    },
+    {
+      title: "Total Trips",
+      dataIndex: "totalTrips",
+      minWidth: 120,
+      key: "totalTrips",
+    },
+    {
+      title: "Earnings",
+      dataIndex: ["payments", "totalEarnings"],
+      minWidth: 160,
+      key: "earnings",
+      render: (earnings: number) => (
+        <span className="text-green-600 font-medium">
+          ₹{earnings.toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      title: "Credits",
+      key: "credits",
+      minWidth: 180,
+      render: (_, record) => {
+        const total = record.credit.limit;
+        const percent = (record.credit.balance / total) * 100;
+        return (
+          <div className="cursor-pointer" onClick={() => openDrawer(record)}>
+            <div className="flex justify-between text-xs font-medium">
+              <span>
+                {record.credit.balance}/{total}
+              </span>
+              <span>{Math.round(percent)}%</span>
+            </div>
+            <Progress
+              percent={percent}
+              size="small"
+              showInfo={false}
+              strokeColor="#1677ff"
+            />
+          </div>
+        );
       },
-      {
-        title: "License Expiry Date",
-        dataIndex: "license_expiry_date",
-        minWidth: 200,
-        key: "license_expiry_date",
-        width: 190,
-        sorter: (a: Driver, b: Driver) => {
-          const dateA = parseISO(a.license_expiry_date);
-          const dateB = parseISO(b.license_expiry_date);
-          return compareAsc(dateA, dateB);
-        },
+    },
+    {
+      title: "Joined",
+      dataIndex: "createdAt",
+      minWidth: 160,
+      key: "joined",
+      render: (date: string) =>
+        new Date(date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => {
+        const menu = (
+          <Menu>
+            <Menu.Item
+              key="view"
+              icon={<EyeOutlined />}
+            >
+              View Details
+            </Menu.Item>
+            <Menu.Item key="edit" icon={<EditOutlined />}>
+              Edit Profile
+            </Menu.Item>
+            <Menu.Item key="block" icon={<StopOutlined />} danger>
+              Block Driver
+            </Menu.Item>
+            <Menu.Item
+              key="suspend"
+              icon={<ClockCircleOutlined />}
+              style={{ color: "#fa8c16" }}
+            >
+              Suspend Driver
+            </Menu.Item>
+          </Menu>
+        );
+        return (
+          <Space className="driver-action">
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => openDrawer(record)}
+            />
+            <Dropdown overlay={menu} trigger={["click"]}>
+              <Button type="text" icon={<EllipsisOutlined />} />
+            </Dropdown>
+          </Space>
+        );
       },
-      {
-        title: "Rating",
-        minWidth: 100,
-        dataIndex: "rating",
-        key: "rating",
-        sorter: (a: Driver, b: Driver) => a.rating - b.rating,
-      },
-      {
-        title: "Status",
-        dataIndex: "status",
-        minWidth: 120,
-        key: "status",
-        render: (text: string) => capitalize(text),
-        sorter: (a: Driver, b: Driver) => a.status.localeCompare(b.status),
-      },
-      {
-        title: "Total Trips",
-        dataIndex: "total_trips",
-        minWidth: 120,
-        key: "total_trips",
-        sorter: (a: Driver, b: Driver) => a.total_trips - b.total_trips,
-      },
-      {
-        title: "Joined At",
-        minWidth: 240,
-        dataIndex: "joined_at",
-        key: "joined_at",
-        render: (text: string) =>
-          format(new Date(text), "MMMM do yyyy, h:mm a", {
-            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          }),
-        sorter: (a: Driver, b: Driver) =>
-          new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime(),
-      },
-    ],
-    [searchText, searchedColumn]
-  );
+    },
+  ];
 
   return (
-    <div ref={contentRef} className="h-full w-full">
-      <Table
-        key={tableHeight}
-        // virtual
-        columns={columns}
-        dataSource={data}
-        rowKey="full_name"
-        pagination={false}
-        tableLayout="auto"
-        scroll={{ y: Math.floor(tableHeight || 0) }}
+    <>
+      <div ref={contentRef} className="h-full w-full">
+        <Table
+          key={tableHeight}
+          rowKey="driverId"
+          columns={columns}
+          dataSource={data}
+          showSorterTooltip={false}
+          tableLayout="auto"
+          scroll={{ y: Math.floor(tableHeight || 0) }}
+          pagination={false}
+          onRow={(record) => ({
+            onClick: (event) => {
+              const isActionClick = (event.target as HTMLElement).closest(
+                ".driver-action"
+              );
+              if (!isActionClick) {
+                openDrawer(record);
+              }
+            },
+          })}
+        />
+      </div>
+      <DriverDetails
+        driver={selectedDriver}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
       />
-    </div>
+    </>
   );
 };
 
