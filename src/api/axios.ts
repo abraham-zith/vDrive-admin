@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosIns = axios.create({
-  baseURL: '/',
+  baseURL: import.meta.env.VITE_BACKEND_URL,
   withCredentials: true,
 });
 
