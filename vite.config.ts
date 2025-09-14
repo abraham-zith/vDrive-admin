@@ -1,21 +1,25 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(),tailwindcss()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'https://v-drive-be.onrender.com',
-        changeOrigin: true,
-        secure: false,
+export default defineConfig(({ mode }) => {
+  // Load environment variables
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return {
+    plugins: [react(), tailwindcss()],
+    server: {
+      proxy: {
+        '/api': {
+          target: env.VITE_BACKEND_URL,
+          changeOrigin: true,
+          secure: false,
+        },
       },
     },
-  },
-  build: {
-    chunkSizeWarningLimit: 1000, // Set to 1000 kB to suppress the warning
-  },
+    build: {
+      chunkSizeWarningLimit: 1000, // Set to 1000 kB to suppress the warning
+    },
+  }
 })
