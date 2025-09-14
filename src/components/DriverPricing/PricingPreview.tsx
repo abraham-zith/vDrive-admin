@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, Typography, Tag, Button } from "antd";
+import { Card, Typography, Tag } from "antd";
 import { MdOutlineLocationOn } from "react-icons/md";
 import { BsClock } from "react-icons/bs";
 import { ThunderboltOutlined } from "@ant-design/icons";
@@ -63,11 +63,6 @@ const PricingPreview = ({
     "normal-user": <Tag color="default">Normal User</Tag>,
     "premium-user": <Tag color="gold">Premium User</Tag>,
     "elite-user": <Tag color="blue">Elite User</Tag>,
-  };
-
-  const handleSave = async () => {
-    try {
-    } catch (error) {}
   };
 
   return (
@@ -153,24 +148,6 @@ const PricingPreview = ({
               {slots.length} slots
             </div>
           ))}
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-end gap-2">
-          <Button className="w-full sm:w-auto">Cancel</Button>
-          <Button
-            type="primary"
-            className="w-full sm:w-auto"
-            onClick={handleSave}
-          >
-            Save Rule
-          </Button>
-          <Button
-            type="primary"
-            className="w-full sm:w-auto"
-            style={{ background: "#4CAF50" }}
-          >
-            Save & Add Another
-          </Button>
         </div>
       </div>
     </Card>

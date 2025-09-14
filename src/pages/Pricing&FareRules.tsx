@@ -11,13 +11,16 @@ import {
   Descriptions,
   Divider,
 } from "antd";
-import {
-  DownloadOutlined,
-  SettingOutlined,
-  EyeOutlined,
-} from "@ant-design/icons";
-import { FiUsers } from "react-icons/fi";
+import { DownloadOutlined, EyeOutlined, EditOutlined } from "@ant-design/icons";
+import { IoAdd } from "react-icons/io5";
 import { utils, writeFile } from "xlsx"; // ← add this
+import TitleBar from "../components/TitleBarCommon/TitleBar";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
+
+import { CloseOutlined } from "@ant-design/icons";
+import { GrLocation } from "react-icons/gr";
+import { LuDollarSign } from "react-icons/lu";
+import { FaCarAlt } from "react-icons/fa";
 import AdvancedFilters from "../components/AdvancedFilters/AdvanceFilters";
 import type { FilterField } from "../components/AdvancedFilters/AdvanceFilters";
 const { Title, Text } = Typography;
@@ -128,10 +131,9 @@ const flattenApiItem = (item: ApiItem, keyPrefix: string): PriceSetting[] => {
         baseFare: money(fare, country),
         driverType: rd.driverType,
         cancellationFee: money(rd.cancellationFee, country),
-        waitingFee: `${rd.waitingFee.perMinutes}min / ${money(
-          rd.waitingFee.fee,
-          country
-        )}`,
+        waitingFee: `${money(rd.waitingFee.fee, country)} per ${
+          rd.waitingFee.perMinutes
+        }min`,
         day: cap(t.day),
         timeRange: `${asTime(t.from.time, t.from.type)} - ${asTime(
           t.to.time,
@@ -481,7 +483,9 @@ const apiResponse: ApiItem[] = [
 ];
 
 const PricingAndFareRules: React.FC = () => {
+  const location = useLocation();
   const [filterForm] = Form.useForm<FilterValues>();
+  const navigate = useNavigate();
 
   // put this near your other helpers
   const dedupeRows = (rows: PriceSetting[]) => {
@@ -546,9 +550,7 @@ const PricingAndFareRules: React.FC = () => {
 
   const [filteredTableData, setFilteredTableData] =
     useState<PriceSetting[]>(initialTableData);
-  const [activeFilterPanel, setActiveFilterPanel] = useState<string | string[]>(
-    ["advanced-filters"]
-  );
+
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [currentPriceSetting, setCurrentPriceSetting] =
     useState<PriceSetting | null>(null);
@@ -930,7 +932,26 @@ const PricingAndFareRules: React.FC = () => {
         </Space>
       ),
     },
+    {
+      title: "Actions",
+      key: "actionsEdit",
+      render: (_: any) => (
+        <Space size="middle">
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            // onClick={() => showDrawer(record)}
+          >
+            Edit
+          </Button>
+        </Space>
+      ),
+    },
   ];
+
+  if (location.pathname === "/PricingAndFareRules/pricing") {
+    return <Outlet />;
+  }
   const fields: FilterField[] = [
     {
       name: "country",
@@ -1019,83 +1040,50 @@ const PricingAndFareRules: React.FC = () => {
     },
   ];
   return (
-    <>
-      <div
-        style={{
-          width: "100%",
-          backgroundColor: "rgb(41 121 245)",
-          display: "flex",
-          paddingTop: "1rem",
-          paddingBottom: "1rem",
-          paddingLeft: "1.5rem",
-          paddingRight: "1.5rem",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div style={{ display: "flex", gap: ".5rem" }}>
-          <div
-            style={{
-              padding: ".5rem",
-              backgroundColor: "#fff3",
-              borderRadius: "10px",
-              color: "rgb(255, 255, 255)",
-              fontSize: "1.5rem",
-              marginBottom: "auto",
-            }}
-          >
-            <SettingOutlined />
+    <TitleBar
+      title="Driver Price Management"
+      description="Advanced admin interface for pricing control"
+      extraContent={
+        <div className="flex items-center gap-2">
+          {/* <div>
+            <Button type="primary">
+              <FiUsers />
+              {filteredTableData.length} Settings
+            </Button>
           </div>
           <div>
-            <h1
-              style={{
-                fontSize: "1.5rem",
-                fontWeight: 700,
-                color: "rgb(255 255 255",
-                lineHeight: "1rem",
-              }}
+            <Button loading={false} type="primary" onClick={() => {}}>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="lucide lucide-trending-up h-5 w-5"
+              >
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                <polyline points="16 7 22 7 22 13"></polyline>
+              </svg>
+              Activity
+            </Button>
+          </div> */}
+          <div>
+            <Button
+              type="primary"
+              icon={<IoAdd />}
+              onClick={() => navigate("/PricingAndFareRules/pricing")}
             >
-              Driver Price Management
-            </h1>
-            <p style={{ color: "#fffc", fontSize: ".875rem;" }}>
-              Advanced admin interface for pricing control
-            </p>
+              Add Pricing
+            </Button>
           </div>
         </div>
-        <div
-          style={{
-            display: "flex",
-            gap: "1rem",
-            alignItems: "normal",
-            color: "rgb(255, 255, 255)",
-          }}
-        >
-          <div style={{ display: "flex", gap: ".3rem" }}>
-            <FiUsers />
-            {filteredTableData.length} Settings
-          </div>
-          <div style={{ display: "flex", gap: ".3rem" }}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-trending-up h-5 w-5"
-            >
-              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-              <polyline points="16 7 22 7 22 13"></polyline>
-            </svg>
-            <p>Active</p>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ padding: 24, backgroundColor: "white" }}>
+      }
+    >
+      <div className="w-full h-full overflow-y-auto">
         <AdvancedFilters filterFields={fields} applyFilters={applyFilters} />
 
         <Card
@@ -1116,134 +1104,314 @@ const PricingAndFareRules: React.FC = () => {
             dataSource={filteredTableData}
             pagination={{ pageSize: 5 }}
             scroll={{ x: "max-content" }}
+            onRow={(record) => ({
+              onClick: () => showDrawer(record),
+            })}
           />
         </Card>
 
         <Drawer
-          title="Pricing Details"
-          width={450}
+          width={550}
           onClose={onCloseDrawer}
           open={drawerVisible}
           destroyOnClose
+          closable={false}
+          title={
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Title level={5} style={{ margin: 0 }}>
+                Pricing Details
+              </Title>
+              <CloseOutlined
+                onClick={onCloseDrawer}
+                style={{
+                  fontSize: 16,
+                  color: "#00000073",
+                  cursor: "pointer",
+                }}
+              />
+            </div>
+          }
         >
           {currentPriceSetting ? (
             <Space direction="vertical" style={{ width: "100%" }} size="middle">
-              <Title
-                level={5}
-                style={{ display: "flex", alignItems: "center", gap: 8 }}
-              >
-                <img
-                  src="https://img.icons8.com/ios/50/000000/marker.png"
-                  alt="location icon"
-                  style={{ width: 20, height: 20 }}
-                />
-                Location Information
-              </Title>
-              <Descriptions
-                column={1}
+              {/* Location Information */}
+              <Card
                 size="small"
-                colon={false}
-                layout="horizontal"
+                bordered
+                bodyStyle={{ padding: 16, backgroundColor: "#ffffff" }}
               >
-                <Descriptions.Item label="Country">
-                  {currentPriceSetting.country}
-                </Descriptions.Item>
-                <Descriptions.Item label="State">
-                  {currentPriceSetting.state}
-                </Descriptions.Item>
-                <Descriptions.Item label="District">
-                  {currentPriceSetting.district}
-                </Descriptions.Item>
-                <Descriptions.Item label="Area">
-                  {currentPriceSetting.area}
-                </Descriptions.Item>
-                <Descriptions.Item label="Pincode">
-                  {currentPriceSetting.pincode}
-                </Descriptions.Item>
-              </Descriptions>
+                <Title
+                  level={5}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <GrLocation />
+                  Location Information
+                </Title>
+                <Descriptions
+                  column={2}
+                  size="small"
+                  colon
+                  layout="vertical"
+                  labelStyle={{ marginBottom: 0 }}
+                  contentStyle={{ marginTop: -4 }}
+                >
+                  <Descriptions.Item label="Country">
+                    {currentPriceSetting.country || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="State">
+                    {currentPriceSetting.state || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="District">
+                    {currentPriceSetting.district || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Area">
+                    {currentPriceSetting.area || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Pincode">
+                    {currentPriceSetting.pincode || "-"}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
 
-              <Divider />
+              {/* Hotspot Details */}
+              <Card size="small" bordered bodyStyle={{ padding: 16 }}>
+                <Title
+                  level={5}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <LuDollarSign />
+                  Hotspot Details
+                </Title>
+                <Descriptions
+                  column={2}
+                  size="small"
+                  colon
+                  layout="vertical"
+                  labelStyle={{ marginBottom: 0 }}
+                  contentStyle={{ marginTop: -4 }}
+                >
+                  <Descriptions.Item label="Hotspot ID">
+                    {currentPriceSetting.hotspotId || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Hotspot Name">
+                    {currentPriceSetting.hotspotName || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Is Hotspot">
+                    <span
+                      style={{
+                        backgroundColor: currentPriceSetting.isHotspot
+                          ? "#e6f7ff"
+                          : "#fff1f0",
+                        color: currentPriceSetting.isHotspot
+                          ? "#007BFF"
+                          : "#ff4d4f",
+                        padding: "2px 8px",
+                        borderRadius: "50px",
+                        fontWeight: "bold",
+                        display: "inline-block",
+                      }}
+                    >
+                      {currentPriceSetting.isHotspot ? "Yes" : "No"}
+                    </span>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Base Fare">
+                    <Text style={{ fontSize: 17, fontWeight: "bold" }}>
+                      {currentPriceSetting.baseFare || "-"}
+                    </Text>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
 
+              {/* Rate Details */}
               <Title
                 level={5}
-                style={{ display: "flex", alignItems: "center", gap: 8 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 8,
+                }}
               >
-                <img
-                  src="https://img.icons8.com/ios/50/000000/fire-station.png"
-                  alt="hotspot icon"
-                  style={{ width: 20, height: 20 }}
-                />
-                Hotspot Details
-              </Title>
-              <Descriptions
-                column={1}
-                size="small"
-                colon={false}
-                layout="horizontal"
-              >
-                <Descriptions.Item label="Hotspot ID">
-                  {currentPriceSetting.hotspotId}
-                </Descriptions.Item>
-                <Descriptions.Item label="Hotspot Name">
-                  {currentPriceSetting.hotspotName}
-                </Descriptions.Item>
-                <Descriptions.Item label="Is Hotspot">
-                  {currentPriceSetting.isHotspot ? "Yes" : "No"}
-                </Descriptions.Item>
-                <Descriptions.Item label="Base Fare">
-                  {currentPriceSetting.baseFare}
-                </Descriptions.Item>
-              </Descriptions>
-
-              <Divider />
-
-              <Title
-                level={5}
-                style={{ display: "flex", alignItems: "center", gap: 8 }}
-              >
-                <img
-                  src="https://img.icons8.com/ios/50/000000/card-in-use.png"
-                  alt="rate icon"
-                  style={{ width: 20, height: 20 }}
-                />
+                <FaCarAlt />
                 Rate Details
               </Title>
 
-              <Card
-                size="small"
-                title={`${currentPriceSetting.driverType.toUpperCase()} DRIVER`}
-                style={{ marginTop: 16 }}
-              >
-                <Space direction="vertical">
-                  <Text strong>
-                    Cancellation Fee: {currentPriceSetting.cancellationFee}
-                  </Text>
-                  <Text strong>
-                    Waiting Fee: {currentPriceSetting.waitingFee}
-                  </Text>
-                </Space>
-              </Card>
-
-              <Title level={5} style={{ marginTop: 16 }}>
-                Time-based Rates
-              </Title>
-              <Card size="small">
-                <Descriptions
-                  column={1}
-                  size="small"
-                  colon={false}
-                  layout="horizontal"
+              <Card size="small" bordered>
+                <Space
+                  direction="vertical"
+                  style={{ width: "100%" }}
+                  size="middle"
                 >
-                  <Descriptions.Item label="Day">
-                    {currentPriceSetting.day}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Time Range">
-                    {currentPriceSetting.timeRange}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Rate Range">
-                    {currentPriceSetting.rateRange}
-                  </Descriptions.Item>
-                </Descriptions>
+                  {/* Driver Info Section */}
+                  <div>
+                    {/* Driver Type Badge */}
+                    <div
+                      style={{
+                        backgroundColor:
+                          currentPriceSetting.driverType?.toLowerCase() ===
+                          "premium"
+                            ? "#000000"
+                            : currentPriceSetting.driverType?.toLowerCase() ===
+                              "elite"
+                            ? "#007BFF"
+                            : "#ffffff",
+                        color:
+                          currentPriceSetting.driverType?.toLowerCase() ===
+                          "premium"
+                            ? "#ffffff"
+                            : currentPriceSetting.driverType?.toLowerCase() ===
+                              "elite"
+                            ? "#ffffff"
+                            : "#000000",
+                        padding: "4px 14px",
+                        borderRadius: "50px",
+                        fontWeight: "bold",
+                        letterSpacing: 0.5,
+                        display: "inline-block",
+                        border: "1px solid #ccc",
+                        width: "fit-content",
+                        marginBottom: 8,
+                      }}
+                    >
+                      {currentPriceSetting.driverType
+                        ? `${currentPriceSetting.driverType.toUpperCase()} DRIVER`
+                        : "DRIVER"}
+                    </div>
+
+                    <Descriptions
+                      column={2}
+                      size="small"
+                      colon
+                      layout="vertical"
+                      labelStyle={{
+                        marginBottom: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                      contentStyle={{ marginTop: -4 }}
+                    >
+                      <Descriptions.Item
+                        label={
+                          <>
+                            <img
+                              src="https://img.icons8.com/ios/50/fa314a/error--v1.png"
+                              alt="cancel icon"
+                              style={{ width: 16, height: 16 }}
+                            />
+                            <span>Cancellation Fee</span>
+                          </>
+                        }
+                      >
+                        <Text strong style={{ fontSize: 13 }}>
+                          {currentPriceSetting.cancellationFee ?? "-"}
+                        </Text>
+                      </Descriptions.Item>
+
+                      <Descriptions.Item
+                        label={
+                          <>
+                            <img
+                              src="https://img.icons8.com/ios/50/000000/clock--v1.png"
+                              alt="clock icon"
+                              style={{ width: 16, height: 16 }}
+                            />
+                            <span>Waiting Fee</span>
+                          </>
+                        }
+                      >
+                        <Text strong style={{ fontSize: 13 }}>
+                          {currentPriceSetting.waitingFee ?? "-"}
+                        </Text>
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </div>
+
+                  <Divider style={{ margin: "12px 0" }} />
+
+                  {/* Time-based Rates Section */}
+                  <div>
+                    <Text strong>Time-based Rates</Text>
+                    <div style={{ display: "flex", gap: 16 }}>
+                      <div style={{ flex: 3 }}>
+                        <Descriptions
+                          size="small"
+                          colon
+                          layout="vertical"
+                          labelStyle={{
+                            marginBottom: 0,
+                            padding: 0,
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                          contentStyle={{ marginTop: -4 }}
+                        >
+                          <Descriptions.Item label="Schedule">
+                            <div
+                              style={{
+                                border: "1px solid #d9d9d9",
+                                borderRadius: "50px",
+                                padding: "2px 10px",
+                                margin: " 0 4px 0 0",
+                                fontWeight: 500,
+                                fontSize: 13,
+                                display: "inline-block",
+                                marginBottom: 4,
+                              }}
+                            >
+                              {currentPriceSetting.day || "-"}
+                            </div>
+                            <div>
+                              <Text type="secondary" style={{ fontSize: 13 }}>
+                                {currentPriceSetting.timeRange || "-"}
+                              </Text>
+                            </div>
+                          </Descriptions.Item>
+                        </Descriptions>
+                      </div>
+
+                      <div
+                        style={{
+                          flex: 1,
+                          display: "flex",
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <Descriptions
+                          size="small"
+                          colon
+                          layout="vertical"
+                          contentStyle={{ marginTop: -4 }}
+                        >
+                          <Descriptions.Item label="Rate">
+                            <Text
+                              strong
+                              style={{ fontSize: 18, color: "#007BFF" }}
+                            >
+                              ₹{currentPriceSetting.rateRange ?? "-"}
+                            </Text>
+                          </Descriptions.Item>
+                        </Descriptions>
+                      </div>
+                    </div>
+                  </div>
+                </Space>
               </Card>
             </Space>
           ) : (
@@ -1251,7 +1419,7 @@ const PricingAndFareRules: React.FC = () => {
           )}
         </Drawer>
       </div>
-    </>
+    </TitleBar>
   );
 };
 
