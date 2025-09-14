@@ -10,7 +10,7 @@ const Dashboard = () => {
     { id: "2", lat: 12.97, lng: 77.6 },
   ];
   return (
-    <div className="container mx-auto px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6 space-y-6 py-2">
+    <div className="w-full h-full overflow-y-auto mx-auto px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6 space-y-6 py-2 ">
       <div className="flex items-center space-x-3">
         <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-xl">
           <FiActivity className="text-white text-2xl" />
@@ -20,7 +20,7 @@ const Dashboard = () => {
             level={2}
             className="!m-0 text-xl sm:text-2xl font-extrabold text-gray-900"
           >
-            RideHub Dashboard
+            Dashboard
           </Typography.Title>
           <Typography.Text className="block text-md sm:text-base text-gray-500">
             Live operational metrics and insights

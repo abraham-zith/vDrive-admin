@@ -29,8 +29,9 @@ import SignUp from "./signup/Signup";
 import Login from "./login/Login";
 import ResetPassword from "./login/ResetPassword";
 import { useAuth } from "./contexts/AuthContext";
+import FullScreenLoader from "./components/FullScreenLoader";
 import ProtectedRoute from "./components/ProtectedRoute";
-import DashBoard from "./pages/DashBoard"
+import DashBoard from "./pages/DashBoard";
 // const PlaceholderContent: React.FC<{
 //   title: string;
 //   children?: React.ReactNode;
@@ -66,7 +67,7 @@ const siderStyle: React.CSSProperties = {
 const App: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, isAuthenticated } = useAuth();
+  const { logout, isAuthenticated, loading } = useAuth();
   const [collapsed, setCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -164,6 +165,7 @@ const App: React.FC = () => {
         },
       }}
     >
+      {loading && <FullScreenLoader />}
       <Layout hasSider={!isMobile && isAuthenticated}>
         {!isMobile && isAuthenticated && (
           <Sider
@@ -295,7 +297,7 @@ const App: React.FC = () => {
                     path="/"
                     // element={<PlaceholderContent title="Dashboard" />}
                     element={<DashBoard />}
-                />
+                  />
                   <Route path="/users" element={<Users />} />
                   <Route path="/pricing" element={<DriverPricing />} />
                   <Route path="/drivers" element={<Drivers />} />

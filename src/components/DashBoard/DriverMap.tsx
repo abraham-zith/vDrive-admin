@@ -22,7 +22,7 @@ const DriverMap: React.FC<DriverMapProps> = ({ driverLocations = [] }) => {
   return (
     <>
       <h1 className="text-xl font-bold">Driver Locations & Active Zones</h1>
-      <p className="text-gray-600 text-md">
+      <p className="text-gray-600 text-md py-2">
         Interactive map showing real-time driver positions and demand hotspots.
         Drag to explore, click on drivers for details.
       </p>
