@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Segmented, Typography } from "antd";
+import { Segmented, Typography, Button, Card } from "antd";
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import LocationConfiguration from "../components/DriverPricing/LocationConfiguration";
 import DriverTimeSlotsAndPricing, {
@@ -8,9 +9,11 @@ import DriverTimeSlotsAndPricing, {
 import HotspotConfiguration from "../components/DriverPricing/HotspotConfiguration";
 import PricingPreview from "../components/DriverPricing/PricingPreview";
 import HotspotTypes from "../components/DriverPricing/HotspotTypes";
+import TitleBar from "../components/TitleBarCommon/TitleBar";
 
 const DriverPricing = () => {
   const [activeTab, setActiveTab] = useState("configuration");
+  const navigate = useNavigate();
   const [country, setCountry] = useState("India");
   const [state, setState] = useState("Tamil Nadu");
   const [district, setDistrict] = useState("Kanchipuram");
@@ -50,88 +53,115 @@ const DriverPricing = () => {
   const [multiplier, setMultiplier] = useState(1);
 
   return (
-    <div className="h-full w-full overflow-y-auto">
-      <div className="flex justify-center px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
-        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col">
-          <Typography.Title level={2} className="text-xl sm:text-2xl">
-            Driver Pricing Management
-          </Typography.Title>
-          <Typography.Text className="text-sm sm:text-base">
-            Configure dynamic pricing rules for different locations and time
-            periods
-          </Typography.Text>
-
-          <div className="w-full my-4">
-            <Segmented<string>
-              options={[
-                {
-                  label: "Configuration",
-                  className: "w-full",
-                  value: "configuration",
-                },
-                {
-                  label: "Hotspot Types",
-                  className: "w-full",
-                  value: "hotspot-types",
-                },
-              ]}
-              size="large"
-              className="w-full"
-              value={activeTab}
-              onChange={setActiveTab}
-            />
+    <div className="h-full w-full">
+      <div className="h-full flex justify-center px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
+        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col gap-2">
+          <div className="flex-grow overflow-y-auto flex flex-col custom-scrollbar">
+            <TitleBar
+              title="Add Pricing"
+              description="Configure pricing for different user types and time slots"
+            >
+              <div className="w-full my-4">
+                <Segmented<string>
+                  options={[
+                    {
+                      label: "Configuration",
+                      className: "w-full",
+                      value: "configuration",
+                    },
+                    {
+                      label: "Hotspot Types",
+                      className: "w-full",
+                      value: "hotspot-types",
+                    },
+                  ]}
+                  size="large"
+                  className="w-full"
+                  value={activeTab}
+                  onChange={setActiveTab}
+                />
+              </div>
+              {activeTab === "configuration" ? (
+                <div className="w-full flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-8 my-4">
+                  <div className="w-full lg:w-2/3 flex flex-col gap-4">
+                    <LocationConfiguration
+                      country={country}
+                      setCountry={setCountry}
+                      state={state}
+                      setState={setState}
+                      district={district}
+                      setDistrict={setDistrict}
+                      area={area}
+                      setArea={setArea}
+                      pincode={pincode}
+                      setPincode={setPincode}
+                      globalPrice={globalPrice}
+                      setGlobalPrice={setGlobalPrice}
+                    />
+                    <HotspotConfiguration
+                      hotspotEnabled={hotspotEnabled}
+                      setHotspotEnabled={setHotspotEnabled}
+                      hotspotType={hotspotType}
+                      setHotspotType={setHotspotType}
+                      multiplier={multiplier}
+                      setMultiplier={setMultiplier}
+                    />
+                    <DriverTimeSlotsAndPricing
+                      timeSlots={timeSlots}
+                      setTimeSlots={setTimeSlots}
+                      hotspotEnabled={hotspotEnabled}
+                      hotspotType={hotspotType}
+                      multiplier={multiplier}
+                      globalPrice={globalPrice}
+                    />
+                  </div>
+                  <div className="w-full lg:w-1/3">
+                    <PricingPreview
+                      country={country}
+                      state={state}
+                      district={district}
+                      area={area}
+                      pincode={pincode}
+                      timeSlots={timeSlots}
+                      hotspotEnabled={hotspotEnabled}
+                      hotspotType={hotspotType}
+                      multiplier={multiplier}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <HotspotTypes />
+              )}
+            </TitleBar>
           </div>
-          {activeTab === "configuration" ? (
-            <div className="w-full flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-8 my-4">
-              <div className="w-full lg:w-2/3 flex flex-col gap-4">
-                <LocationConfiguration
-                  country={country}
-                  setCountry={setCountry}
-                  state={state}
-                  setState={setState}
-                  district={district}
-                  setDistrict={setDistrict}
-                  area={area}
-                  setArea={setArea}
-                  pincode={pincode}
-                  setPincode={setPincode}
-                  globalPrice={globalPrice}
-                  setGlobalPrice={setGlobalPrice}
-                />
-                <HotspotConfiguration
-                  hotspotEnabled={hotspotEnabled}
-                  setHotspotEnabled={setHotspotEnabled}
-                  hotspotType={hotspotType}
-                  setHotspotType={setHotspotType}
-                  multiplier={multiplier}
-                  setMultiplier={setMultiplier}
-                />
-                <DriverTimeSlotsAndPricing
-                  timeSlots={timeSlots}
-                  setTimeSlots={setTimeSlots}
-                  hotspotEnabled={hotspotEnabled}
-                  hotspotType={hotspotType}
-                  multiplier={multiplier}
-                  globalPrice={globalPrice}
-                />
-              </div>
-              <div className="w-full lg:w-1/3">
-                <PricingPreview
-                  country={country}
-                  state={state}
-                  district={district}
-                  area={area}
-                  pincode={pincode}
-                  timeSlots={timeSlots}
-                  hotspotEnabled={hotspotEnabled}
-                  hotspotType={hotspotType}
-                  multiplier={multiplier}
-                />
-              </div>
-            </div>
-          ) : (
-            <HotspotTypes />
-          )}
+          <div className="w-full">
+            {activeTab === "configuration" ? (
+              <Card className="w-full mt-auto">
+                <div className="flex flex-col sm:flex-row justify-end gap-2">
+                  <Button
+                    className="w-full sm:w-auto"
+                    onClick={() => navigate("/PricingAndFareRules")}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="primary"
+                    className="w-full sm:w-auto"
+                    // onClick={handleSave}
+                  >
+                    Save Rule
+                  </Button>
+                  <Button
+                    type="primary"
+                    className="w-full sm:w-auto"
+                    style={{ background: "#4CAF50" }}
+                  >
+                    Save & Add Another
+                  </Button>
+                </div>
+              </Card>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

@@ -116,9 +116,9 @@ const App: React.FC = () => {
       icon: <TeamOutlined />,
     },
     {
-      label: <Link to="/pricing">Pricing</Link>,
-      key: "/pricing",
-      icon: <DollarOutlined />,
+      label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>,
+      key: "/PricingAndFareRules",
+      icon: <FaFileContract />,
     },
     {
       label: <Link to="/drivers">Drivers</Link>,
@@ -129,11 +129,6 @@ const App: React.FC = () => {
       label: <Link to="/admins">Admins</Link>,
       key: "/admins",
       icon: <RiAdminLine />,
-    },
-    {
-      label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>,
-      key: "/PricingAndFareRules",
-      icon: <FaFileContract />,
     },
   ];
   return (
@@ -184,7 +179,11 @@ const App: React.FC = () => {
                 <Menu
                   theme="dark"
                   mode="inline"
-                  selectedKeys={[location.pathname]}
+                  selectedKeys={
+                    location.pathname.startsWith("/PricingAndFareRules")
+                      ? ["/PricingAndFareRules"]
+                      : [location.pathname]
+                  }
                   items={menuItems}
                   className="font-medium"
                 />
@@ -293,19 +292,16 @@ const App: React.FC = () => {
             >
               <Routes>
                 <Route element={<ProtectedRoute />}>
-                  <Route
-                    path="/"
-                    // element={<PlaceholderContent title="Dashboard" />}
-                    element={<DashBoard />}
-                  />
+                  <Route path="/" element={<DashBoard />} />
                   <Route path="/users" element={<Users />} />
-                  <Route path="/pricing" element={<DriverPricing />} />
                   <Route path="/drivers" element={<Drivers />} />
                   <Route path="/admins" element={<Admins />} />
                   <Route
                     path="/PricingAndFareRules"
                     element={<PricingAndFareRules />}
-                  />
+                  >
+                    <Route path="pricing" element={<DriverPricing />} />
+                  </Route>
                 </Route>
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/login" element={<Login />} />

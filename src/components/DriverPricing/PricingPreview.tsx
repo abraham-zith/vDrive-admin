@@ -154,24 +154,6 @@ const PricingPreview = ({
             </div>
           ))}
         </div>
-
-        <div className="flex flex-col sm:flex-row justify-end gap-2">
-          <Button className="w-full sm:w-auto">Cancel</Button>
-          <Button
-            type="primary"
-            className="w-full sm:w-auto"
-            onClick={handleSave}
-          >
-            Save Rule
-          </Button>
-          <Button
-            type="primary"
-            className="w-full sm:w-auto"
-            style={{ background: "#4CAF50" }}
-          >
-            Save & Add Another
-          </Button>
-        </div>
       </div>
     </Card>
   );

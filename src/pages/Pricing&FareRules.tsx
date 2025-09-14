@@ -25,9 +25,10 @@ import {
   EyeOutlined,
   EditOutlined,
 } from "@ant-design/icons";
-import { FiUsers } from "react-icons/fi";
+import { IoAdd } from "react-icons/io5";
 import { utils, writeFile } from "xlsx"; // ← add this
 import TitleBar from "../components/TitleBarCommon/TitleBar";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 
 import { CloseOutlined } from "@ant-design/icons";
 import { GrLocation } from "react-icons/gr";
@@ -496,7 +497,9 @@ const apiResponse: ApiItem[] = [
 ];
 
 const PricingAndFareRules: React.FC = () => {
+  const location = useLocation();
   const [filterForm] = Form.useForm<FilterValues>();
+  const navigate = useNavigate();
 
   // put this near your other helpers
   const dedupeRows = (rows: PriceSetting[]) => {
@@ -974,13 +977,17 @@ const PricingAndFareRules: React.FC = () => {
     },
   ];
 
+  if (location.pathname === "/PricingAndFareRules/pricing") {
+    return <Outlet />;
+  }
+
   return (
     <TitleBar
       title="Driver Price Management"
       description="Advanced admin interface for pricing control"
       extraContent={
         <div className="flex items-center gap-2">
-          <div>
+          {/* <div>
             <Button type="primary">
               <FiUsers />
               {filteredTableData.length} Settings
@@ -1004,6 +1011,15 @@ const PricingAndFareRules: React.FC = () => {
                 <polyline points="16 7 22 7 22 13"></polyline>
               </svg>
               Activity
+            </Button>
+          </div> */}
+          <div>
+            <Button
+              type="primary"
+              icon={<IoAdd />}
+              onClick={() => navigate("/PricingAndFareRules/pricing")}
+            >
+              Add Pricing
             </Button>
           </div>
         </div>
