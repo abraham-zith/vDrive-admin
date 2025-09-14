@@ -13,7 +13,7 @@ interface DriverMapProps {
 
 const DriverMap: React.FC<DriverMapProps> = ({ driverLocations = [] }) => {
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: "AIzaSyBZ3mogcxlhD3vpX0OGRf6A8CZoiKIp8I4",
+    googleMapsApiKey: import.meta.env.GOOGLE_MAP_API,
   });
 
   if (loadError) return <div>Error loading map</div>;

@@ -31,15 +31,15 @@ import ResetPassword from "./login/ResetPassword";
 import { useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashBoard from "./pages/DashBoard"
-const PlaceholderContent: React.FC<{
-  title: string;
-  children?: React.ReactNode;
-}> = ({ title, children }) => (
-  <div>
-    <h2 className="text-2xl font-semibold mb-4">{title}</h2>
-    {children || <p>Content for the {title.toLowerCase()} page.</p>}
-  </div>
-);
+// const PlaceholderContent: React.FC<{
+//   title: string;
+//   children?: React.ReactNode;
+// }> = ({ title, children }) => (
+//   <div>
+//     <h2 className="text-2xl font-semibold mb-4">{title}</h2>
+//     {children || <p>Content for the {title.toLowerCase()} page.</p>}
+//   </div>
+// );
 
 const { Content, Sider, Header } = Layout;
 
