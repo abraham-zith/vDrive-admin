@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Segmented, Typography, Button, Card } from "antd";
+import { Segmented, Button, Card } from "antd";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import LocationConfiguration from "../components/DriverPricing/LocationConfiguration";

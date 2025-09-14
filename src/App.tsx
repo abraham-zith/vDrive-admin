@@ -24,7 +24,6 @@ import DriverPricing from "./pages/DriverPricing";
 import Drivers from "./pages/Drivers";
 import PricingAndFareRules from "./pages/Pricing&FareRules";
 import { RiAdminLine } from "react-icons/ri";
-import { FaFileContract } from "react-icons/fa";
 import SignUp from "./signup/Signup";
 import Login from "./login/Login";
 import ResetPassword from "./login/ResetPassword";
@@ -118,7 +117,7 @@ const App: React.FC = () => {
     {
       label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>,
       key: "/PricingAndFareRules",
-      icon: <FaFileContract />,
+      icon: <DollarOutlined />,
     },
     {
       label: <Link to="/drivers">Drivers</Link>,

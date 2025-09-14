@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, Typography, Tag, Button } from "antd";
+import { Card, Typography, Tag } from "antd";
 import { MdOutlineLocationOn } from "react-icons/md";
 import { BsClock } from "react-icons/bs";
 import { ThunderboltOutlined } from "@ant-design/icons";
@@ -63,11 +63,6 @@ const PricingPreview = ({
     "normal-user": <Tag color="default">Normal User</Tag>,
     "premium-user": <Tag color="gold">Premium User</Tag>,
     "elite-user": <Tag color="blue">Elite User</Tag>,
-  };
-
-  const handleSave = async () => {
-    try {
-    } catch (error) {}
   };
 
   return (
