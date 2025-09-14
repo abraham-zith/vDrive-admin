@@ -10,18 +10,26 @@ import {
 import type { MenuProps } from "antd";
 import { Layout, Menu, Avatar, ConfigProvider, Button, Drawer } from "antd";
 import logo from "/logo1.png";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import Users from "./pages/Users";
 import Admins from "./pages/Admins";
-import PricingAndFareRules from "./pages/Pricing&FareRules";
 import { PiSteeringWheel } from "react-icons/pi";
 import DriverPricing from "./pages/DriverPricing";
 import Drivers from "./pages/Drivers";
+import PricingAndFareRules from "./pages/Pricing&FareRules";
 import { RiAdminLine } from "react-icons/ri";
+import { FaFileContract } from "react-icons/fa";
 import SignUp from "./signup/Signup";
 import Login from "./login/Login";
 import ResetPassword from "./login/ResetPassword";
-import { FaFileContract } from "react-icons/fa";
+import { useAuth } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const PlaceholderContent: React.FC<{
   title: string;
@@ -55,9 +63,10 @@ const siderStyle: React.CSSProperties = {
   bottom: 0,
   zIndex: 100,
 };
-
-const AppContent: React.FC = () => {
+const App: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, isAuthenticated } = useAuth();
   const [collapsed, setCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -121,8 +130,8 @@ const AppContent: React.FC = () => {
       icon: <RiAdminLine />,
     },
     {
-      label: <Link to="/pricing-and-fare-Rules">Pricing & Fare Rules</Link>,
-      key: "/pricing-and-fare-Rules",
+      label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>,
+      key: "/PricingAndFareRules",
       icon: <FaFileContract />,
     },
   ];
@@ -155,8 +164,8 @@ const AppContent: React.FC = () => {
         },
       }}
     >
-      <Layout hasSider={!isMobile}>
-        {!isMobile && (
+      <Layout hasSider={!isMobile && isAuthenticated}>
+        {!isMobile && isAuthenticated && (
           <Sider
             style={siderStyle}
             collapsed={collapsed}
@@ -220,6 +229,10 @@ const AppContent: React.FC = () => {
                       label: "Logout",
                       icon: <LogoutOutlined />,
                       danger: true,
+                      onClick: async () => {
+                        await logout();
+                        navigate("/login");
+                      },
                     },
                   ]}
                   className="bg-transparent border-0 mt-2 font-medium"
@@ -231,11 +244,11 @@ const AppContent: React.FC = () => {
 
         <Layout
           style={{
-            marginLeft: isMobile ? 0 : collapsed ? 80 : 250,
+            marginLeft: isMobile || !isAuthenticated ? 0 : collapsed ? 80 : 250,
             transition: "margin-left 0.2s",
           }}
         >
-          {isMobile && (
+          {isMobile && isAuthenticated && (
             <Header
               style={{
                 padding: "0 16px",
@@ -273,24 +286,25 @@ const AppContent: React.FC = () => {
           <Content>
             <div
               className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
-                isMobile ? "pt-16 h-[100dvh]" : "h-[100dvh]"
+                isMobile && isAuthenticated ? "pt-16 h-[100dvh]" : "h-[100dvh]"
               }`}
             >
               <Routes>
-                <Route
-                  path="/"
-                  element={<PlaceholderContent title="Dashboard" />}
-                />
-                <Route path="/users" element={<Users />} />
-                <Route path="/pricing" element={<DriverPricing />} />
-                <Route path="/drivers" element={<Drivers />} />
-                <Route path="/admins" element={<Admins />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route
+                    path="/"
+                    element={<PlaceholderContent title="Dashboard" />}
+                  />
+                  <Route path="/users" element={<Users />} />
+                  <Route path="/pricing" element={<DriverPricing />} />
+                  <Route path="/drivers" element={<Drivers />} />
+                  <Route path="/admins" element={<Admins />} />
+                  <Route
+                    path="/PricingAndFareRules"
+                    element={<PricingAndFareRules />}
+                  />
+                </Route>
                 <Route path="/signup" element={<SignUp />} />
-                <Route
-                  path="/pricing-and-fare-rules"
-                  element={<PricingAndFareRules />}
-                />
-
                 <Route path="/login" element={<Login />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
               </Routes>
@@ -298,53 +312,55 @@ const AppContent: React.FC = () => {
           </Content>
         </Layout>
 
-        <Drawer
-          title={
-            <div className="flex items-center gap-2">
-              <img height={32} width={32} src={logo} alt="" />
-              <span>vDrive Admin</span>
-            </div>
-          }
-          placement="left"
-          closable={false}
-          onClose={onCloseDrawer}
-          open={drawerVisible}
-          width={250}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
-            }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+        {isAuthenticated && (
+          <Drawer
+            title={
+              <div className="flex items-center gap-2">
+                <img height={32} width={32} src={logo} alt="" />
+                <span>vDrive Admin</span>
+              </div>
+            }
+            placement="left"
+            closable={false}
+            onClose={onCloseDrawer}
+            open={drawerVisible}
+            width={250}
           >
-            <div style={{ flex: 1 }}>
-              <Menu
-                theme="light"
-                mode="vertical"
-                selectedKeys={[location.pathname]}
-                items={menuItems}
-              />
-            </div>
-            <div className="p-4 border-t">
-              <div className="flex items-center gap-3">
-                <Avatar size="large" icon={<UserOutlined />} />
-                <div>
-                  <div className="font-medium">Admin User</div>
-                  <div className="text-xs text-gray-500">admin@example.com</div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div style={{ flex: 1 }}>
+                <Menu
+                  theme="light"
+                  mode="vertical"
+                  selectedKeys={[location.pathname]}
+                  items={menuItems}
+                />
+              </div>
+              <div className="p-4 border-t">
+                <div className="flex items-center gap-3">
+                  <Avatar size="large" icon={<UserOutlined />} />
+                  <div>
+                    <div className="font-medium">Admin User</div>
+                    <div className="text-xs text-gray-500">
+                      admin@example.com
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Drawer>
+          </Drawer>
+        )}
       </Layout>
     </ConfigProvider>
   );
 };
-
-const App: React.FC = () => <AppContent />;
 
 export default App;
