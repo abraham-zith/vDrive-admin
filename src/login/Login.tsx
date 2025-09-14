@@ -1,107 +1,175 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Input, Typography } from "antd";
+import type { InputRef } from "antd";
+import { useAuth } from "../contexts/AuthContext";
 
 const { Text } = Typography;
 
-export interface Login{
-    userName:string,
-    password:string
+export interface Login {
+  userName: string;
+  password: string;
 }
-const Login =()=>{
-    const navigate= useNavigate();
- const [login,setLogin]=useState<Login>({
-    userName:"",
-    password:""
- });
- const [errors, setErrors] = useState<Record<string, string>>({});
+const Login = () => {
+  const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
+  const [login, setLogin] = useState<Login>({
+    userName: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
- const handleLogin =(evt: React.ChangeEvent<HTMLInputElement>)=>{
-    const {name,value} =evt?.target;
-    setLogin((prev)=>({
-        ...prev,
-        [name]:value
-    }))
- }
+  const userNameRef = useRef<InputRef>(null);
+  const passwordRef = useRef<InputRef>(null);
 
- const validate =()=>{
+  const handleLogin = (evt: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = evt?.target;
+    setLogin((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleKeyDown = (
+    evt: React.KeyboardEvent<HTMLInputElement>,
+    field: string
+  ) => {
+    if (evt.key === "Enter") {
+      if (field === "userName" && login.userName.trim()) {
+        passwordRef.current?.focus();
+      } else if (
+        field === "password" &&
+        login.userName.trim() &&
+        login.password.trim()
+      ) {
+        handleSubmit();
+      }
+    }
+  };
+
+  const validate = () => {
     let newErrors: Record<string, string> = {};
     if (!login?.userName) {
-        
-        newErrors.userName = "Registered Email/Mobile Number is required";
- }
- if(!login?.password){
-    newErrors.password ="Password is required"
- }
- setErrors(newErrors);
- return Object.keys(newErrors)?.length === 0;
-}
-
- const handleSubmit =()=>{
-    if (validate()) {
-     console.log("Login successful");
-     navigate('/')
+      newErrors.userName = "Registered Email/Mobile Number is required";
     }
- }
+    if (!login?.password) {
+      newErrors.password = "Password is required";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors)?.length === 0;
+  };
 
- const handleForgotPassword =()=>{
-    navigate('/reset-password')
- }
+  const handleSubmit = async (evt?: React.FormEvent) => {
+    evt?.preventDefault();
+    if (validate()) {
+      try {
+        await authLogin(login);
+        navigate("/");
+      } catch (error) {
+        console.error("Login failed", error);
+      }
+    }
+  };
 
- const handleSignUp =()=>{
-    navigate('/signup')
- }
+  // const handleForgotPassword = () => {
+  //   navigate("/reset-password");
+  // };
 
- return (
-   <div className="max-w-[400px] border border-gray-300 rounded-xl shadow-md bg-white flex flex-col gap-4 p-6 my-10 mx-auto">
-     <div>
-       <Text>Username<Text type ="danger">*</Text></Text>
-       <Input
-         name="userName"
-         placeholder="Enter registered Email/Mobile Number"
-         value={login?.userName}
-         onChange={handleLogin}
-       />
-        {errors?.userName && (
-          <div className="text-red-500 text-xs pt-1.5">{errors?.userName}</div>
-        )}
-     </div>
-     <div>
-       <Text>Password<Text type ="danger">*</Text></Text>
-       <Input.Password
-         name="password"
-         placeholder="Enter Password"
-         value={login?.password}
-         onChange={handleLogin}
-       />
-        {errors?.password && (
-          <div className="text-red-500 text-xs pt-1.5">{errors?.password}</div>
-        )}
-     </div>
-        <Button type="link" block onClick={handleForgotPassword} style={{display:"flex",justifyContent:"flex-end"}}>Forgot password?</Button>
-    <div className="flex flex-col items-center gap-[10px]">
-    <Button
-        type="primary"
-        block
-        onClick={handleSubmit}
-        style={{ marginTop: 16,width:75 }}
+  // const handleSignUp = () => {
+  //   navigate("/signup");
+  // };
+
+  return (
+    <div className="h-full flex items-center justify-center bg-gray-50 back-gradient-login">
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-[400px] border border-gray-300 rounded-xl shadow-md bg-white flex flex-col gap-4 p-6 w-full mx-4"
       >
-        Login
-      </Button>
-      <div>
-        <Text>Or Sign Up using
-       <Text> <Button  
+        <div className="flex justify-center mb-4">
+          <img src="/logo1.png" alt="Logo" className="h-16 w-auto" />
+        </div>
+        <div className="w-full flex justify-center text-2xl font-semibold mb-4 text-gray-700">
+          Welcome Admin
+        </div>
+        <div>
+          <Text>
+            Username<Text type="danger">*</Text>
+          </Text>
+          <Input
+            ref={userNameRef}
+            size="large"
+            name="userName"
+            placeholder="Enter registered Email/Mobile Number"
+            value={login?.userName}
+            onChange={handleLogin}
+            onKeyDown={(e) => handleKeyDown(e, "userName")}
+          />
+          {errors?.userName && (
+            <div className="text-red-500 text-xs pt-1.5">
+              {errors?.userName}
+            </div>
+          )}
+        </div>
+        <div>
+          <Text>
+            Password<Text type="danger">*</Text>
+          </Text>
+          <Input.Password
+            ref={passwordRef}
+            size="large"
+            name="password"
+            placeholder="Enter Password"
+            value={login?.password}
+            onChange={handleLogin}
+            onKeyDown={(e) => handleKeyDown(e, "password")}
+          />
+          {errors?.password && (
+            <div className="text-red-500 text-xs pt-1.5">
+              {errors?.password}
+            </div>
+          )}
+        </div>
+        {/* <Button
         type="link"
         block
-        onClick={handleSignUp}
-        style={{width:75}}
-        >
-        Sign Up
-        </Button></Text></Text> </div>
+        onClick={handleForgotPassword}
+        style={{ display: "flex", justifyContent: "flex-end" }}
+      >
+        Forgot password?
+      </Button> */}
+        <div className="flex flex-col items-center gap-[10px]">
+          <Button
+            size="large"
+            type="primary"
+            block
+            onClick={handleSubmit}
+            style={{ marginTop: 16, width: 75 }}
+          >
+            Login
+          </Button>
+          {/* <div>
+          <Text>
+            Or Sign Up using
+            <Text>
+              {" "}
+              <Button
+                type="link"
+                block
+                onClick={handleSignUp}
+                style={{ width: 75 }}
+              >
+                Sign Up
+              </Button>
+            </Text>
+          </Text>{" "}
+        </div> */}
+          <div className="w-full justify-center flex text-xs text-gray-400 mt-4">
+            © 2025 vdrive. All rights reserved.
+          </div>
         </div>
-   </div>
- );
-
-}
+      </form>
+    </div>
+  );
+};
 
 export default Login;

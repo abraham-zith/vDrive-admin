@@ -6,6 +6,15 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(),tailwindcss()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://v-drive-be.onrender.com',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
   build: {
     chunkSizeWarningLimit: 1000, // Set to 1000 kB to suppress the warning
   },

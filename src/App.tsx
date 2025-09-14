@@ -10,16 +10,26 @@ import {
 import type { MenuProps } from "antd";
 import { Layout, Menu, Avatar, ConfigProvider, Button, Drawer } from "antd";
 import logo from "/logo1.png";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import Users from "./pages/Users";
 import Admins from "./pages/Admins";
 import { PiSteeringWheel } from "react-icons/pi";
 import DriverPricing from "./pages/DriverPricing";
 import Drivers from "./pages/Drivers";
+import PricingAndFareRules from "./pages/Pricing&FareRules";
 import { RiAdminLine } from "react-icons/ri";
+import { FaFileContract } from "react-icons/fa";
 import SignUp from "./signup/Signup";
 import Login from "./login/Login";
 import ResetPassword from "./login/ResetPassword";
+import { useAuth } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 import DashBoard from "./pages/DashBoard"
 const PlaceholderContent: React.FC<{
   title: string;
@@ -34,11 +44,11 @@ const PlaceholderContent: React.FC<{
 const { Content, Sider, Header } = Layout;
 
 const Logo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => (
-  <div className="flex items-center justify-center gap-3 px-4 h-[64px] border-b border-gray-700">
+  <div className="flex items-center justify-center gap-3 px-4 h-[64px] border-b border-gray-200">
     <img height={32} width={32} src={logo} alt="" />
 
     {!collapsed && (
-      <span className="font-semibold text-xl text-white whitespace-nowrap">
+      <span className="font-semibold text-xl text-black whitespace-nowrap">
         vDrive Admin
       </span>
     )}
@@ -53,9 +63,10 @@ const siderStyle: React.CSSProperties = {
   bottom: 0,
   zIndex: 100,
 };
-
-const AppContent: React.FC = () => {
+const App: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, isAuthenticated } = useAuth();
   const [collapsed, setCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -118,19 +129,43 @@ const AppContent: React.FC = () => {
       key: "/admins",
       icon: <RiAdminLine />,
     },
+    {
+      label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>,
+      key: "/PricingAndFareRules",
+      icon: <FaFileContract />,
+    },
   ];
   return (
     <ConfigProvider
       theme={{
+        token: {
+          colorPrimary: "#1d2a5c",
+          colorPrimaryBg: "#ffffff",
+        },
         components: {
+          Layout: {
+            siderBg: "#FFFFFF",
+          },
+          Menu: {
+            darkItemBg: "#FFFFFF",
+            darkPopupBg: "#FFFFFF",
+            darkItemSelectedBg: "#1D2A5C",
+            darkItemSelectedColor: "#FFFFFF",
+            darkItemColor: "#8A92A6",
+            darkItemHoverColor: "#1D2A5C",
+          },
+          Typography: {
+            titleMarginBottom: 0,
+            titleMarginTop: 0,
+          },
           Segmented: {
             trackBg: "rgb(241,245,249)",
           },
         },
       }}
     >
-      <Layout hasSider={!isMobile}>
-        {!isMobile && (
+      <Layout hasSider={!isMobile && isAuthenticated}>
+        {!isMobile && isAuthenticated && (
           <Sider
             style={siderStyle}
             collapsed={collapsed}
@@ -149,14 +184,15 @@ const AppContent: React.FC = () => {
                   mode="inline"
                   selectedKeys={[location.pathname]}
                   items={menuItems}
+                  className="font-medium"
                 />
               </div>
 
               <div
-                className={`flex-shrink-0 p-4 border-t border-gray-700 block`}
+                className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
               >
                 <div
-                  className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer ${
+                  className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
                     collapsed ? "justify-center" : "gap-3"
                   }`}
                 >
@@ -171,11 +207,11 @@ const AppContent: React.FC = () => {
                     }`}
                   >
                     <div className="overflow-hidden">
-                      <div className="flex flex-col text-white">
+                      <div className="flex flex-col text-black">
                         <span className="font-medium whitespace-nowrap">
                           Admin User
                         </span>
-                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
                           admin@example.com
                         </span>
                       </div>
@@ -193,9 +229,13 @@ const AppContent: React.FC = () => {
                       label: "Logout",
                       icon: <LogoutOutlined />,
                       danger: true,
+                      onClick: async () => {
+                        await logout();
+                        navigate("/login");
+                      },
                     },
                   ]}
-                  className="bg-transparent border-0 mt-2"
+                  className="bg-transparent border-0 mt-2 font-medium"
                 />
               </div>
             </div>
@@ -204,11 +244,11 @@ const AppContent: React.FC = () => {
 
         <Layout
           style={{
-            marginLeft: isMobile ? 0 : collapsed ? 80 : 250,
+            marginLeft: isMobile || !isAuthenticated ? 0 : collapsed ? 80 : 250,
             transition: "margin-left 0.2s",
           }}
         >
-          {isMobile && (
+          {isMobile && isAuthenticated && (
             <Header
               style={{
                 padding: "0 16px",
@@ -246,19 +286,25 @@ const AppContent: React.FC = () => {
           <Content>
             <div
               className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
-                isMobile ? "pt-16 h-[100dvh]" : "h-[100dvh]"
+                isMobile && isAuthenticated ? "pt-16 h-[100dvh]" : "h-[100dvh]"
               }`}
             >
               <Routes>
-                <Route
-                  path="/"
-                  // element={<PlaceholderContent title="Dashboard" />}
-                  element={<DashBoard />}
+                <Route element={<ProtectedRoute />}>
+                  <Route
+                    path="/"
+                    // element={<PlaceholderContent title="Dashboard" />}
+                    element={<DashBoard />}
                 />
-                <Route path="/users" element={<Users />} />
-                <Route path="/pricing" element={<DriverPricing />} />
-                <Route path="/drivers" element={<Drivers />} />
-                <Route path="/admins" element={<Admins />} />
+                  <Route path="/users" element={<Users />} />
+                  <Route path="/pricing" element={<DriverPricing />} />
+                  <Route path="/drivers" element={<Drivers />} />
+                  <Route path="/admins" element={<Admins />} />
+                  <Route
+                    path="/PricingAndFareRules"
+                    element={<PricingAndFareRules />}
+                  />
+                </Route>
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
@@ -267,53 +313,55 @@ const AppContent: React.FC = () => {
           </Content>
         </Layout>
 
-        <Drawer
-          title={
-            <div className="flex items-center gap-2">
-              <img height={32} width={32} src={logo} alt="" />
-              <span>vDrive Admin</span>
-            </div>
-          }
-          placement="left"
-          closable={false}
-          onClose={onCloseDrawer}
-          open={drawerVisible}
-          width={250}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
-            }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+        {isAuthenticated && (
+          <Drawer
+            title={
+              <div className="flex items-center gap-2">
+                <img height={32} width={32} src={logo} alt="" />
+                <span>vDrive Admin</span>
+              </div>
+            }
+            placement="left"
+            closable={false}
+            onClose={onCloseDrawer}
+            open={drawerVisible}
+            width={250}
           >
-            <div style={{ flex: 1 }}>
-              <Menu
-                theme="light"
-                mode="vertical"
-                selectedKeys={[location.pathname]}
-                items={menuItems}
-              />
-            </div>
-            <div className="p-4 border-t">
-              <div className="flex items-center gap-3">
-                <Avatar size="large" icon={<UserOutlined />} />
-                <div>
-                  <div className="font-medium">Admin User</div>
-                  <div className="text-xs text-gray-500">admin@example.com</div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div style={{ flex: 1 }}>
+                <Menu
+                  theme="light"
+                  mode="vertical"
+                  selectedKeys={[location.pathname]}
+                  items={menuItems}
+                />
+              </div>
+              <div className="p-4 border-t">
+                <div className="flex items-center gap-3">
+                  <Avatar size="large" icon={<UserOutlined />} />
+                  <div>
+                    <div className="font-medium">Admin User</div>
+                    <div className="text-xs text-gray-500">
+                      admin@example.com
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </Drawer>
+          </Drawer>
+        )}
       </Layout>
     </ConfigProvider>
   );
 };
-
-const App: React.FC = () => <AppContent />;
 
 export default App;

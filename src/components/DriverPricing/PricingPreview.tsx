@@ -65,6 +65,11 @@ const PricingPreview = ({
     "elite-user": <Tag color="blue">Elite User</Tag>,
   };
 
+  const handleSave = async () => {
+    try {
+    } catch (error) {}
+  };
+
   return (
     <Card size="small" className="w-full">
       <div className="w-full flex flex-col gap-4">
@@ -152,7 +157,11 @@ const PricingPreview = ({
 
         <div className="flex flex-col sm:flex-row justify-end gap-2">
           <Button className="w-full sm:w-auto">Cancel</Button>
-          <Button type="primary" className="w-full sm:w-auto">
+          <Button
+            type="primary"
+            className="w-full sm:w-auto"
+            onClick={handleSave}
+          >
             Save Rule
           </Button>
           <Button
