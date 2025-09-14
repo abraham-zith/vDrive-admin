@@ -960,7 +960,7 @@ const PricingAndFareRules: React.FC = () => {
     {
       title: "Actions",
       key: "actionsEdit",
-      render: (_: any, record: PriceSetting) => (
+      render: (_: any) => (
         <Space size="middle">
           <Button
             type="text"
