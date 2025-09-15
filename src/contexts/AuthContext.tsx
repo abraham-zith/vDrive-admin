@@ -11,6 +11,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const getCookie = (name: string) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift();
+  return null;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -21,7 +28,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    setIsAuthenticated(!!token);
+    const refreshToken = getCookie("refresh_token");
+
+    if (!refreshToken) {
+      // No refresh token, logout immediately
+      setIsAuthenticated(false);
+      localStorage.removeItem("accessToken");
+    } else {
+      setIsAuthenticated(!!token);
+    }
   }, []);
 
   const login = async (credentials: Login) => {
