@@ -13,6 +13,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
   extraContent,
   children,
   description,
+  className,
 }) => {
   return (
     <div className="w-full h-full flex flex-col gap-2">
@@ -26,7 +27,15 @@ const TitleBar: React.FC<TitleBarProps> = ({
 
         <div className="flex items-center space-x-2">{extraContent}</div>
       </div>
-      <div className="w-full h-full relative overflow-hidden">{children}</div>
+      <div
+        className={
+          className?.length
+            ? className
+            : "w-full h-full relative overflow-hidden"
+        }
+      >
+        {children}
+      </div>
     </div>
   );
 };
