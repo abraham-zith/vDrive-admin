@@ -160,8 +160,12 @@ const App: React.FC = () => {
       }}
     >
       {loading && <FullScreenLoader />}
-      <Layout hasSider={!isMobile && isAuthenticated}>
-        {!isMobile && isAuthenticated && (
+      <Layout
+        hasSider={
+          !isMobile && isAuthenticated && location.pathname !== "/login"
+        }
+      >
+        {!isMobile && isAuthenticated && location.pathname !== "/login" && (
           <Sider
             style={siderStyle}
             collapsed={collapsed}
@@ -244,11 +248,16 @@ const App: React.FC = () => {
 
         <Layout
           style={{
-            marginLeft: isMobile || !isAuthenticated ? 0 : collapsed ? 80 : 250,
+            marginLeft:
+              isMobile || !isAuthenticated || location.pathname === "/login"
+                ? 0
+                : collapsed
+                ? 80
+                : 250,
             transition: "margin-left 0.2s",
           }}
         >
-          {isMobile && isAuthenticated && (
+          {isMobile && isAuthenticated && location.pathname !== "/login" && (
             <Header
               style={{
                 padding: "0 16px",
@@ -279,6 +288,10 @@ const App: React.FC = () => {
                   icon={<LogoutOutlined />}
                   danger
                   style={{ fontSize: "16px" }}
+                  onClick={async () => {
+                    await logout();
+                    navigate("/login");
+                  }}
                 />
               </div>
             </Header>
@@ -286,7 +299,9 @@ const App: React.FC = () => {
           <Content>
             <div
               className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
-                isMobile && isAuthenticated ? "pt-16 h-[100dvh]" : "h-[100dvh]"
+                isMobile && isAuthenticated && location.pathname !== "/login"
+                  ? "pt-16 h-[100dvh]"
+                  : "h-[100dvh]"
               }`}
             >
               <Routes>

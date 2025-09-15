@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Input, Typography } from "antd";
 import type { InputRef } from "antd";
@@ -12,7 +12,7 @@ export interface Login {
 }
 const Login = () => {
   const navigate = useNavigate();
-  const { login: authLogin, loading } = useAuth();
+  const { login: authLogin, loading, isAuthenticated } = useAuth();
   const [login, setLogin] = useState<Login>({
     userName: "",
     password: "",
@@ -21,6 +21,12 @@ const Login = () => {
 
   const userNameRef = useRef<InputRef>(null);
   const passwordRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = evt?.target;
