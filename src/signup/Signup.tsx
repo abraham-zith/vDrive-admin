@@ -22,7 +22,7 @@ const SignUp = () => {
     alternateContact: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const handleChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = evt.target;
     if (name === "confirmPassword") {
@@ -62,7 +62,7 @@ const SignUp = () => {
       setErrors((prev) => ({ ...prev, password: "" }));
       return;
     }
-  
+
     setSignupFields((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
@@ -102,7 +102,6 @@ const SignUp = () => {
 
   const handleSubmit = () => {
     if (validate()) {
-      console.log("Form Submitted", signupFields);
       navigate("/");
     }
   };

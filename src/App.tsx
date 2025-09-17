@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import {
   TeamOutlined,
   UserOutlined,
@@ -11,26 +11,64 @@ import type { MenuProps } from "antd";
 import { Layout, Menu, Avatar, ConfigProvider, Button, Drawer } from "antd";
 import logo from "/logo1.png";
 import {
-  Routes,
-  Route,
+  createBrowserRouter,
+  RouterProvider,
   Link,
   useLocation,
   useNavigate,
+  Outlet,
 } from "react-router-dom";
-import Users from "./pages/Users";
-import Admins from "./pages/Admins";
 import { PiSteeringWheel } from "react-icons/pi";
-import DriverPricing from "./pages/DriverPricing";
-import Drivers from "./pages/Drivers";
-import PricingAndFareRules from "./pages/Pricing&FareRules";
 import { RiAdminLine } from "react-icons/ri";
-import SignUp from "./signup/Signup";
-import Login from "./login/Login";
-import ResetPassword from "./login/ResetPassword";
 import { useAuth } from "./contexts/AuthContext";
 import FullScreenLoader from "./components/FullScreenLoader";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
+
+// Loading component for route suspense
+const RouteLoadingFallback = () => (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "400px",
+      padding: "20px",
+    }}
+  >
+    <div
+      className="loader"
+      style={{
+        border: "6px solid #f3f3f3",
+        borderTop: "6px solid #1677ff",
+        borderRadius: "50%",
+        width: 40,
+        height: 40,
+        animation: "spin 1s linear infinite",
+      }}
+    />
+    <p style={{ marginTop: 16, color: "#666" }}>Loading...</p>
+    <style>
+      {`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}
+    </style>
+  </div>
+);
+
+// Lazy load heavy components for better bundle splitting
+const Users = lazy(() => import("./pages/Users"));
+const Admins = lazy(() => import("./pages/Admins"));
+const Drivers = lazy(() => import("./pages/Drivers"));
+const DriverPricing = lazy(() => import("./pages/DriverPricing"));
+const PricingAndFareRules = lazy(() => import("./pages/Pricing&FareRules"));
+const SignUp = lazy(() => import("./signup/Signup"));
+const Login = lazy(() => import("./login/Login"));
+const ResetPassword = lazy(() => import("./login/ResetPassword"));
 // const PlaceholderContent: React.FC<{
 //   title: string;
 //   children?: React.ReactNode;
@@ -63,10 +101,10 @@ const siderStyle: React.CSSProperties = {
   bottom: 0,
   zIndex: 100,
 };
-const App: React.FC = () => {
+const RootLayout: React.FC = () => {
+  const { logout, isAuthenticated, loading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, isAuthenticated, loading } = useAuth();
   const [collapsed, setCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -84,6 +122,12 @@ const App: React.FC = () => {
   const showDrawer = () => {
     setDrawerVisible(true);
   };
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated && location.pathname !== "/login") {
+      navigate("/login");
+    }
+  }, [isAuthenticated, loading, location, navigate]);
 
   const onCloseDrawer = () => {
     setDrawerVisible(false);
@@ -304,23 +348,7 @@ const App: React.FC = () => {
                   : "h-[100dvh]"
               }`}
             >
-              <Routes>
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/" element={<DashBoard />} />
-                  <Route path="/users" element={<Users />} />
-                  <Route path="/drivers" element={<Drivers />} />
-                  <Route path="/admins" element={<Admins />} />
-                  <Route
-                    path="/PricingAndFareRules"
-                    element={<PricingAndFareRules />}
-                  >
-                    <Route path="pricing" element={<DriverPricing />} />
-                  </Route>
-                </Route>
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-              </Routes>
+              <Outlet />
             </div>
           </Content>
         </Layout>
@@ -375,5 +403,87 @@ const App: React.FC = () => {
     </ConfigProvider>
   );
 };
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      { index: true, element: <DashBoard /> },
+      {
+        path: "users",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Users />
+          </Suspense>
+        ),
+      },
+      {
+        path: "admins",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Admins />
+          </Suspense>
+        ),
+      },
+      {
+        path: "drivers",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Drivers />
+          </Suspense>
+        ),
+      },
+      {
+        path: "PricingAndFareRules",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <PricingAndFareRules />
+          </Suspense>
+        ),
+        children: [
+          {
+            path: "pricing",
+            element: (
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <DriverPricing />
+              </Suspense>
+            ),
+          },
+        ],
+      },
+    ],
+  },
+  {
+    path: "/signup",
+    element: (
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <SignUp />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/login",
+    element: (
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <Login />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/reset-password",
+    element: (
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <ResetPassword />
+      </Suspense>
+    ),
+  },
+]);
+
+const App = () => (
+  <ErrorBoundary>
+    <RouterProvider router={router} />
+  </ErrorBoundary>
+);
 
 export default App;
