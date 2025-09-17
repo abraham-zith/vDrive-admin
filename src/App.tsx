@@ -379,9 +379,13 @@ const RootLayout: React.FC = () => {
             >
               <div style={{ flex: 1 }}>
                 <Menu
-                  theme="light"
+                  theme="dark"
                   mode="vertical"
-                  selectedKeys={[location.pathname]}
+                  selectedKeys={
+                    location.pathname.startsWith("/PricingAndFareRules")
+                      ? ["/PricingAndFareRules"]
+                      : [location.pathname]
+                  }
                   items={menuItems}
                 />
               </div>
