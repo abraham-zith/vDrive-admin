@@ -63,7 +63,6 @@ const ResetPassword = () => {
     }
     setErrors(newErrors);
     if (Object.keys(newErrors).length === 0) {
-      console.log("Password reset success:", fields);
       //  call backend
     }
   };
