@@ -73,6 +73,30 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+export const getCurrentUser = createAsyncThunk(
+  "auth/getCurrentUser",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/api/auth/me");
+
+      const data = response.data.data;
+      console.log("Current user data:", data);
+      return {
+        id: data.id || "1",
+        email: data.contact || "admin@example.com",
+        name: data.name || "Admin User",
+        role: data.role || "admin",
+      };
+    } catch (error: any) {
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to get current user"
+      );
+    }
+  }
+);
+
 // Initial state
 const initialState: AuthState = {
   user: null,
@@ -131,6 +155,22 @@ const authSlice = createSlice({
       .addCase(logoutUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
+      })
+      // Get Current User
+      .addCase(getCurrentUser.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(getCurrentUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(getCurrentUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+        // Clear invalid token
+        localStorage.removeItem("accessToken");
       });
   },
 });

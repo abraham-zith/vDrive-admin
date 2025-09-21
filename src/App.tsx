@@ -24,6 +24,8 @@ import { useAuth } from "./contexts/AuthContext";
 import FullScreenLoader from "./components/FullScreenLoader";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
+import { useAppSelector } from "./store/store";
+import { selectUser } from "./store/slices/authSlice";
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -103,9 +105,10 @@ const siderStyle: React.CSSProperties = {
 };
 
 const RootLayout: React.FC = () => {
-  const { logout, isAuthenticated, loading } = useAuth();
+  const { logout, isAuthenticated, loading, authChecked } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const user = useAppSelector(selectUser);
   const [collapsed, setCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -125,10 +128,15 @@ const RootLayout: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!loading && !isAuthenticated && location.pathname !== "/login") {
+    if (
+      !loading &&
+      authChecked &&
+      !isAuthenticated &&
+      location.pathname !== "/login"
+    ) {
       navigate("/login");
     }
-  }, [isAuthenticated, loading, location, navigate]);
+  }, [isAuthenticated, loading, authChecked, location, navigate]);
 
   const onCloseDrawer = () => {
     setDrawerVisible(false);
@@ -258,10 +266,10 @@ const RootLayout: React.FC = () => {
                     <div className="overflow-hidden">
                       <div className="flex flex-col text-black">
                         <span className="font-medium whitespace-nowrap">
-                          Admin User
+                          {user?.name || "Admin User"}
                         </span>
                         <span className="text-xs text-gray-500 whitespace-nowrap">
-                          admin@example.com
+                          {user?.email || "admin@example.com"}
                         </span>
                       </div>
                     </div>
@@ -394,9 +402,11 @@ const RootLayout: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <Avatar size="large" icon={<UserOutlined />} />
                   <div>
-                    <div className="font-medium">Admin User</div>
+                    <div className="font-medium">
+                      {user?.name || "Admin User"}
+                    </div>
                     <div className="text-xs text-gray-500">
-                      admin@example.com
+                      {user?.email || "admin@example.com"}
                     </div>
                   </div>
                 </div>

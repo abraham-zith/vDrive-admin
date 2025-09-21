@@ -10,13 +10,16 @@ const api = axios.create({
 export const setAuthToken = (token: string) => {
   if (token) {
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    localStorage.setItem("accessToken", token);
   } else {
     delete api.defaults.headers.common["Authorization"];
+    localStorage.removeItem("accessToken");
   }
 };
 
 export const clearAuthToken = () => {
   delete api.defaults.headers.common["Authorization"];
+  localStorage.removeItem("accessToken");
 };
 
 // Auto-set token from localStorage on startup
