@@ -13,7 +13,13 @@ export interface Login {
 }
 const Login = () => {
   const navigate = useNavigate();
-  const { login: authLogin, loading, isAuthenticated } = useAuth();
+  const {
+    login: authLogin,
+    loading,
+    isAuthenticated,
+    error,
+    clearError,
+  } = useAuth();
   const [login, setLogin] = useState<Login>({
     userName: "",
     password: "",
@@ -29,12 +35,27 @@ const Login = () => {
     }
   }, [isAuthenticated, navigate]);
 
+  // Clear errors when component mounts or when user starts typing
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+  }, [error, clearError]);
+
   const handleLogin = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = evt?.target;
     setLogin((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    // Clear field-specific errors when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
   };
 
   const handleKeyDown = (
@@ -72,10 +93,12 @@ const Login = () => {
       try {
         await authLogin(login);
         navigate("/");
-      } catch (error) {
+      } catch (error: any) {
         console.error("Login failed", error);
+        // Error is now handled by Redux, but we can still show local validation
         setErrors({
           password:
+            error?.message ||
             "Login failed. Please check your credentials and try again.",
         });
       }
