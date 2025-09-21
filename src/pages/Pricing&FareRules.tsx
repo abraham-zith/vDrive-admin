@@ -34,6 +34,7 @@ import { CloseOutlined } from "@ant-design/icons";
 import { GrLocation } from "react-icons/gr";
 import { LuDollarSign } from "react-icons/lu";
 import { FaCarAlt } from "react-icons/fa";
+import { usePricingData } from "../hooks/usePricingData";
 
 const { Option } = Select;
 const { Panel } = Collapse;
@@ -498,6 +499,8 @@ const apiResponse: ApiItem[] = [
 
 const PricingAndFareRules: React.FC = () => {
   const location = useLocation();
+  const data = usePricingData();
+  console.log({ data });
   const [filterForm] = Form.useForm<FilterValues>();
   const navigate = useNavigate();
 

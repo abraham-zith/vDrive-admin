@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "../store";
+import api from "../../api/axios";
 
 // Types
 export interface User {
@@ -26,10 +27,7 @@ export const loginUser = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      // Import axios instance dynamically to avoid circular dependencies
-      const axiosIns = (await import("../../api/axios")).default;
-
-      const response = await axiosIns.post("/api/auth/signIn", {
+      const response = await api.post("/api/auth/signIn", {
         user_name: email, // Map email to user_name as expected by API
         password: password,
       });
@@ -60,10 +58,7 @@ export const logoutUser = createAsyncThunk(
   "auth/logoutUser",
   async (_, { rejectWithValue }) => {
     try {
-      // Import axios instance dynamically to avoid circular dependencies
-      const axiosIns = (await import("../../api/axios")).default;
-
-      const { data } = await axiosIns.post("/api/auth/signout");
+      const { data } = await api.post("/api/auth/signout");
 
       if (!data?.success) {
         throw new Error("Logout failed");
@@ -144,7 +139,7 @@ export const { clearError, setUser, clearUser } = authSlice.actions;
 
 // Selectors
 export const selectAuth = (state: RootState) => state.auth;
-export const selectUser = (state: RootState) => state.auth.user;
+export const selectUser = (state: RootState): User | null => state.auth.user;
 export const selectIsAuthenticated = (state: RootState) =>
   state.auth.isAuthenticated;
 export const selectAuthLoading = (state: RootState) => state.auth.isLoading;

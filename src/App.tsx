@@ -101,6 +101,7 @@ const siderStyle: React.CSSProperties = {
   bottom: 0,
   zIndex: 100,
 };
+
 const RootLayout: React.FC = () => {
   const { logout, isAuthenticated, loading } = useAuth();
   const location = useLocation();

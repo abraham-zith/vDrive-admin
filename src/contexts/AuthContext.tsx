@@ -9,6 +9,7 @@ import {
   clearError,
   selectAuthError,
 } from "../store/slices/authSlice";
+import { setAuthToken, clearAuthToken } from "../api/axios";
 import type { Login } from "../login/Login";
 
 interface AuthContextType {
@@ -43,9 +44,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         })
       ).unwrap();
 
-      // Store token in localStorage for API calls
+      // Set token for API calls (handles both localStorage and axios headers)
       if (result.token) {
-        localStorage.setItem("accessToken", result.token);
+        setAuthToken(result.token);
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -56,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = async () => {
     try {
       await dispatch(logoutUser()).unwrap();
-      localStorage.removeItem("accessToken");
+      clearAuthToken(); // Clears both localStorage and axios headers
     } catch (error) {
       console.error("Logout failed:", error);
       throw error;
