@@ -82,7 +82,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Initialize auth state from API on component mount
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    console.log({ token, user });
     if (token && !user) {
       dispatch(getCurrentUser())
         .unwrap()

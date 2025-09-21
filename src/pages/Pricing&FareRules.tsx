@@ -500,7 +500,6 @@ const apiResponse: ApiItem[] = [
 const PricingAndFareRules: React.FC = () => {
   const location = useLocation();
   const data = usePricingData();
-  console.log({ data });
   const [filterForm] = Form.useForm<FilterValues>();
   const navigate = useNavigate();
 

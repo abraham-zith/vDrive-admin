@@ -80,7 +80,6 @@ export const getCurrentUser = createAsyncThunk(
       const response = await api.get("/api/auth/me");
 
       const data = response.data.data;
-      console.log("Current user data:", data);
       return {
         id: data.id || "1",
         email: data.contact || "admin@example.com",
