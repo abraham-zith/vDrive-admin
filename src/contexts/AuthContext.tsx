@@ -35,15 +35,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    const refreshToken = getCookie("refresh_token");
+    // const refreshToken = getCookie("refresh_token");
 
-    if (!refreshToken) {
-      // No refresh token, logout immediately
-      setIsAuthenticated(false);
-      localStorage.removeItem("accessToken");
-    } else {
-      setIsAuthenticated(!!token);
-    }
+    // if (!refreshToken) {
+    //   // No refresh token, logout immediately
+    //   setIsAuthenticated(false);
+    //   localStorage.removeItem("accessToken");
+    // } else {
+    setIsAuthenticated(!!token);
+    // }
 
     // Listen for storage changes to update auth state
     const handleStorageChange = () => {
