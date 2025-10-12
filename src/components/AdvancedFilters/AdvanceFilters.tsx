@@ -147,7 +147,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
     >
       <Panel
         header={
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="flex items-center gap-2">
             <FilterOutlined />
             <span
               style={{
@@ -162,7 +162,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
         }
         key="advanced-filters"
         extra={
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="flex items-center gap-2">
             <Button
               type="text"
               onClick={(e) => {
