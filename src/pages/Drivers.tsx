@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Typography } from "antd";
+import { Button } from "antd";
 import DriverTable from "../components/DriverTable/DriverTable";
 import Filter from "../components/Filter/Filter";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
