@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Typography } from "antd";
+import { Button } from "antd";
 import DriverTable from "../components/DriverTable/DriverTable";
 import Filter from "../components/Filter/Filter";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
 import { isSameDay } from "date-fns";
+import TitleBar from "../components/TitleBarCommon/TitleBar";
+import { IoMdRefresh } from "react-icons/io";
 
 export type DriverStatus =
   | "active"
@@ -556,14 +558,23 @@ const Drivers = () => {
   });
 
   return (
-    <div className=" container mx-auto w-full h-full flex flex-col gap-[6px] px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
-      <Typography.Title level={2} className="text-xl sm:text-2xl">
-        Driver Management
-      </Typography.Title>
-      <Typography.Text className="text-sm sm:text-base">
-        Manage drivers, view details, and perform administrative actions
-      </Typography.Text>
-
+    <TitleBar
+      title="Driver Management"
+      description="Manage drivers, view details, and perform administrative actions
+"
+      extraContent={
+        <div>
+          <Button
+            icon={<IoMdRefresh />}
+            loading={false}
+            type="primary"
+            onClick={() => {}}
+          >
+            Refresh
+          </Button>
+        </div>
+      }
+    >
       <Filter<Filters>
         fields={filterFields}
         initialValues={filters}
@@ -585,10 +596,8 @@ const Drivers = () => {
         }}
       />
 
-      <div className="flex-grow overflow-hidden">
-        <DriverTable data={filteredData} />
-      </div>
-    </div>
+      <DriverTable data={filteredData} />
+    </TitleBar>
   );
 };
 

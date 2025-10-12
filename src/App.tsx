@@ -24,6 +24,7 @@ import { useAuth } from "./contexts/AuthContext";
 import FullScreenLoader from "./components/FullScreenLoader";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
+import { MdOutlineMoneyOff } from "react-icons/md";
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -66,9 +67,11 @@ const Admins = lazy(() => import("./pages/Admins"));
 const Drivers = lazy(() => import("./pages/Drivers"));
 const DriverPricing = lazy(() => import("./pages/DriverPricing"));
 const PricingAndFareRules = lazy(() => import("./pages/Pricing&FareRules"));
+const Deductions = lazy(() => import("./pages/Deductions"));
 const SignUp = lazy(() => import("./signup/Signup"));
 const Login = lazy(() => import("./login/Login"));
 const ResetPassword = lazy(() => import("./login/ResetPassword"));
+
 // const PlaceholderContent: React.FC<{
 //   title: string;
 //   children?: React.ReactNode;
@@ -172,6 +175,11 @@ const RootLayout: React.FC = () => {
       label: <Link to="/admins">Admins</Link>,
       key: "/admins",
       icon: <RiAdminLine />,
+    },
+    {
+      label: <Link to="/Deductions">Deduction Management</Link>,
+      key: "/Deductions",
+      icon: <MdOutlineMoneyOff />,
     },
   ];
   return (
@@ -435,6 +443,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <Drivers />
+          </Suspense>
+        ),
+      },
+      {
+        path: "Deductions",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Deductions />
           </Suspense>
         ),
       },
