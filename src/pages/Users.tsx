@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Button } from "antd";
 import { IoMdRefresh } from "react-icons/io";
 import UserTable from "../components/UserTable/UserTable";
-import Filter from "../components/Filter/Filter";
+import dayjs from "dayjs";
 import AppliedFilters from "../components/AppliedFilters/AppliedFilters";
-import { isSameDay } from "date-fns";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
-
+import AdvancedFilters from "../components/AdvancedFilters/AdvanceFilters";
+import type { FilterField } from "../components/AdvancedFilters/AdvanceFilters";
 export type UserRole =
   | "Admin"
   | "Manager"
@@ -338,6 +338,36 @@ export interface Filters {
   lastLogin: Date | null;
   createdAt: Date | null;
 }
+const ROLES = [
+  "Admin",
+  "Manager",
+  "Developer",
+  "Tester",
+  "Support",
+  "Designer",
+  "Analyst",
+];
+const STATUSES = ["Active", "Inactive", "Suspended"];
+const fields: FilterField[] = [
+  {
+    name: "status",
+    label: "Status",
+    type: "select",
+    mode: "multiple",
+    options: STATUSES.map((r) => ({ label: r, value: r })),
+  },
+  {
+    name: "role",
+    label: "Role",
+    type: "select",
+    mode: "multiple",
+    options: ROLES.map((r) => ({ label: r, value: r })),
+  },
+
+  { name: "lastLogin", label: "Last Login", type: "date" },
+  { name: "createdAt", label: "Created At", type: "date" },
+];
+
 const Users = () => {
   const [filters, setFilters] = useState<Filters>({
     role: [],
@@ -346,57 +376,38 @@ const Users = () => {
     createdAt: null,
   });
 
-  const ROLES = [
-    "Admin",
-    "Manager",
-    "Developer",
-    "Tester",
-    "Support",
-    "Designer",
-    "Analyst",
-  ];
-  const STATUSES = ["Active", "Inactive", "Suspended"];
+  const [filteredData, setFilteredData] = useState<User[]>(DATA);
 
-  const filterFields = [
-    {
-      key: "role",
-      label: "Role",
-      type: "select" as const,
-      options: ROLES.map((r) => ({ label: r, value: r })),
-      mode: "multiple" as const,
-    },
-    {
-      key: "status",
-      label: "Status",
-      type: "select" as const,
-      options: STATUSES.map((s) => ({ label: s, value: s })),
-      mode: "multiple" as const,
-    },
-    { key: "lastLogin", label: "Last Login", type: "date" as const },
-    { key: "createdAt", label: "Created At", type: "date" as const },
-  ];
+  const applyFilters = (values: Record<string, any>) => {
+    let tempData = DATA;
+    if (values.status) {
+      const selectedStatuses = Array.isArray(values.status)
+        ? values.status
+        : [values.status];
+      tempData = tempData.filter((user) =>
+        selectedStatuses.includes(user.status)
+      );
+    }
+    if (values.role) {
+      const selectedRole = Array.isArray(values.role)
+        ? values.role
+        : [values.role];
+      tempData = tempData.filter((user) => selectedRole.includes(user.role));
+    }
+    if (values.lastLogin) {
+      tempData = tempData.filter((user) =>
+        dayjs(user.lastLogin).isSame(values.lastLogin, "day")
+      );
+    }
+    if (values.createdAt) {
+      tempData = tempData.filter((user) =>
+        dayjs(user.createdAt).isSame(values.createdAt, "day")
+      );
+    }
 
-  const filteredData = DATA.filter((user) => {
-    if (filters.role.length > 0 && !filters.role.includes(user.role)) {
-      return false;
-    }
-    if (filters.status.length > 0 && !filters.status.includes(user.status)) {
-      return false;
-    }
-    if (
-      filters.lastLogin &&
-      !isSameDay(new Date(user.lastLogin), filters.lastLogin)
-    ) {
-      return false;
-    }
-    if (
-      filters.createdAt &&
-      !isSameDay(new Date(user.createdAt), filters.createdAt)
-    ) {
-      return false;
-    }
-    return true;
-  });
+    setFilteredData(tempData);
+  };
+
   return (
     <TitleBar
       title="User Management"
@@ -415,12 +426,12 @@ const Users = () => {
       }
     >
       <div className="w-full h-full flex flex-col gap-4">
-        <Filter<Filters>
+        {/* <Filter<Filters>
           fields={filterFields}
           initialValues={filters}
           onChange={setFilters}
-        />
-
+        /> */}
+        <AdvancedFilters filterFields={fields} applyFilters={applyFilters} />
         <AppliedFilters<Filters>
           filters={filters}
           setFilters={setFilters}

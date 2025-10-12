@@ -32,6 +32,7 @@ export interface FilterField {
   min?: number;
   max?: number;
   step?: number;
+  mode?: "multiple" | "tags";
 }
 
 export interface FilterValues {
@@ -70,7 +71,10 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
         return <Input placeholder={`Enter ${field.label.toLowerCase()}`} />;
       case "select":
         return (
-          <Select placeholder={`Select ${field.label.toLowerCase()}`}>
+          <Select
+            mode={field.mode ?? "tags"}
+            placeholder={`Select ${field.label.toLowerCase()}`}
+          >
             {field.options?.map((opt: FieldOption) => (
               <Option key={opt.value.toString()} value={opt.value}>
                 {opt.label}
