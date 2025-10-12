@@ -545,28 +545,28 @@ const Drivers = () => {
 
   const applyFilters = (values: Record<string, any>) => {
     let tempData = DATA;
-    if (values.status) {
-      const selectedStatuses = Array.isArray(values.status)
-        ? values.status
-        : [values.status];
+    if (values?.status?.length > 0) {
+      const selectedStatuses = Array.isArray(values?.status)
+        ? values?.status
+        : [values?.status];
       tempData = tempData.filter((user) =>
-        selectedStatuses.includes(user.status)
+        selectedStatuses.includes(user?.status)
       );
     }
-    if (values.role) {
-      const selectedRole = Array.isArray(values.role)
-        ? values.role
-        : [values.role];
-      tempData = tempData.filter((user) => selectedRole.includes(user.role));
+    if (values?.role?.length > 0) {
+      const selectedRole = Array.isArray(values?.role)
+        ? values?.role
+        : [values?.role];
+      tempData = tempData.filter((user) => selectedRole.includes(user?.role));
     }
-    if (values.joined) {
+    if (values?.joined) {
       tempData = tempData.filter((user) =>
-        dayjs(user.createdAt).isSame(values.joined, "day")
+        dayjs(user?.createdAt).isSame(values?.joined, "day")
       );
     }
 
-    if (values.rating && Array.isArray(values.rating)) {
-      const [min, max] = values.rating;
+    if (values?.rating && Array.isArray(values?.rating)) {
+      const [min, max] = values?.rating;
       tempData = tempData.filter((item) => {
         const itemValue = Number(item.rating ?? 0);
         return itemValue >= min && itemValue <= max;

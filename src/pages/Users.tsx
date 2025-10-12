@@ -380,28 +380,28 @@ const Users = () => {
 
   const applyFilters = (values: Record<string, any>) => {
     let tempData = DATA;
-    if (values.status) {
-      const selectedStatuses = Array.isArray(values.status)
-        ? values.status
-        : [values.status];
+    if (values?.status?.length > 0) {
+      const selectedStatuses = Array.isArray(values?.status)
+        ? values?.status
+        : [values?.status];
       tempData = tempData.filter((user) =>
-        selectedStatuses.includes(user.status)
+        selectedStatuses.includes(user?.status)
       );
     }
-    if (values.role) {
-      const selectedRole = Array.isArray(values.role)
-        ? values.role
-        : [values.role];
-      tempData = tempData.filter((user) => selectedRole.includes(user.role));
+    if (values?.role?.length > 0) {
+      const selectedRole = Array.isArray(values?.role)
+        ? values?.role
+        : [values?.role];
+      tempData = tempData.filter((user) => selectedRole.includes(user?.role));
     }
-    if (values.lastLogin) {
+    if (values?.lastLogin) {
       tempData = tempData.filter((user) =>
-        dayjs(user.lastLogin).isSame(values.lastLogin, "day")
+        dayjs(user?.lastLogin).isSame(values?.lastLogin, "day")
       );
     }
-    if (values.createdAt) {
+    if (values?.createdAt) {
       tempData = tempData.filter((user) =>
-        dayjs(user.createdAt).isSame(values.createdAt, "day")
+        dayjs(user?.createdAt).isSame(values?.createdAt, "day")
       );
     }
 
