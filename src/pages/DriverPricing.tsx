@@ -14,7 +14,7 @@ import TitleBar from "../components/TitleBarCommon/TitleBar";
 const DriverPricing = () => {
   const [activeTab, setActiveTab] = useState("configuration");
   const navigate = useNavigate();
-  const [country, setCountry] = useState("India");
+  const [country, setCountry] = useState("");
   const [state, setState] = useState("Tamil Nadu");
   const [district, setDistrict] = useState("Kanchipuram");
   const [area, setArea] = useState("Madippakkam");

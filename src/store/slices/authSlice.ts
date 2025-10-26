@@ -83,7 +83,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
       }
     },
-    clearError: (state) => {
+    clearCountryError: (state) => {
       state.error = null;
     },
     checkAuthStatus: (state) => {
@@ -133,6 +133,10 @@ const authSlice = createSlice({
   },
 });
 
-export const { setAuthenticated, setAccessToken, clearError, checkAuthStatus } =
-  authSlice.actions;
+export const {
+  setAuthenticated,
+  setAccessToken,
+  clearCountryError,
+  checkAuthStatus,
+} = authSlice.actions;
 export default authSlice.reducer;
