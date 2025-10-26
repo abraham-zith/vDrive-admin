@@ -10,23 +10,14 @@ const api = axios.create({
 export const setAuthToken = (token: string) => {
   if (token) {
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    localStorage.setItem("accessToken", token);
   } else {
     delete api.defaults.headers.common["Authorization"];
-    localStorage.removeItem("accessToken");
   }
 };
 
 export const clearAuthToken = () => {
   delete api.defaults.headers.common["Authorization"];
-  localStorage.removeItem("accessToken");
 };
-
-// Auto-set token from localStorage on startup
-const token = localStorage.getItem("accessToken");
-if (token) {
-  setAuthToken(token);
-}
 
 // Request interceptor for authorization
 api.interceptors.request.use((config) => {
@@ -54,14 +45,12 @@ api.interceptors.response.use(
         const newToken = refreshResponse.data?.data?.accessToken;
 
         if (newToken) {
-          localStorage.setItem("accessToken", newToken);
           setAuthToken(newToken);
           originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
         // Clear token and handle logout via Redux action if possible
-        localStorage.removeItem("accessToken");
         clearAuthToken();
         // Re-throw to allow component-level error handling
         throw refreshError;

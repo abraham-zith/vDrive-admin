@@ -81,20 +81,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Initialize auth state from API on component mount
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (token && !user) {
-      dispatch(getCurrentUser())
-        .unwrap()
-        .then(() => {
-          setAuthChecked(true);
-        })
-        .catch(() => {
-          setAuthChecked(true);
-        });
-    } else {
-      setAuthChecked(true);
-    }
-  }, [dispatch, user]);
+    dispatch(getCurrentUser())
+      .unwrap()
+      .then(() => {
+        setAuthChecked(true);
+      })
+      .catch(() => {
+        setAuthChecked(true);
+      });
+  }, [dispatch]);
 
   const contextValue = useMemo(
     () => ({

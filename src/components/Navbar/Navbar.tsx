@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, Button, Drawer, Avatar } from "antd";
 import {
   HomeOutlined,
@@ -9,9 +9,12 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import logo from "/logo1.png";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Navbar: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [current, setCurrent] = useState(location.pathname);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -134,6 +137,11 @@ const Navbar: React.FC = () => {
                   selectedKeys={[current]}
                   items={items}
                   style={{ borderRight: 0 }}
+                  onClick={({ key }) => {
+                    if (key === "4") {
+                      logout().then(() => navigate("/login"));
+                    }
+                  }}
                 />
               </Drawer>
             </>
@@ -147,6 +155,11 @@ const Navbar: React.FC = () => {
               style={{
                 // backgroundColor: "transparent",
                 borderBottom: "none",
+              }}
+              onClick={({ key }) => {
+                if (key === "4") {
+                  logout().then(() => navigate("/login"));
+                }
               }}
             />
           )}
