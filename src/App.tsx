@@ -20,7 +20,8 @@ import {
 } from "react-router-dom";
 import { PiSteeringWheel } from "react-icons/pi";
 import { RiAdminLine } from "react-icons/ri";
-import { useAuth } from "./contexts/AuthContext";
+import { useAppDispatch, useAppSelector } from "./store/hooks";
+import { logoutAsync } from "./store/slices/authSlice";
 import FullScreenLoader from "./components/FullScreenLoader";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
@@ -105,7 +106,8 @@ const siderStyle: React.CSSProperties = {
   zIndex: 100,
 };
 const RootLayout: React.FC = () => {
-  const { logout, isAuthenticated, loading } = useAuth();
+  const dispatch = useAppDispatch();
+  const { isAuthenticated, loading } = useAppSelector((state) => state.auth);
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(true);
@@ -286,7 +288,7 @@ const RootLayout: React.FC = () => {
                       icon: <LogoutOutlined />,
                       danger: true,
                       onClick: async () => {
-                        await logout();
+                        await dispatch(logoutAsync());
                         navigate("/login");
                       },
                     },
@@ -341,7 +343,7 @@ const RootLayout: React.FC = () => {
                   danger
                   style={{ fontSize: "16px" }}
                   onClick={async () => {
-                    await logout();
+                    await dispatch(logoutAsync());
                     navigate("/login");
                   }}
                 />
