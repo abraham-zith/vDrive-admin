@@ -1,30 +1,16 @@
 import React, { useState, useMemo } from "react";
 import { getHours, getMinutes } from "date-fns";
 import {
-  Form,
-  Row,
-  Col,
-  Input,
-  Select,
-  InputNumber,
-  DatePicker,
   Button,
-  Radio,
   Table,
   Space,
   Card,
-  Collapse,
   Drawer,
   Typography,
   Descriptions,
   Divider,
 } from "antd";
-import {
-  DownloadOutlined,
-  FilterOutlined,
-  EyeOutlined,
-  EditOutlined,
-} from "@ant-design/icons";
+import { DownloadOutlined, EyeOutlined, EditOutlined } from "@ant-design/icons";
 import { IoAdd } from "react-icons/io5";
 import { utils, writeFile } from "xlsx"; // ← add this
 import TitleBar from "../components/TitleBarCommon/TitleBar";
@@ -34,12 +20,11 @@ import { CloseOutlined } from "@ant-design/icons";
 import { GrLocation } from "react-icons/gr";
 import { LuDollarSign } from "react-icons/lu";
 import { FaCarAlt } from "react-icons/fa";
-
-const { Option } = Select;
-const { Panel } = Collapse;
+import AdvancedFilters from "../components/AdvancedFilters/AdvanceFilters";
+import type { FilterField } from "../components/AdvancedFilters/AdvanceFilters";
 const { Title, Text } = Typography;
 
-interface FilterValues {
+export interface FilterValues {
   country?: string;
   state?: string;
   district?: string;
@@ -498,7 +483,6 @@ const apiResponse: ApiItem[] = [
 
 const PricingAndFareRules: React.FC = () => {
   const location = useLocation();
-  const [filterForm] = Form.useForm<FilterValues>();
   const navigate = useNavigate();
 
   // put this near your other helpers
@@ -564,9 +548,7 @@ const PricingAndFareRules: React.FC = () => {
 
   const [filteredTableData, setFilteredTableData] =
     useState<PriceSetting[]>(initialTableData);
-  const [activeFilterPanel, setActiveFilterPanel] = useState<string | string[]>(
-    ["advanced-filters"]
-  );
+
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [currentPriceSetting, setCurrentPriceSetting] =
     useState<PriceSetting | null>(null);
@@ -766,18 +748,6 @@ const PricingAndFareRules: React.FC = () => {
       }
     }
     return null;
-  };
-
-  const handleClearAllFilters = () => {
-    filterForm.resetFields();
-    setFilteredTableData(initialTableData);
-  };
-
-  const onFilterValuesChange = (
-    _changedValues: any,
-    allValues: FilterValues
-  ) => {
-    applyFilters(allValues);
   };
 
   const showDrawer = (record: PriceSetting) => {
@@ -980,7 +950,93 @@ const PricingAndFareRules: React.FC = () => {
   if (location.pathname === "/PricingAndFareRules/pricing") {
     return <Outlet />;
   }
-
+  const fields: FilterField[] = [
+    {
+      name: "country",
+      label: "Country",
+      type: "select",
+      options: [
+        { value: "india", label: "India" },
+        { value: "usa", label: "USA" },
+      ],
+    },
+    { name: "state", label: "State", type: "input" },
+    { name: "district", label: "District", type: "input" },
+    { name: "area", label: "Area", type: "input" },
+    { name: "pincode", label: "Pincode", type: "input" },
+    {
+      name: "isHotspot",
+      label: "Is Hotspot",
+      type: "radio",
+      options: [
+        { value: true, label: "Yes" },
+        { value: false, label: "No" },
+      ],
+    },
+    { name: "hotspotId", label: "Hotspot ID", type: "input" },
+    { name: "hotspotName", label: "Hotspot Name", type: "input" },
+    {
+      name: "baseFareRange",
+      label: "Base Fare Range",
+      type: "range",
+      minPlaceholder: "0",
+      maxPlaceholder: "1000",
+    },
+    {
+      name: "driverType",
+      label: "Driver Type",
+      type: "select",
+      options: [
+        { value: "normal", label: "Normal" },
+        { value: "premium", label: "Premium" },
+        { value: "elite", label: "Elite" },
+      ],
+    },
+    {
+      name: "cancellationFeeRange",
+      label: "Cancellation Fee Range",
+      type: "range",
+      minPlaceholder: "0",
+      maxPlaceholder: "100",
+    },
+    {
+      name: "waitingFeePerMin",
+      label: "Waiting Fee (Per Min)",
+      type: "range",
+      minPlaceholder: "0",
+      maxPlaceholder: "10",
+    },
+    {
+      name: "waitingFeeAmount",
+      label: "Waiting Fee Amount",
+      type: "range",
+      minPlaceholder: "0",
+      maxPlaceholder: "20",
+    },
+    {
+      name: "dayOfWeek",
+      label: "Day of Week",
+      type: "select",
+      options: [
+        { value: "monday", label: "Monday" },
+        { value: "tuesday", label: "Tuesday" },
+        { value: "wednesday", label: "Wednesday" },
+        { value: "thursday", label: "Thursday" },
+        { value: "friday", label: "Friday" },
+        { value: "saturday", label: "Saturday" },
+        { value: "sunday", label: "Sunday" },
+      ],
+    },
+    { name: "timeFrom", label: "Time From", type: "time" },
+    { name: "timeTo", label: "Time To", type: "time" },
+    {
+      name: "rateRange",
+      label: "Rate Range",
+      type: "range",
+      minPlaceholder: "0",
+      maxPlaceholder: "50",
+    },
+  ];
   return (
     <TitleBar
       title="Driver Price Management"
@@ -1025,261 +1081,8 @@ const PricingAndFareRules: React.FC = () => {
         </div>
       }
     >
-      <div
-        className="w-full h-full overflow-y-auto"
-        style={{ padding: 24, backgroundColor: "white" }}
-      >
-        <Collapse
-          activeKey={activeFilterPanel}
-          onChange={(key) => setActiveFilterPanel(key)}
-          style={{ marginBottom: 24, backgroundColor: "white" }}
-          expandIconPosition="end"
-        >
-          <Panel
-            header={
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <FilterOutlined />
-                <span
-                  style={{
-                    fontSize: "1.125rem",
-                    lineHeight: "1.75rem",
-                    fontWeight: 600,
-                  }}
-                >
-                  Advanced Filters
-                </span>
-              </div>
-            }
-            key="advanced-filters"
-            extra={
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <Button
-                  type="text"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleClearAllFilters();
-                  }}
-                >
-                  Clear All
-                </Button>
-              </div>
-            }
-          >
-            <Form
-              form={filterForm}
-              name="advanced_filters"
-              onValuesChange={onFilterValuesChange}
-              layout="vertical"
-              initialValues={{
-                baseFareRangeMin: 0,
-                baseFareRangeMax: 1000,
-                cancellationFeeRangeMin: 0,
-                cancellationFeeRangeMax: 100,
-                waitingFeePerMinMin: 0,
-                waitingFeePerMinMax: 10,
-                waitingFeeAmountMin: 0,
-                waitingFeeAmountMax: 20,
-                rateRangeMin: 0,
-                rateRangeMax: 1000,
-              }}
-            >
-              <Row gutter={[16, 16]}>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="country" label="Country">
-                    <Select placeholder="Select country">
-                      <Option value="india">India</Option>
-                      <Option value="usa">USA</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="state" label="State">
-                    <Input placeholder="Enter state" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="district" label="District">
-                    <Input placeholder="Enter district" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="area" label="Area">
-                    <Input placeholder="Enter area" />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="pincode" label="Pincode">
-                    <Input placeholder="Enter pincode" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="isHotspot" label="Is Hotspot">
-                    <Radio.Group>
-                      <Radio value={true}>Yes</Radio>
-                      <Radio value={false}>No</Radio>
-                    </Radio.Group>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="hotspotId" label="Hotspot ID">
-                    <Input placeholder="Enter hotspot ID" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="hotspotName" label="Hotspot Name">
-                    <Input placeholder="Enter hotspot name" />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item label="Base Fare Range">
-                    <Input.Group compact>
-                      <Form.Item name="baseFareRangeMin" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="0"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                      <Form.Item name="baseFareRangeMax" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="1000"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                    </Input.Group>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="driverType" label="Driver Type">
-                    <Select placeholder="Select driver type">
-                      <Option value="normal">Normal</Option>
-                      <Option value="premium">Premium</Option>
-                      <Option value="elite">Elite</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item label="Cancellation Fee Range">
-                    <Input.Group compact>
-                      <Form.Item name="cancellationFeeRangeMin" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="0"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                      <Form.Item name="cancellationFeeRangeMax" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="100"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                    </Input.Group>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item label="Waiting Fee (Per Min)">
-                    <Input.Group compact>
-                      <Form.Item name="waitingFeePerMinMin" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="0"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                      <Form.Item name="waitingFeePerMinMax" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="10"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                    </Input.Group>
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item label="Waiting Fee Amount">
-                    <Input.Group compact>
-                      <Form.Item name="waitingFeeAmountMin" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="0"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                      <Form.Item name="waitingFeeAmountMax" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="20"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                    </Input.Group>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="dayOfWeek" label="Day of Week">
-                    <Select placeholder="Select day">
-                      <Option value="monday">Monday</Option>
-                      <Option value="tuesday">Tuesday</Option>
-                      <Option value="wednesday">Wednesday</Option>
-                      <Option value="thursday">Thursday</Option>
-                      <Option value="friday">Friday</Option>
-                      <Option value="saturday">Saturday</Option>
-                      <Option value="sunday">Sunday</Option>
-                    </Select>
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="timeFrom" label="Time From">
-                    {/* CHANGED: 12-hour mode + AM/PM */}
-                    <DatePicker.TimePicker
-                      style={{ width: "100%" }}
-                      use12Hours
-                      format="hh:mm A"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="timeTo" label="Time To">
-                    {/* CHANGED: 12-hour mode + AM/PM */}
-                    <DatePicker.TimePicker
-                      style={{ width: "100%" }}
-                      use12Hours
-                      format="hh:mm A"
-                    />
-                  </Form.Item>
-                </Col>
-
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item label="Rate Range">
-                    <Input.Group compact>
-                      <Form.Item name="rateRangeMin" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="0"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                      <Form.Item name="rateRangeMax" noStyle>
-                        <InputNumber
-                          min={0}
-                          placeholder="50"
-                          style={{ width: "50%" }}
-                        />
-                      </Form.Item>
-                    </Input.Group>
-                  </Form.Item>
-                </Col>
-              </Row>
-            </Form>
-          </Panel>
-        </Collapse>
+      <div className="w-full h-full overflow-y-auto">
+        <AdvancedFilters filterFields={fields} applyFilters={applyFilters} />
 
         <Card
           title="Driver Price Settings"
