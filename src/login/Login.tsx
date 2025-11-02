@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Input, Typography } from "antd";
 import type { InputRef } from "antd";
-import { useAuth } from "../contexts/AuthContext";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { loginAsync } from "../store/slices/authSlice";
 import FullScreenLoader from "../components/FullScreenLoader";
 
 const { Text } = Typography;
@@ -13,7 +14,8 @@ export interface Login {
 }
 const Login = () => {
   const navigate = useNavigate();
-  const { login: authLogin, loading, isAuthenticated } = useAuth();
+  const dispatch = useAppDispatch();
+  const { loading, isAuthenticated } = useAppSelector((state) => state.auth);
   const [login, setLogin] = useState<Login>({
     userName: "",
     password: "",
@@ -70,7 +72,7 @@ const Login = () => {
     evt?.preventDefault();
     if (validate()) {
       try {
-        await authLogin(login);
+        await dispatch(loginAsync(login)).unwrap();
         navigate("/");
       } catch (error) {
         console.error("Login failed", error);
