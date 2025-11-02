@@ -11,14 +11,14 @@ import {
   Button,
   Input,
   Space,
-   Dropdown, Menu
+  Dropdown,
+  Menu,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 
 import Highlighter from "react-highlight-words";
 import type { Driver } from "../../pages/Drivers";
 import {
-
   CopyOutlined,
   EllipsisOutlined,
   EyeOutlined,
@@ -112,7 +112,6 @@ const DriverTable = ({ data }: DriverTableProps) => {
           >
             Reset
           </Button>
-        
         </Space>
       </div>
     ),
@@ -297,10 +296,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
       render: (_, record) => {
         const menu = (
           <Menu>
-            <Menu.Item
-              key="view"
-              icon={<EyeOutlined />}
-            >
+            <Menu.Item key="view" icon={<EyeOutlined />}>
               View Details
             </Menu.Item>
             <Menu.Item key="edit" icon={<EditOutlined />}>
@@ -338,6 +334,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
     <>
       <div ref={contentRef} className="h-full w-full">
         <Table
+          className="rounded-lg border border-gray-300"
           key={tableHeight}
           rowKey="driverId"
           columns={columns}

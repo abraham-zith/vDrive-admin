@@ -58,6 +58,7 @@ const DriverPricing = () => {
         <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col gap-2">
           <div className="flex-grow overflow-y-auto flex flex-col custom-scrollbar">
             <TitleBar
+              className="w-full h-full "
               title="Add Pricing"
               description="Configure pricing for different user types and time slots"
             >

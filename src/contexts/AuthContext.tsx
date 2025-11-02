@@ -1,4 +1,11 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import axiosIns from "../api/axios";
 import type { Login } from "../login/Login";
 
@@ -11,6 +18,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// const getCookie = (name: string) => {
+//   const value = `; ${document.cookie}`;
+//   const parts = value.split(`; ${name}=`);
+//   if (parts.length === 2) return parts.pop()?.split(";").shift();
+//   return null;
+// };
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -21,10 +35,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
+    // const refreshToken = getCookie("refresh_token");
+
+    // if (!refreshToken) {
+    //   // No refresh token, logout immediately
+    //   setIsAuthenticated(false);
+    //   localStorage.removeItem("accessToken");
+    // } else {
     setIsAuthenticated(!!token);
+    // }
+
+    // Listen for storage changes to update auth state
+    const handleStorageChange = () => {
+      setIsAuthenticated(!!localStorage.getItem("accessToken"));
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
-  const login = async (credentials: Login) => {
+  const login = useCallback(async (credentials: Login) => {
     setLoading(true);
     try {
       const response = await axiosIns.post("/api/auth/signIn", {
@@ -43,12 +76,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setLoading(true);
     try {
-      console.log("Logging out...");
       const { data } = await axiosIns.post("/api/auth/signout");
       if (data?.success) {
         localStorage.removeItem("accessToken");
@@ -57,12 +89,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      isAuthenticated,
+      loading,
+      login,
+      logout,
+    }),
+    [isAuthenticated, loading, login, logout]
+  );
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, loading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };
 

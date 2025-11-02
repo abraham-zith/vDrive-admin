@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Input, Typography } from "antd";
 import type { InputRef } from "antd";
 import { useAuth } from "../contexts/AuthContext";
+import FullScreenLoader from "../components/FullScreenLoader";
 
 const { Text } = Typography;
 
@@ -12,7 +13,7 @@ export interface Login {
 }
 const Login = () => {
   const navigate = useNavigate();
-  const { login: authLogin, loading } = useAuth();
+  const { login: authLogin, loading, isAuthenticated } = useAuth();
   const [login, setLogin] = useState<Login>({
     userName: "",
     password: "",
@@ -21,6 +22,12 @@ const Login = () => {
 
   const userNameRef = useRef<InputRef>(null);
   const passwordRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = (evt: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = evt?.target;
@@ -67,6 +74,10 @@ const Login = () => {
         navigate("/");
       } catch (error) {
         console.error("Login failed", error);
+        setErrors({
+          password:
+            "Login failed. Please check your credentials and try again.",
+        });
       }
     }
   };
@@ -79,8 +90,11 @@ const Login = () => {
   //   navigate("/signup");
   // };
 
+  // if (loading) return <FullScreenLoader />;
+
   return (
-    <div className="h-full flex items-center justify-center bg-gray-50 back-gradient-login">
+    <div className="h-dvh flex items-center justify-center bg-gray-50 back-gradient-login">
+      {loading && <FullScreenLoader />}
       <form
         onSubmit={handleSubmit}
         className="max-w-[400px] border border-gray-300 rounded-xl shadow-md bg-white flex flex-col gap-4 p-6 w-full mx-4"
@@ -143,7 +157,7 @@ const Login = () => {
             type="primary"
             block
             onClick={handleSubmit}
-            disabled={loading}
+            loading={loading}
             style={{ marginTop: 16, width: 75 }}
           >
             Login

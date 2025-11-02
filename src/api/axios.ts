@@ -28,7 +28,9 @@ axiosIns.interceptors.response.use(
         originalConfig.headers['Authorization'] = `Bearer ${data.accessToken}`;
         return axiosIns(originalConfig);
       } catch (refreshError) {
-        window.location.href = '/login';
+        // Clear token and let app handle logout
+        localStorage.removeItem("accessToken");
+        throw new Error('Authentication failed'); // Let the component handle navigation
         return Promise.reject(refreshError);
       }
     }
