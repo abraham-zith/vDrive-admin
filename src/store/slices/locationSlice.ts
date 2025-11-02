@@ -86,7 +86,11 @@ export const fetchCountries = createAsyncThunk(
 export const fetchState = createAsyncThunk(
   "location/fetchState",
   async (
-    { limit = 20, countryId = "" }: { limit?: number; countryId?: string },
+    {
+      countryId = "",
+      search = "",
+      limit = 20,
+    }: { search?: string; countryId?: string; limit?: number },
     { rejectWithValue }
   ) => {
     try {
@@ -95,9 +99,13 @@ export const fetchState = createAsyncThunk(
       }
 
       stateCancelTokenSource = axios.CancelToken.source();
-
+      const params = new URLSearchParams();
+      params.append("limit", limit.toString());
+      if (search) {
+        params.append("search", search);
+      }
       const response = await axiosIns.get(
-        `/api/locations/states/${countryId}`,
+        `/api/locations/states/${countryId}?${params.toString()}`,
         {
           cancelToken: stateCancelTokenSource.token,
         }

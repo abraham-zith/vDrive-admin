@@ -15,7 +15,7 @@ const DriverPricing = () => {
   const [activeTab, setActiveTab] = useState("configuration");
   const navigate = useNavigate();
   const [country, setCountry] = useState("");
-  const [state, setState] = useState("Tamil Nadu");
+  const [state, setState] = useState("");
   const [district, setDistrict] = useState("Kanchipuram");
   const [area, setArea] = useState("Madippakkam");
   const [pincode, setPincode] = useState("60091");

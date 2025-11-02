@@ -38,15 +38,27 @@ const LocationConfiguration = ({
   const { countries, isLoadingCountries, states, isLoadingStates } =
     useAppSelector((state) => state.location);
 
-  const debouncedSearch = useCallback(
+  const debouncedCountrySearch = useCallback(
     debounce((searchValue: string) => {
       dispatch(fetchCountries({ limit: 20, search: searchValue }));
     }, 500),
     [dispatch]
   );
 
-  const handleSearch = (value: string) => {
-    debouncedSearch(value);
+  const debouncedStateSearch = useCallback(
+    debounce((searchValue: string) => {
+      dispatch(
+        fetchState({ countryId: country, search: searchValue, limit: 20 })
+      );
+    }, 500),
+    [dispatch, country]
+  );
+
+  const handleCountrySearch = (value: string) => {
+    debouncedCountrySearch(value);
+  };
+  const handleStateSearch = (value: string) => {
+    debouncedStateSearch(value);
   };
 
   const countryOptions = useMemo(
@@ -74,7 +86,7 @@ const LocationConfiguration = ({
 
   useEffect(() => {
     if (country) {
-      dispatch(fetchState({ countryId: country }));
+      dispatch(fetchState({ countryId: country, search: "tamil nadu" }));
     }
   }, [country]);
 
@@ -89,12 +101,22 @@ const LocationConfiguration = ({
       }
     }
   }, [countries, country, setCountry]);
+  useEffect(() => {
+    if (states.length > 0 && !state && country) {
+      const tamilNaduState = states.find(
+        (s) => s.state_name.toLowerCase() === "tamil nadu"
+      );
+      if (tamilNaduState) {
+        setState(tamilNaduState.id);
+      }
+    }
+  }, [states, state, country, setState]);
 
   useEffect(() => {
     return () => {
-      debouncedSearch.cancel();
+      debouncedCountrySearch.cancel();
     };
-  }, [debouncedSearch]);
+  }, [debouncedCountrySearch]);
 
   return (
     <Card className="w-full" size="small">
@@ -122,7 +144,7 @@ const LocationConfiguration = ({
               showSearch
               placeholder="Search and select country"
               filterOption={false}
-              onSearch={handleSearch}
+              onSearch={handleCountrySearch}
               loading={isLoadingCountries}
               notFoundContent={
                 isLoadingCountries ? "Loading..." : "No countries found"
@@ -135,6 +157,10 @@ const LocationConfiguration = ({
               value={state}
               onChange={setState}
               options={stateOptions}
+              showSearch
+              placeholder="Search and select state"
+              filterOption={false}
+              onSearch={handleStateSearch}
               loading={isLoadingStates}
               notFoundContent={
                 isLoadingStates ? "Loading..." : "No states found"

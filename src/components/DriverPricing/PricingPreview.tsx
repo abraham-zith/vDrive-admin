@@ -12,6 +12,7 @@ import {
   mockHotspotApi,
   type HotspotType,
 } from "../../utilities/mockHotspotApi";
+import { useAppSelector } from "../../store/hooks";
 
 interface PricingPreviewProps {
   country: string;
@@ -38,6 +39,9 @@ const PricingPreview = ({
 }: PricingPreviewProps) => {
   const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
 
+  // Get location data from Redux
+  const { countries, states } = useAppSelector((state) => state.location);
+
   // Load hotspot types on component mount
   useEffect(() => {
     loadHotspotTypes();
@@ -59,6 +63,14 @@ const PricingPreview = ({
 
   const hotspotAddition = selectedHotspotType?.addition || 40;
 
+  // Find labels from Redux data
+  const countryLabel =
+    countries.find((c) => c.id === country)?.country_name || country;
+  const stateLabel = states.find((s) => s.id === state)?.state_name || state;
+  const districtLabel = district || "N/A";
+  const areaLabel = area || "N/A";
+  const pincodeLabel = pincode || "N/A";
+
   const userTypeTags = {
     "normal-user": <Tag color="default">Normal User</Tag>,
     "premium-user": <Tag color="gold">Premium User</Tag>,
@@ -79,7 +91,8 @@ const PricingPreview = ({
           </div>
           <div className="p-2 bg-[#F8F9FA] rounded-md">
             <span className="text-sm break-all">
-              {country}-{state}-{district}-{area}-{pincode}
+              {countryLabel} - {stateLabel} - {districtLabel} - {areaLabel} -{" "}
+              {pincodeLabel}
             </span>
           </div>
         </div>
