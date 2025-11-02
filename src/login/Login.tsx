@@ -75,7 +75,7 @@ const Login = () => {
         await dispatch(loginAsync(login)).unwrap();
         navigate("/");
       } catch (error) {
-        console.error("Login failed", error);
+        console.error("Login failed now", error);
         setErrors({
           password:
             "Login failed. Please check your credentials and try again.",
