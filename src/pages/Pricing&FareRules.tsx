@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { getHours, getMinutes } from "date-fns";
 import {
-  Form,
   Button,
   Table,
   Space,
@@ -484,7 +483,6 @@ const apiResponse: ApiItem[] = [
 
 const PricingAndFareRules: React.FC = () => {
   const location = useLocation();
-  const [filterForm] = Form.useForm<FilterValues>();
   const navigate = useNavigate();
 
   // put this near your other helpers
