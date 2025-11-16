@@ -7,6 +7,7 @@ import {
   DollarOutlined,
   MenuOutlined,
 } from "@ant-design/icons";
+import { FaHandHoldingUsd } from "react-icons/fa";
 import type { MenuProps } from "antd";
 import { Layout, Menu, Avatar, ConfigProvider, Button, Drawer } from "antd";
 import logo from "/logo1.png";
@@ -72,6 +73,7 @@ const Deductions = lazy(() => import("./pages/Deductions"));
 const SignUp = lazy(() => import("./signup/Signup"));
 const Login = lazy(() => import("./login/Login"));
 const ResetPassword = lazy(() => import("./login/ResetPassword"));
+const DriverTransaction = lazy(()=>import("./pages/DriverTransaction"))
 
 // const PlaceholderContent: React.FC<{
 //   title: string;
@@ -182,6 +184,11 @@ const RootLayout: React.FC = () => {
       label: <Link to="/Deductions">Deduction Management</Link>,
       key: "/Deductions",
       icon: <MdOutlineMoneyOff />,
+    },
+    {
+      label: <Link to="/DriverTransaction">Driver Transaction </Link>,
+      key: "/DriverTransaction",
+      icon: <FaHandHoldingUsd />,
     },
   ];
   return (
@@ -446,7 +453,7 @@ const router = createBrowserRouter([
           <Suspense fallback={<RouteLoadingFallback />}>
             <Drivers />
           </Suspense>
-        ),
+        )
       },
       {
         path: "Deductions",
@@ -474,6 +481,14 @@ const router = createBrowserRouter([
           },
         ],
       },
+      {
+        path:"DriverTransaction",
+        element:(
+          <Suspense fallback={<RouteLoadingFallback />}>
+          <DriverTransaction/>
+          </Suspense>
+        )
+      }
     ],
   },
   {
