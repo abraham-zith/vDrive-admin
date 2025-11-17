@@ -1,0 +1,268 @@
+// src/pages/InvoiceTemplates.tsx
+import React, { useState } from "react";
+import { Tabs, Button, Tag, Pagination } from "antd";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store";
+import type { TripDetailsType } from "../store/slices/tripSlice";
+
+import {
+  FileTextOutlined,
+  UserOutlined,
+  CarOutlined,
+  BarChartOutlined,
+  CloudDownloadOutlined,
+  SendOutlined,
+} from "@ant-design/icons";
+
+import TitleBar from "../components/TitleBarCommon/TitleBar";
+
+import CustomerInvoice from "../components/InvoiceTemplates/CustomerInvoice";
+import DriverInvoice from "../components/InvoiceTemplates/DriverInvoice";
+import DailyTripReport from "../components/InvoiceTemplates/DailyTripReport";
+import AdminPlatformReport from "../components/InvoiceTemplates/AdminPlatformReport";
+
+// Extend Trip type to include invoice sending status
+type TripInvoiceState = TripDetailsType & {
+  sentToCustomer?: boolean;
+  sentToDriver?: boolean;
+  sentToAdmin?: boolean;
+};
+
+// Filter trips created today
+// const getTodayTrips = (data: TripInvoiceState[]) => {
+//   const today = new Date().toISOString().split("T")[0];
+//   return data.filter((t) => t.createdAt.startsWith(today));
+// };
+
+// Trip list component for customer/driver/admin
+const TripInvoiceList: React.FC<{
+  data: TripInvoiceState[];
+  type: "customer" | "driver" | "admin";
+  openPreview: (trip: TripInvoiceState) => void;
+  sendHandler: (trip: TripInvoiceState) => void;
+}> = ({ data, type, openPreview, sendHandler }) => {
+  const statusKey =
+    type === "customer"
+      ? "sentToCustomer"
+      : type === "driver"
+      ? "sentToDriver"
+      : "sentToAdmin";
+
+  const completedTrips = data.filter((t) => t.status === "Completed");
+
+  const pageSize = 10;
+  const [page, setPage] = useState(1);
+  const paginated = completedTrips.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  return (
+    <div className="mt-4">
+      <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3">
+        {paginated.map((trip) => (
+          <div
+            key={trip.tripId}
+            className="p-4 border bg-gray-50 rounded-lg flex justify-between items-center"
+          >
+            <div className="w-[60%]">
+              <p className="font-semibold">
+                {type === "customer" && `${trip.customerName} • ${trip.tripId}`}
+                {type === "driver" && `${trip.driverName} • ${trip.tripId}`}
+                {type === "admin" && `Trip ${trip.tripId}`}
+              </p>
+              <p className="text-xs text-gray-500">
+                {trip.pickup} → {trip.drop}
+              </p>
+              {type === "driver" && (
+                <p className="text-xs text-gray-500">
+                  Vehicle: {trip.carNumber} • {trip.carType}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Tag color={trip[statusKey] ? "green" : "red"}>
+                {trip[statusKey] ? "Sent" : "Not Sent"}
+              </Tag>
+
+              <Button size="small" onClick={() => openPreview(trip)}>
+                Preview
+              </Button>
+
+              {/* Icon button placeholder */}
+              <Button size="small" icon={<CloudDownloadOutlined />} />
+
+              <Button
+                size="small"
+                icon={<SendOutlined />}
+                type={trip[statusKey] ? "default" : "primary"}
+                onClick={() => sendHandler(trip)}
+              >
+                {trip[statusKey] ? "Resend" : "Send"}
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-center mt-4">
+        <Pagination
+          current={page}
+          pageSize={pageSize}
+          total={completedTrips.length}
+          onChange={(p) => setPage(p)}
+          showSizeChanger={false}
+        />
+      </div>
+    </div>
+  );
+};
+
+const InvoiceTemplates: React.FC = () => {
+  const tripData = useSelector(
+    (state: RootState) => state.trips.trips
+  ) as TripInvoiceState[];
+
+  const [openModal, setOpenModal] = useState({
+    customer: false,
+    driver: false,
+    daily: false,
+    admin: false,
+  });
+
+  const [selectedTrip, setSelectedTrip] = useState<TripInvoiceState | null>(
+    null
+  );
+
+  const openPreview = (
+    key: keyof typeof openModal,
+    trip?: TripInvoiceState
+  ) => {
+    setSelectedTrip(trip ?? null);
+    setOpenModal({ ...openModal, [key]: true });
+  };
+
+  const closePreview = (key: keyof typeof openModal) => {
+    setSelectedTrip(null);
+    setOpenModal({ ...openModal, [key]: false });
+  };
+
+  const mockSend = (t: TripInvoiceState) =>
+    alert(`Sending invoice for ${t.tripId}`);
+
+  return (
+    <TitleBar
+      title="Invoice & Reports"
+      description="Preview invoices and platform reports."
+    >
+      <div className="bg-white p-4 rounded-xl shadow-md min-h-[80vh] overflow-y-auto">
+        <Tabs
+          items={[
+            {
+              key: "customer",
+              label: (
+                <span className="flex items-center gap-2">
+                  <UserOutlined /> Customer Invoices
+                </span>
+              ),
+              children: (
+                <TripInvoiceList
+                  data={tripData}
+                  type="customer"
+                  openPreview={(t) => openPreview("customer", t)}
+                  sendHandler={mockSend}
+                />
+              ),
+            },
+            {
+              key: "driver",
+              label: (
+                <span className="flex items-center gap-2">
+                  <CarOutlined /> Driver Invoices
+                </span>
+              ),
+              children: (
+                <TripInvoiceList
+                  data={tripData}
+                  type="driver"
+                  openPreview={(t) => openPreview("driver", t)}
+                  sendHandler={mockSend}
+                />
+              ),
+            },
+            {
+              key: "daily",
+              label: (
+                <span className="flex items-center gap-2">
+                  <BarChartOutlined /> Daily Trip Report
+                </span>
+              ),
+              children: (
+                <section className="p-4 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">Daily Summary</h2>
+
+                    <div className="flex gap-2">
+                      <Button type="default" icon={<CloudDownloadOutlined />}>
+                        Preview
+                      </Button>
+
+                      <Button type="primary" icon={<FileTextOutlined />}>
+                        Export PDF
+                      </Button>
+                    </div>
+                  </div>
+                </section>
+              ),
+            },
+            {
+              key: "admin",
+              label: (
+                <span className="flex items-center gap-2">
+                  <BarChartOutlined /> Platform Report
+                </span>
+              ),
+              children: (
+                <section className="p-3 space-y-3">
+                  <Button type="primary" icon={<FileTextOutlined />}>
+                    Preview Platform Report
+                  </Button>
+
+                  <Button type="default" icon={<CloudDownloadOutlined />}>
+                    Export PDF
+                  </Button>
+                </section>
+              ),
+            },
+          ]}
+        />
+      </div>
+
+      {/* Modals */}
+      <CustomerInvoice
+        isOpen={openModal.customer}
+        onClose={() => closePreview("customer")}
+        trip={selectedTrip ?? undefined}
+      />
+
+      <DriverInvoice
+        isOpen={openModal.driver}
+        onClose={() => closePreview("driver")}
+        trip={selectedTrip ?? undefined}
+      />
+
+      <DailyTripReport
+        isOpen={openModal.daily}
+        onClose={() => closePreview("daily")}
+      />
+
+      <AdminPlatformReport
+        isOpen={openModal.admin}
+        onClose={() => closePreview("admin")}
+      />
+    </TitleBar>
+  );
+};
+
+export default InvoiceTemplates;

@@ -26,7 +26,7 @@ import FullScreenLoader from "./components/FullScreenLoader";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
-import { IoCarOutline } from "react-icons/io5";
+import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
 
 
 // Loading component for route suspense
@@ -55,11 +55,11 @@ const RouteLoadingFallback = () => (
     <p style={{ marginTop: 16, color: "#666" }}>Loading...</p>
     <style>
       {`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}
+@keyframes spin {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
+}
+`}
     </style>
   </div>
 );
@@ -67,6 +67,7 @@ const RouteLoadingFallback = () => (
 // Lazy load heavy components for better bundle splitting
 const Users = lazy(() => import("./pages/Users"));
 const Admins = lazy(() => import("./pages/Admins"));
+const InvoiceTemplates = lazy(() => import("./pages/InvoiceTemplates"));
 const TripDetails = lazy(() => import("./pages/TripDetails"));
 const Drivers = lazy(() => import("./pages/Drivers"));
 const DriverPricing = lazy(() => import("./pages/DriverPricing"));
@@ -77,13 +78,13 @@ const Login = lazy(() => import("./login/Login"));
 const ResetPassword = lazy(() => import("./login/ResetPassword"));
 
 // const PlaceholderContent: React.FC<{
-//   title: string;
-//   children?: React.ReactNode;
+// title: string;
+// children?: React.ReactNode;
 // }> = ({ title, children }) => (
-//   <div>
-//     <h2 className="text-2xl font-semibold mb-4">{title}</h2>
-//     {children || <p>Content for the {title.toLowerCase()} page.</p>}
-//   </div>
+// <div>
+// <h2 className="text-2xl font-semibold mb-4">{title}</h2>
+// {children || <p>Content for the {title.toLowerCase()} page.</p>}
+// </div>
 // );
 
 const { Content, Sider, Header } = Layout;
@@ -182,6 +183,11 @@ const RootLayout: React.FC = () => {
       icon: <RiAdminLine />,
     },
     {
+      label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>,
+      key: "/InvoiceTemplates",
+      icon: <IoReceiptOutline />,
+    },
+    {
       label: <Link to="/TripDetails">TripDetails</Link>,
       key: "/TripDetails",
       icon: <IoCarOutline />,
@@ -258,19 +264,17 @@ const RootLayout: React.FC = () => {
                 className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
               >
                 <div
-                  className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
-                    collapsed ? "justify-center" : "gap-3"
-                  }`}
+                  className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${collapsed ? "justify-center" : "gap-3"
+                    }`}
                 >
                   {collapsed ? null : (
                     <Avatar size="large" icon={<UserOutlined />} />
                   )}
                   <div
-                    className={`grid transition-all duration-300 ease-in-out ${
-                      collapsed
+                    className={`grid transition-all duration-300 ease-in-out ${collapsed
                         ? "grid-rows-[0fr] opacity-0"
                         : "grid-rows-[1fr] opacity-100"
-                    }`}
+                      }`}
                   >
                     <div className="overflow-hidden">
                       <div className="flex flex-col text-black">
@@ -314,8 +318,8 @@ const RootLayout: React.FC = () => {
               isMobile || !isAuthenticated || location.pathname === "/login"
                 ? 0
                 : collapsed
-                ? 80
-                : 250,
+                  ? 80
+                  : 250,
             transition: "margin-left 0.2s",
           }}
         >
@@ -360,11 +364,10 @@ const RootLayout: React.FC = () => {
           )}
           <Content>
             <div
-              className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
-                isMobile && isAuthenticated && location.pathname !== "/login"
+              className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${isMobile && isAuthenticated && location.pathname !== "/login"
                   ? "pt-16 h-[100dvh]"
                   : "h-[100dvh]"
-              }`}
+                }`}
             >
               <Outlet />
             </div>
@@ -445,6 +448,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <Admins />
+          </Suspense>
+        ),
+      },
+      {
+        path: "InvoiceTemplates",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <InvoiceTemplates />
           </Suspense>
         ),
       },
