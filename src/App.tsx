@@ -26,6 +26,8 @@ import FullScreenLoader from "./components/FullScreenLoader";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
+import { IoCarOutline } from "react-icons/io5";
+
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -65,6 +67,7 @@ const RouteLoadingFallback = () => (
 // Lazy load heavy components for better bundle splitting
 const Users = lazy(() => import("./pages/Users"));
 const Admins = lazy(() => import("./pages/Admins"));
+const TripDetails = lazy(() => import("./pages/TripDetails"));
 const Drivers = lazy(() => import("./pages/Drivers"));
 const DriverPricing = lazy(() => import("./pages/DriverPricing"));
 const PricingAndFareRules = lazy(() => import("./pages/Pricing&FareRules"));
@@ -177,6 +180,11 @@ const RootLayout: React.FC = () => {
       label: <Link to="/admins">Admins</Link>,
       key: "/admins",
       icon: <RiAdminLine />,
+    },
+    {
+      label: <Link to="/TripDetails">TripDetails</Link>,
+      key: "/TripDetails",
+      icon: <IoCarOutline />,
     },
     {
       label: <Link to="/Deductions">Deduction Management</Link>,
@@ -437,6 +445,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <Admins />
+          </Suspense>
+        ),
+      },
+      {
+        path: "TripDetails",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <TripDetails />
           </Suspense>
         ),
       },
