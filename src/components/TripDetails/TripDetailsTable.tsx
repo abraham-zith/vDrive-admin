@@ -86,7 +86,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
       ),
     },
     {
-      title: "Status",
+      title: "Trip Status",
       render: (_, r) => (
         <Tag
           color={
