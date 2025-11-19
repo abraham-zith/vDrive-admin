@@ -13,22 +13,15 @@ import {
 } from "antd";
 import type { TableColumnsType } from "antd";
 
-import {
-  GrPhone,
-  GrLocation
-} from "react-icons/gr";
+import { GrPhone, GrLocation } from "react-icons/gr";
 import { CiUser } from "react-icons/ci";
 import {
   AiOutlineInfoCircle,
   AiOutlineTag
 } from "react-icons/ai";
-import {
-  MdAccessTime
-} from "react-icons/md";
+import { MdAccessTime } from "react-icons/md";
 import { BsFillPersonFill } from "react-icons/bs";
 import {
-  FaFlag,
-  FaMapMarkedAlt,
   FaHeadset,
   FaAddressCard,
 } from "react-icons/fa";
@@ -38,12 +31,10 @@ import {
   IoLocationOutline,
   IoPeopleOutline,
   IoCalendarOutline,
-  IoStarOutline,
   IoSettingsOutline,
 } from "react-icons/io5";
 
 import { CloseOutlined } from "@ant-design/icons";
-
 import type { TripDetailsType } from "../../store/slices/tripSlice";
 
 const { Text } = Typography;
@@ -56,6 +47,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [trip, setTrip] = useState<TripDetailsType | null>(null);
 
+  // 🔹 Table Columns
   const columns: TableColumnsType<TripDetailsType> = [
     {
       title: "Trip ID",
@@ -75,20 +67,12 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
       title: "Driver",
       render: (_, r) => (
         <div>
-          <div>{r.driverName || "No Driver"}</div>
+          <div>{r.driverName}</div>
           <small style={{ color: "#888" }}>
             {r.carNumber} • {r.carType}
           </small>
         </div>
       ),
-    },
-    {
-      title: "Trip Type",
-      dataIndex: "tripType",
-    },
-    {
-      title: "Schedule",
-      dataIndex: "schedule",
     },
     {
       title: "Route",
@@ -108,11 +92,9 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
           color={
             r.status === "Completed"
               ? "green"
-              : r.status === "In Progress"
-              ? "blue"
               : r.status === "Cancelled"
-              ? "red"
-              : "orange"
+                ? "red"
+                : "orange"
           }
         >
           {r.status}
@@ -123,19 +105,9 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
       title: "Fare",
       render: (_, r) => <>₹{r.fare.toFixed(2)}</>,
     },
-    {
-      title: "Flags",
-      render: (_, r) =>
-        r.flags?.length
-          ? r.flags.map((f) => (
-              <Tag key={f} color="purple">
-                {f}
-              </Tag>
-            ))
-          : "—",
-    },
   ];
 
+  // 🔹 Reusable Card Section
   const DetailCard = ({
     icon,
     title,
@@ -175,6 +147,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
         })}
       />
 
+      {/* Drawer */}
       <Drawer
         title={`Trip Details: ${trip?.tripId}`}
         placement="right"
@@ -186,8 +159,8 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
         {!trip ? (
           <p>No trip selected</p>
         ) : (
-           <>
-
+          <>
+            {/* Status */}
             <DetailCard icon={<IoReceiptOutline size={20} />} title="Trip Status">
               <Descriptions column={2} size="small" colon={false}>
                 <Descriptions.Item label="Status">
@@ -195,28 +168,22 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
                     color={
                       trip.status === "Completed"
                         ? "green"
-                        : trip.status === "In Progress"
-                          ? "blue"
-                          : trip.status === "Cancelled"
-                            ? "red"
-                            : "orange"
+                        : trip.status === "Cancelled"
+                          ? "red"
+                          : "orange"
                     }
                   >
                     {trip.status}
                   </Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="Flags">
-                  {trip.flags?.length
-                    ? trip.flags.map((f) => (
-                      <Tag key={f} color="purple">
-                        {f}
-                      </Tag>
-                    ))
-                    : "—"}
+
+                <Descriptions.Item label="Payment Method">
+                  {trip.paymentMethod}
                 </Descriptions.Item>
               </Descriptions>
             </DetailCard>
 
+            {/* Trip Information */}
             <DetailCard
               icon={<IoLocationOutline size={20} />}
               title="Trip Information"
@@ -230,21 +197,6 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
                   }
                 >
                   {trip.pickup}
-                  {trip.zone && (
-                    <div
-                      style={{
-                        marginTop: 4,
-                        padding: "2px 8px",
-                        borderRadius: 10,
-                        border: "1px solid #ddd",
-                        background: "#fafafa",
-                        width: "fit-content",
-                        fontSize: 12,
-                      }}
-                    >
-                      {trip.zone}
-                    </div>
-                  )}
                 </Descriptions.Item>
 
                 <Descriptions.Item
@@ -267,28 +219,60 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
                 <Descriptions.Item label="Duration">
                   {trip.duration}
                 </Descriptions.Item>
-                <Descriptions.Item label="Trip Type">
-                  {trip.tripType}
-                </Descriptions.Item>
-                <Descriptions.Item label="Schedule">
-                  {trip.schedule}
-                </Descriptions.Item>
               </Descriptions>
 
               <Divider />
 
+              {/* Fare Breakdown */}
               <Descriptions column={1} size="small" colon={false}>
                 <Descriptions.Item>
                   <Row justify="space-between">
                     <Col>Base Fare</Col>
-                    <Col>₹{trip.baseFare ?? 0}</Col>
+                    <Col>₹{trip.baseFare}</Col>
+                  </Row>
+                </Descriptions.Item>
+
+                <Descriptions.Item>
+                  <Row justify="space-between">
+                    <Col>Distance Fare</Col>
+                    <Col>₹{trip.distanceFare}</Col>
+                  </Row>
+                </Descriptions.Item>
+
+                <Descriptions.Item>
+                  <Row justify="space-between">
+                    <Col>Time Fare</Col>
+                    <Col>₹{trip.timeFare}</Col>
+                  </Row>
+                </Descriptions.Item>
+
+                <Descriptions.Item>
+                  <Row justify="space-between">
+                    <Col>Surge</Col>
+                    <Col>₹{trip.surge}</Col>
+                  </Row>
+                </Descriptions.Item>
+
+                <Descriptions.Item>
+                  <Row justify="space-between">
+                    <Col>Toll</Col>
+                    <Col>₹{trip.toll}</Col>
                   </Row>
                 </Descriptions.Item>
 
                 <Descriptions.Item>
                   <Row justify="space-between">
                     <Col>Discount</Col>
-                    <Col style={{ color: "red" }}>₹{trip.discount ?? 0}</Col>
+                    <Col style={{ color: "red" }}>₹{trip.discount}</Col>
+                  </Row>
+                </Descriptions.Item>
+
+                <Divider />
+
+                <Descriptions.Item>
+                  <Row justify="space-between">
+                    <Col>GST</Col>
+                    <Col>₹{trip.tax}</Col>
                   </Row>
                 </Descriptions.Item>
 
@@ -303,8 +287,10 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
               </Descriptions>
             </DetailCard>
 
+            {/* People & Vehicle */}
             <DetailCard icon={<IoPeopleOutline size={20} />} title="People & Vehicle">
               <Descriptions layout="vertical" column={2} colon={false}>
+                {/* Customer */}
                 <Descriptions.Item label="Customer">
                   <div style={{ display: "flex", gap: 12 }}>
                     <CiUser size={30} color="#1890ff" />
@@ -317,6 +303,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
                   </div>
                 </Descriptions.Item>
 
+                {/* Driver */}
                 <Descriptions.Item label="Driver">
                   <div style={{ display: "flex", gap: 12 }}>
                     <FaAddressCard size={30} />
@@ -334,40 +321,15 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
               </Descriptions>
             </DetailCard>
 
+            {/* Timeline */}
             <DetailCard icon={<IoCalendarOutline size={20} />} title="Trip Timeline">
-              {[
-                ["Created At", trip.createdAt],
-                ["Scheduled For", trip.scheduledFor],
-                ["Created By", trip.createdBy],
-                ["Last Updated By", trip.lastUpdatedBy],
-              ].map(([label, value]) => (
-                <Row
-                  key={label}
-                  justify="space-between"
-                  style={{ marginBottom: 10 }}
-                >
-                  <Col style={{ fontWeight: 500 }}>{label}</Col>
-                  <Col>{value ?? "N/A"}</Col>
-                </Row>
-              ))}
+              <Row justify="space-between" style={{ marginBottom: 10 }}>
+                <Col style={{ fontWeight: 500 }}>Created At</Col>
+                <Col>{trip.createdAt}</Col>
+              </Row>
             </DetailCard>
 
-            <DetailCard icon={<IoStarOutline size={20} />} title="Ratings">
-              {[
-                ["Customer Rating", trip.customerRating],
-                ["Driver Rating", trip.driverRating],
-              ].map(([label, value]) => (
-                <Row
-                  key={label}
-                  justify="space-between"
-                  style={{ marginBottom: 10 }}
-                >
-                  <Col style={{ fontWeight: 500 }}>{label}</Col>
-                  <Col>{value ? `${value}/5` : "N/A"}</Col>
-                </Row>
-              ))}
-            </DetailCard>
-
+            {/* Admin Actions */}
             <DetailCard
               icon={<IoSettingsOutline size={20} />}
               title="Admin Actions"
@@ -376,11 +338,9 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
                 size="small"
                 dataSource={[
                   { icon: <BsFillPersonFill />, text: "Assign Driver" },
-                  { icon: <MdAccessTime />, text: "Auto Re-route" },
+                  { icon: <MdAccessTime />, text: "Adjust Fare" },
                   { icon: <AiOutlineTag />, text: "Clone Trip" },
                   { icon: <AiOutlineInfoCircle />, text: "Trip Report" },
-                  { icon: <FaFlag />, text: "Flag Trip" },
-                  { icon: <FaMapMarkedAlt />, text: "View on Map" },
                   { icon: <FaHeadset />, text: "Contact Support" },
                 ]}
                 renderItem={({ icon, text }) => (
