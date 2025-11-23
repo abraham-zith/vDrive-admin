@@ -1,5 +1,5 @@
 import React from "react";
-import DeductionTable from "../components/DeductionsTable/DeductionsTable"; // import the table component
+import DeductionTable from "../components/DeductionsTable/DeductionsTable";
 import {
   CalculatorOutlined,
   DollarOutlined,
@@ -11,6 +11,10 @@ import {
 import TitleBar from "../components/TitleBarCommon/TitleBar";
 import { Button } from "antd";
 import { IoMdRefresh } from "react-icons/io";
+import AdvancedFilters from "../components/AdvancedFilters/AdvanceFilters";
+import type { FilterField } from "../components/AdvancedFilters/AdvanceFilters";
+import dayjs from "dayjs";
+import { useState } from "react";
 
 export interface Driver {
   fullName: string;
@@ -66,7 +70,7 @@ const Deductions = () => {
       balanceBefore: "$1,250.00",
       balanceAfter: "$1,124.50",
       status: "Success",
-      date: "Jan 15, 2024",
+      date: "2025-10-01T10:00:00",
       reference: "REF-001",
       performedBy: "System",
     },
@@ -83,12 +87,12 @@ const Deductions = () => {
       balanceBefore: "$890.25",
       balanceAfter: "$844.50",
       status: "Failed",
-      date: "Jan 14, 2024",
+      date: "2025-10-01T10:00:00",
       reference: "REF-002",
       performedBy: "Admin",
     },
     {
-      id: "DED-2024-002",
+      id: "DED-2024-003",
       driver: {
         fullName: "Alice Johnson",
         id: "DRV-002",
@@ -100,12 +104,12 @@ const Deductions = () => {
       balanceBefore: "$890.25",
       balanceAfter: "$844.50",
       status: "Failed",
-      date: "Jan 14, 2024",
+      date: "2025-10-01T10:00:00",
       reference: "REF-002",
       performedBy: "Admin",
     },
     {
-      id: "DED-2024-002",
+      id: "DED-2024-004",
       driver: {
         fullName: "Alice Johnson",
         id: "DRV-002",
@@ -117,11 +121,54 @@ const Deductions = () => {
       balanceBefore: "$890.25",
       balanceAfter: "$844.50",
       status: "Failed",
-      date: "Jan 14, 2024",
+      date: "2025-10-02T10:00:00",
       reference: "REF-002",
       performedBy: "Admin",
     },
   ];
+
+  const [filteredData, setFilteredData] = useState<Deduction[]>(DATA);
+
+  const driverOptions = Array.from(
+    new Set(DATA.map((item) => item.driver.fullName))
+  ).map((name) => ({
+    value: name,
+    label: name,
+  }));
+
+  const fields: FilterField[] = [
+    {
+      name: "driver",
+      label: "Driver",
+      type: "select",
+      options: driverOptions,
+    },
+    { name: "date", label: "Date", type: "date" },
+  ];
+
+
+  const applyFilters = (values: Record<string, any>) => {
+    let tempData = DATA;
+
+    if (values?.date) {
+      tempData = tempData.filter((user) =>
+        dayjs(user?.date).isSame(values?.date, "day")
+      );
+    }
+
+    if (values?.driver?.length > 0) {
+      const selectedDriver = Array.isArray(values?.driver)
+        ? values?.driver
+        : [values?.driver];
+
+      tempData = tempData.filter((user) =>
+        selectedDriver.includes(user?.driver?.fullName)
+      );
+    }
+
+    setFilteredData(tempData);
+  };
+
 
   const stats = [
     {
@@ -129,7 +176,7 @@ const Deductions = () => {
       value: "1,247",
       icon: (
         <span className="text-blue-500 text-base">
-          <CalculatorOutlined />{" "}
+          <CalculatorOutlined />
         </span>
       ),
     },
@@ -147,7 +194,7 @@ const Deductions = () => {
       value: "$8,940.25",
       icon: (
         <span className="text-blue-400 text-base">
-          <SettingOutlined />{" "}
+          <SettingOutlined />
         </span>
       ),
     },
@@ -156,7 +203,7 @@ const Deductions = () => {
       value: "$2,150.75",
       icon: (
         <span className="text-yellow-500 text-base">
-          <ReloadOutlined />{" "}
+          <ReloadOutlined />
         </span>
       ),
     },
@@ -165,7 +212,7 @@ const Deductions = () => {
       value: "$1,890.00",
       icon: (
         <span className="text-red-500 text-base">
-          <WarningOutlined />{" "}
+          <WarningOutlined />
         </span>
       ),
     },
@@ -174,7 +221,7 @@ const Deductions = () => {
       value: "$58,211.50",
       icon: (
         <span className="text-green-500">
-          <ArrowDownOutlined className="text-gray-400 text-base" />{" "}
+          <ArrowDownOutlined className="text-gray-400 text-base" />
         </span>
       ),
     },
@@ -196,13 +243,15 @@ const Deductions = () => {
         </div>
       }
     >
-      <div className="grid  grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-6">
+      <AdvancedFilters filterFields={fields} applyFilters={applyFilters} />
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-6">
         {stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
       </div>
 
-      <DeductionTable data={DATA} />
+      <DeductionTable data={filteredData} />
     </TitleBar>
   );
 };
