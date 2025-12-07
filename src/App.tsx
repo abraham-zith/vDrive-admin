@@ -8,7 +8,7 @@ import {
   MenuOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
-import { Layout, Menu, Avatar, ConfigProvider, Button, Drawer } from "antd";
+import { Layout, Menu, Avatar, ConfigProvider, Button, Drawer, App as AntdApp } from "antd";
 import logo from "/logo1.png";
 import {
   createBrowserRouter,
@@ -26,6 +26,7 @@ import FullScreenLoader from "./components/FullScreenLoader";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
+import { AntdStaticHolder } from "./utilities/antdStaticHolder";
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -213,7 +214,9 @@ const RootLayout: React.FC = () => {
         },
       }}
     >
-      {loading && <FullScreenLoader />}
+      <AntdApp>
+        <AntdStaticHolder />
+        {loading && <FullScreenLoader />}
       <Layout
         hasSider={
           !isMobile && isAuthenticated && location.pathname !== "/login"
@@ -414,6 +417,7 @@ const RootLayout: React.FC = () => {
           </Drawer>
         )}
       </Layout>
+      </AntdApp>
     </ConfigProvider>
   );
 };
