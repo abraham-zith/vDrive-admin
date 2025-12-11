@@ -8,7 +8,15 @@ import {
   MenuOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
-import { Layout, Menu, Avatar, ConfigProvider, Button, Drawer, App as AntdApp } from "antd";
+import {
+  Layout,
+  Menu,
+  Avatar,
+  ConfigProvider,
+  Button,
+  Drawer,
+  App as AntdApp,
+} from "antd";
 import logo from "/logo1.png";
 import {
   createBrowserRouter,
@@ -28,7 +36,6 @@ import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
 import { AntdStaticHolder } from "./utilities/antdStaticHolder";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
-
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -121,6 +128,7 @@ const RootLayout: React.FC = () => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
+  console.log("Checking");
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -231,203 +239,206 @@ const RootLayout: React.FC = () => {
       <AntdApp>
         <AntdStaticHolder />
         {loading && <FullScreenLoader />}
-      <Layout
-        hasSider={
-          !isMobile && isAuthenticated && location.pathname !== "/login"
-        }
-      >
-        {!isMobile && isAuthenticated && location.pathname !== "/login" && (
-          <Sider
-            style={siderStyle}
-            collapsed={collapsed}
-            width={250}
-            onMouseEnter={() => setCollapsed(false)}
-            onMouseLeave={() => setCollapsed(true)}
-          >
-            <div className="flex flex-col h-full">
-              <div className="flex-shrink-0">
-                <Logo collapsed={collapsed} />
-              </div>
+        <Layout
+          hasSider={
+            !isMobile && isAuthenticated && location.pathname !== "/login"
+          }
+        >
+          {!isMobile && isAuthenticated && location.pathname !== "/login" && (
+            <Sider
+              style={siderStyle}
+              collapsed={collapsed}
+              width={250}
+              onMouseEnter={() => setCollapsed(false)}
+              onMouseLeave={() => setCollapsed(true)}
+            >
+              <div className="flex flex-col h-full">
+                <div className="flex-shrink-0">
+                  <Logo collapsed={collapsed} />
+                </div>
 
-              <div className="flex-grow overflow-y-auto">
-                <Menu
-                  theme="dark"
-                  mode="inline"
-                  selectedKeys={
-                    location.pathname.startsWith("/PricingAndFareRules")
-                      ? ["/PricingAndFareRules"]
-                      : [location.pathname]
-                  }
-                  items={menuItems}
-                  className="font-medium"
-                />
-              </div>
+                <div className="flex-grow overflow-y-auto">
+                  <Menu
+                    theme="dark"
+                    mode="inline"
+                    selectedKeys={
+                      location.pathname.startsWith("/PricingAndFareRules")
+                        ? ["/PricingAndFareRules"]
+                        : [location.pathname]
+                    }
+                    items={menuItems}
+                    className="font-medium"
+                  />
+                </div>
 
-              <div
-                className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
-              >
                 <div
-                  className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${collapsed ? "justify-center" : "gap-3"
-                    }`}
+                  className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
                 >
-                  {collapsed ? null : (
-                    <Avatar size="large" icon={<UserOutlined />} />
-                  )}
                   <div
-                    className={`grid transition-all duration-300 ease-in-out ${collapsed
-                        ? "grid-rows-[0fr] opacity-0"
-                        : "grid-rows-[1fr] opacity-100"
-                      }`}
+                    className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
+                      collapsed ? "justify-center" : "gap-3"
+                    }`}
                   >
-                    <div className="overflow-hidden">
-                      <div className="flex flex-col text-black">
-                        <span className="font-medium whitespace-nowrap">
-                          Admin User
-                        </span>
-                        <span className="text-xs text-gray-500 whitespace-nowrap">
-                          admin@example.com
-                        </span>
+                    {collapsed ? null : (
+                      <Avatar size="large" icon={<UserOutlined />} />
+                    )}
+                    <div
+                      className={`grid transition-all duration-300 ease-in-out ${
+                        collapsed
+                          ? "grid-rows-[0fr] opacity-0"
+                          : "grid-rows-[1fr] opacity-100"
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <div className="flex flex-col text-black">
+                          <span className="font-medium whitespace-nowrap">
+                            Admin User
+                          </span>
+                          <span className="text-xs text-gray-500 whitespace-nowrap">
+                            admin@example.com
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <Menu
+                    theme="dark"
+                    mode="inline"
+                    selectable={false}
+                    inlineCollapsed={collapsed}
+                    items={[
+                      {
+                        key: "logout",
+                        label: "Logout",
+                        icon: <LogoutOutlined />,
+                        danger: true,
+                        onClick: async () => {
+                          await dispatch(logoutAsync());
+                          navigate("/login");
+                        },
+                      },
+                    ]}
+                    className="bg-transparent border-0 mt-2 font-medium"
+                  />
+                </div>
+              </div>
+            </Sider>
+          )}
+
+          <Layout
+            style={{
+              marginLeft:
+                isMobile || !isAuthenticated || location.pathname === "/login"
+                  ? 0
+                  : collapsed
+                  ? 80
+                  : 250,
+              transition: "margin-left 0.2s",
+            }}
+          >
+            {isMobile && isAuthenticated && location.pathname !== "/login" && (
+              <Header
+                style={{
+                  padding: "0 16px",
+                  background: "#fff",
+                  borderBottom: "1px solid #d9d9d9",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 1000,
+                }}
+              >
+                <img height={32} width={32} src={logo} alt="Logo" />
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <Button
+                    type="text"
+                    icon={<MenuOutlined />}
+                    onClick={showDrawer}
+                    style={{ fontSize: "16px" }}
+                  />
+                  <Button
+                    type="text"
+                    icon={<LogoutOutlined />}
+                    danger
+                    style={{ fontSize: "16px" }}
+                    onClick={async () => {
+                      await dispatch(logoutAsync());
+                      navigate("/login");
+                    }}
+                  />
+                </div>
+              </Header>
+            )}
+            <Content>
+              <div
+                className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
+                  isMobile && isAuthenticated && location.pathname !== "/login"
+                    ? "pt-16 h-[100dvh]"
+                    : "h-[100dvh]"
+                }`}
+              >
+                <Outlet />
+              </div>
+            </Content>
+          </Layout>
+
+          {isAuthenticated && (
+            <Drawer
+              title={
+                <div className="flex items-center gap-2">
+                  <img height={32} width={32} src={logo} alt="" />
+                  <span>vDrive Admin</span>
+                </div>
+              }
+              placement="left"
+              closable={false}
+              onClose={onCloseDrawer}
+              open={drawerVisible}
+              width={250}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                <div style={{ flex: 1 }}>
+                  <Menu
+                    theme="dark"
+                    mode="vertical"
+                    selectedKeys={
+                      location.pathname.startsWith("/PricingAndFareRules")
+                        ? ["/PricingAndFareRules"]
+                        : [location.pathname]
+                    }
+                    items={menuItems}
+                  />
+                </div>
+                <div className="p-4 border-t">
+                  <div className="flex items-center gap-3">
+                    <Avatar size="large" icon={<UserOutlined />} />
+                    <div>
+                      <div className="font-medium">Admin User</div>
+                      <div className="text-xs text-gray-500">
+                        admin@example.com
                       </div>
                     </div>
                   </div>
                 </div>
-                <Menu
-                  theme="dark"
-                  mode="inline"
-                  selectable={false}
-                  inlineCollapsed={collapsed}
-                  items={[
-                    {
-                      key: "logout",
-                      label: "Logout",
-                      icon: <LogoutOutlined />,
-                      danger: true,
-                      onClick: async () => {
-                        await dispatch(logoutAsync());
-                        navigate("/login");
-                      },
-                    },
-                  ]}
-                  className="bg-transparent border-0 mt-2 font-medium"
-                />
               </div>
-            </div>
-          </Sider>
-        )}
-
-        <Layout
-          style={{
-            marginLeft:
-              isMobile || !isAuthenticated || location.pathname === "/login"
-                ? 0
-                : collapsed
-                  ? 80
-                  : 250,
-            transition: "margin-left 0.2s",
-          }}
-        >
-          {isMobile && isAuthenticated && location.pathname !== "/login" && (
-            <Header
-              style={{
-                padding: "0 16px",
-                background: "#fff",
-                borderBottom: "1px solid #d9d9d9",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                position: "fixed",
-                top: 0,
-                left: 0,
-                right: 0,
-                zIndex: 1000,
-              }}
-            >
-              <img height={32} width={32} src={logo} alt="Logo" />
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "8px" }}
-              >
-                <Button
-                  type="text"
-                  icon={<MenuOutlined />}
-                  onClick={showDrawer}
-                  style={{ fontSize: "16px" }}
-                />
-                <Button
-                  type="text"
-                  icon={<LogoutOutlined />}
-                  danger
-                  style={{ fontSize: "16px" }}
-                  onClick={async () => {
-                    await dispatch(logoutAsync());
-                    navigate("/login");
-                  }}
-                />
-              </div>
-            </Header>
+            </Drawer>
           )}
-          <Content>
-            <div
-              className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${isMobile && isAuthenticated && location.pathname !== "/login"
-                  ? "pt-16 h-[100dvh]"
-                  : "h-[100dvh]"
-                }`}
-            >
-              <Outlet />
-            </div>
-          </Content>
         </Layout>
-
-        {isAuthenticated && (
-          <Drawer
-            title={
-              <div className="flex items-center gap-2">
-                <img height={32} width={32} src={logo} alt="" />
-                <span>vDrive Admin</span>
-              </div>
-            }
-            placement="left"
-            closable={false}
-            onClose={onCloseDrawer}
-            open={drawerVisible}
-            width={250}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-              }}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              <div style={{ flex: 1 }}>
-                <Menu
-                  theme="dark"
-                  mode="vertical"
-                  selectedKeys={
-                    location.pathname.startsWith("/PricingAndFareRules")
-                      ? ["/PricingAndFareRules"]
-                      : [location.pathname]
-                  }
-                  items={menuItems}
-                />
-              </div>
-              <div className="p-4 border-t">
-                <div className="flex items-center gap-3">
-                  <Avatar size="large" icon={<UserOutlined />} />
-                  <div>
-                    <div className="font-medium">Admin User</div>
-                    <div className="text-xs text-gray-500">
-                      admin@example.com
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Drawer>
-        )}
-      </Layout>
       </AntdApp>
     </ConfigProvider>
   );
