@@ -128,7 +128,6 @@ const RootLayout: React.FC = () => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  console.log("Checking");
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
