@@ -15,6 +15,20 @@ export interface State {
   state_name: string;
   country_id: string;
 }
+export interface District {
+  id: string;
+  city_name: string;
+  city_code: string;
+  state_id: string;
+}
+export interface Area {
+  id: string;
+  place: string;
+  zipcode: string;
+  city_id: string;
+  state_id: string;
+  country_id: string;
+}
 
 interface LocationState {
   countries: Country[];
@@ -25,6 +39,14 @@ interface LocationState {
   isLoadingStates: boolean;
   stateError: string | null;
   totalStates: number;
+  districts: District[];
+  isLoadingDistricts: boolean;
+  districtError: string | null;
+  totalDistricts: number;
+  areas: Area[];
+  isLoadingAreas: boolean;
+  areaError: string | null;
+  totalAreas: number;
 }
 
 const initialState: LocationState = {
@@ -36,12 +58,25 @@ const initialState: LocationState = {
   isLoadingStates: false,
   stateError: null,
   totalStates: 0,
+  districts: [],
+  isLoadingDistricts: false,
+  districtError: null,
+  totalDistricts: 0,
+  areas: [],
+  isLoadingAreas: false,
+  areaError: null,
+  totalAreas: 0,
 };
 
 // Cancel token for managing concurrent requests
 let cancelTokenSource: ReturnType<typeof axios.CancelToken.source> | null =
   null;
 let stateCancelTokenSource: ReturnType<typeof axios.CancelToken.source> | null =
+  null;
+let districtCancelTokenSource: ReturnType<
+  typeof axios.CancelToken.source
+> | null = null;
+let areaCancelTokenSource: ReturnType<typeof axios.CancelToken.source> | null =
   null;
 
 // Async thunk to fetch countries with cancel token support
@@ -122,6 +157,103 @@ export const fetchState = createAsyncThunk(
   }
 );
 
+export const fetchDistricts = createAsyncThunk(
+  "location/fetchDistricts",
+  async (
+    {
+      countryId = "",
+      stateId = "",
+      search = "",
+      limit = 20,
+    }: { search?: string; countryId: string; stateId?: string; limit?: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      if (districtCancelTokenSource) {
+        districtCancelTokenSource.cancel(
+          "Operation canceled due to new request."
+        );
+      }
+
+      districtCancelTokenSource = axios.CancelToken.source();
+      const params = new URLSearchParams();
+      params.append("limit", limit.toString());
+      if (stateId) {
+        params.append("state_id", stateId);
+      }
+      if (search) {
+        params.append("search", search);
+      }
+      const response = await axiosIns.get(
+        `/api/locations/cities/${countryId}?${params.toString()}`,
+        {
+          cancelToken: districtCancelTokenSource.token,
+        }
+      );
+
+      return response.data.data;
+    } catch (error) {
+      if (axios.isCancel(error)) {
+        // Request was cancelled, don't treat as error
+        return rejectWithValue("cancelled");
+      }
+      throw error;
+    }
+  }
+);
+
+export const fetchAreas = createAsyncThunk(
+  "location/fetchAreas",
+  async (
+    {
+      countryId = "",
+      stateId = "",
+      cityId = "",
+      search = "",
+      limit = 20,
+    }: {
+      search?: string;
+      countryId: string;
+      stateId?: string;
+      cityId?: string;
+      limit?: number;
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      if (areaCancelTokenSource) {
+        areaCancelTokenSource.cancel("Operation canceled due to new request.");
+      }
+
+      areaCancelTokenSource = axios.CancelToken.source();
+      const params = new URLSearchParams();
+      params.append("limit", limit.toString());
+      if (stateId) {
+        params.append("state_id", stateId);
+      }
+      if (cityId) {
+        params.append("city_id", cityId);
+      }
+      if (search) {
+        params.append("search", search);
+      }
+      const response = await axiosIns.get(
+        `/api/locations/areas/${countryId}?${params.toString()}`,
+        {
+          cancelToken: areaCancelTokenSource.token,
+        }
+      );
+
+      return response.data.data;
+    } catch (error) {
+      if (axios.isCancel(error)) {
+        return rejectWithValue("cancelled");
+      }
+      throw error;
+    }
+  }
+);
+
 const locationSlice = createSlice({
   name: "location",
   initialState,
@@ -134,11 +266,25 @@ const locationSlice = createSlice({
       state.countryError = null;
     },
     clearStates: (state) => {
-      state.countries = [];
-      state.totalCountries = 0;
+      state.states = [];
+      state.totalStates = 0;
     },
     clearStateError: (state) => {
       state.stateError = null;
+    },
+    clearDistricts: (state) => {
+      state.districts = [];
+      state.totalDistricts = 0;
+    },
+    clearDistrictError: (state) => {
+      state.districtError = null;
+    },
+    clearAreas: (state) => {
+      state.areas = [];
+      state.totalAreas = 0;
+    },
+    clearAreaError: (state) => {
+      state.areaError = null;
     },
   },
   extraReducers: (builder) => {
@@ -161,12 +307,12 @@ const locationSlice = createSlice({
           state.isLoadingCountries = false;
           state.countryError =
             action.error.message || "Failed to fetch countries";
-        } else {
-          state.isLoadingCountries = false;
         }
       })
       .addCase(fetchState.pending, (state) => {
         state.isLoadingStates = true;
+        state.states = [];
+        state.totalStates = 0;
         state.stateError = null;
       })
       .addCase(
@@ -182,12 +328,60 @@ const locationSlice = createSlice({
         if (action.payload !== "cancelled") {
           state.isLoadingStates = false;
           state.stateError = action.error.message || "Failed to fetch states";
-        } else {
-          state.isLoadingStates = false;
+        }
+      })
+      .addCase(fetchDistricts.pending, (state) => {
+        state.isLoadingDistricts = true;
+        state.districts = [];
+        state.totalDistricts = 0;
+        state.districtError = null;
+      })
+      .addCase(
+        fetchDistricts.fulfilled,
+        (state, action: PayloadAction<{ data: District[]; total: number }>) => {
+          state.isLoadingDistricts = false;
+          state.districts = action.payload.data;
+          state.totalDistricts = action.payload.total;
+        }
+      )
+      .addCase(fetchDistricts.rejected, (state, action) => {
+        if (action.payload !== "cancelled") {
+          state.isLoadingDistricts = false;
+          state.districtError =
+            action.error.message || "Failed to fetch districts";
+        }
+      })
+      .addCase(fetchAreas.pending, (state) => {
+        state.isLoadingAreas = true;
+        state.areas = [];
+        state.totalAreas = 0;
+        state.areaError = null;
+      })
+      .addCase(
+        fetchAreas.fulfilled,
+        (state, action: PayloadAction<{ data: Area[]; total: number }>) => {
+          state.isLoadingAreas = false;
+          state.areas = action.payload.data;
+          state.totalAreas = action.payload.total;
+        }
+      )
+      .addCase(fetchAreas.rejected, (state, action) => {
+        if (action.payload !== "cancelled") {
+          state.isLoadingAreas = false;
+          state.areaError = action.error.message || "Failed to fetch areas";
         }
       });
   },
 });
 
-export const { clearCountries, clearCountryError } = locationSlice.actions;
+export const {
+  clearCountries,
+  clearCountryError,
+  clearStates,
+  clearStateError,
+  clearDistricts,
+  clearDistrictError,
+  clearAreas,
+  clearAreaError,
+} = locationSlice.actions;
 export default locationSlice.reducer;

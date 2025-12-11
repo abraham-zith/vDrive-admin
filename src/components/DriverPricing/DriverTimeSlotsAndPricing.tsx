@@ -10,16 +10,13 @@ import {
   Tag,
   TimePicker,
 } from "antd";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { BsClock } from "react-icons/bs";
 import { FaRegStar } from "react-icons/fa";
 import { FiUsers } from "react-icons/fi";
 import dayjs, { type Dayjs } from "dayjs";
 import { LuZap } from "react-icons/lu";
-import {
-  mockHotspotApi,
-  type HotspotType,
-} from "../../utilities/mockHotspotApi";
+import { useAppSelector } from "../../store/hooks";
 
 export type Day =
   | "monday"
@@ -160,27 +157,14 @@ const DriverTimeSlotsAndPricing = ({
   multiplier,
   globalPrice,
 }: DriverTimeSlotsAndPricingProps) => {
+  const { hotspots } = useAppSelector((state) => state.hotspot);
   const [userType, setUserType] = useState<UserType>("elite-user");
-  const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
 
   // Load hotspot types on component mount
-  useEffect(() => {
-    loadHotspotTypes();
-  }, []);
-
-  const loadHotspotTypes = async () => {
-    try {
-      const types = await mockHotspotApi.getHotspotTypes();
-      setHotspotTypes(types);
-    } catch (error) {
-      console.error("Failed to load hotspot types");
-    }
-  };
+  // Fetching moved to parent page (DriverPricing)
 
   // Get selected hotspot type details
-  const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType
-  );
+  const selectedHotspotType = hotspots.find((type) => type.id === hotspotType);
 
   const userTypeDetails = {
     "normal-user": {
@@ -343,14 +327,13 @@ const DriverTimeSlotsAndPricing = ({
               <Tag color="processing">
                 <div className="flex gap-1 items-center">
                   <LuZap />
-                  <span>{selectedHotspotType.name}</span>
+                  <span>{selectedHotspotType.hotspot_name}</span>
                 </div>
               </Tag>
               <span className="text-sm">Active Hotspot Configuration</span>
             </div>
             <span className="text-sm">
-              Addition: +₹{selectedHotspotType.addition} • Multiplier:{" "}
-              {multiplier}x
+              Addition: +₹{selectedHotspotType.fare} • Multiplier: {multiplier}x
             </span>
           </div>
         )}

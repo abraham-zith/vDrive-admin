@@ -1,10 +1,6 @@
-import { useState, useEffect } from "react";
-import { Card, Select, Switch, InputNumber, Tag, Spin, message } from "antd";
+import { Card, Select, Switch, InputNumber, Tag, Spin } from "antd";
 import { ThunderboltOutlined, LoadingOutlined } from "@ant-design/icons";
-import {
-  mockHotspotApi,
-  type HotspotType,
-} from "../../utilities/mockHotspotApi";
+import { useAppSelector } from "../../store/hooks";
 
 interface HotspotConfigurationProps {
   hotspotEnabled: boolean;
@@ -23,32 +19,15 @@ const HotspotConfiguration = ({
   multiplier,
   setMultiplier,
 }: HotspotConfigurationProps) => {
-  const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { hotspots, loading } = useAppSelector((state) => state.hotspot);
 
   // Load hotspot types on component mount
-  useEffect(() => {
-    loadHotspotTypes();
-  }, []);
-
-  const loadHotspotTypes = async () => {
-    try {
-      setLoading(true);
-      const types = await mockHotspotApi.getHotspotTypes();
-      setHotspotTypes(types.filter((type) => type.isActive)); // Only show active types
-    } catch (error) {
-      message.error("Failed to load hotspot types");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetching moved to parent page (DriverPricing)
 
   // Get selected hotspot type details
-  const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType
-  );
+  const selectedHotspotType = hotspots.find((type) => type.id === hotspotType);
 
-  if (loading) {
+  if (loading && hotspots.length === 0) {
     return (
       <Card size="small">
         <div className="flex justify-center items-center h-32">
@@ -93,16 +72,22 @@ const HotspotConfiguration = ({
               <span>Hotspot Type</span>
               <Select
                 value={hotspotType}
-                onChange={setHotspotType}
+                onChange={(value) => {
+                  setHotspotType(value);
+                  const selected = hotspots.find((h) => h.id === value);
+                  if (selected) {
+                    setMultiplier(selected.multiplier);
+                  }
+                }}
                 placeholder="Select a hotspot type"
-                options={hotspotTypes.map((type) => ({
-                  value: type.name.toLowerCase().replace(/\s+/g, "-"),
+                options={hotspots.map((type) => ({
+                  value: type.id,
                   label: (
                     <div className="flex items-center gap-2">
                       <ThunderboltOutlined />
-                      <span>{type.name}</span>
+                      <span>{type.hotspot_name}</span>
                       <span className="text-xs text-gray-500">
-                        +₹{type.addition} - {type.multiplier}x
+                        +₹{type.fare} - {type.multiplier}x
                       </span>
                     </div>
                   ),
@@ -113,10 +98,10 @@ const HotspotConfiguration = ({
               <div className="w-full flex flex-col sm:flex-row gap-4">
                 <div className="w-full sm:w-1/2 flex flex-col">
                   <Tag color="blue" className="mb-2">
-                    {selectedHotspotType.name}
+                    {selectedHotspotType.hotspot_name}
                   </Tag>
                   <span className="text-sm text-gray-600">
-                    Addition: +₹{selectedHotspotType.addition}
+                    Addition: +₹{selectedHotspotType.fare}
                   </span>
                 </div>
                 <div className="w-full sm:w-1/2 flex flex-col">

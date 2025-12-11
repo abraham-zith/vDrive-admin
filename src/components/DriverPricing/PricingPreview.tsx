@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { Card, Typography, Tag } from "antd";
 import { MdOutlineLocationOn } from "react-icons/md";
 import { BsClock } from "react-icons/bs";
@@ -8,10 +7,6 @@ import {
   type UserType,
   type TimeSlot,
 } from "./DriverTimeSlotsAndPricing";
-import {
-  mockHotspotApi,
-  type HotspotType,
-} from "../../utilities/mockHotspotApi";
 import { useAppSelector } from "../../store/hooks";
 
 interface PricingPreviewProps {
@@ -37,38 +32,28 @@ const PricingPreview = ({
   hotspotType,
   multiplier,
 }: PricingPreviewProps) => {
-  const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
-
   // Get location data from Redux
-  const { countries, states } = useAppSelector((state) => state.location);
+  const { countries, states, districts, areas } = useAppSelector(
+    (state) => state.location
+  );
+  // Get hotspot data from Redux
+  const { hotspots } = useAppSelector((state) => state.hotspot);
 
   // Load hotspot types on component mount
-  useEffect(() => {
-    loadHotspotTypes();
-  }, []);
-
-  const loadHotspotTypes = async () => {
-    try {
-      const types = await mockHotspotApi.getHotspotTypes();
-      setHotspotTypes(types);
-    } catch (error) {
-      console.error("Failed to load hotspot types");
-    }
-  };
+  // Fetching moved to parent page (DriverPricing)
 
   // Get selected hotspot type details
-  const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType
-  );
+  const selectedHotspotType = hotspots.find((type) => type.id === hotspotType);
 
-  const hotspotAddition = selectedHotspotType?.addition || 40;
+  const hotspotAddition = Number(selectedHotspotType?.fare) || 40;
 
   // Find labels from Redux data
   const countryLabel =
     countries.find((c) => c.id === country)?.country_name || country;
   const stateLabel = states.find((s) => s.id === state)?.state_name || state;
-  const districtLabel = district || "N/A";
-  const areaLabel = area || "N/A";
+  const districtLabel =
+    districts.find((d) => d.id === district)?.city_name || district || "N/A";
+  const areaLabel = areas.find((a) => a.id === area)?.place || area || "N/A";
   const pincodeLabel = pincode || "N/A";
 
   const userTypeTags = {
@@ -143,7 +128,9 @@ const PricingPreview = ({
               <span className="font-semibold">Hotspot Effect</span>
             </div>
             <div className="p-2 bg-[#F8F9FA] rounded-md">
-              <Tag color="blue">{selectedHotspotType?.name || "Hotspot"}</Tag>
+              <Tag color="blue">
+                {selectedHotspotType?.hotspot_name || "Hotspot"}
+              </Tag>
               <div className="text-sm">Addition: +₹{hotspotAddition}</div>
               <div className="text-sm">Multiplier: {multiplier}x</div>
               <div className="text-green-500 text-sm">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Segmented, Button, Card } from "antd";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -10,15 +10,27 @@ import HotspotConfiguration from "../components/DriverPricing/HotspotConfigurati
 import PricingPreview from "../components/DriverPricing/PricingPreview";
 import HotspotTypes from "../components/DriverPricing/HotspotTypes";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { fetchHotspots } from "../store/slices/hotspotSlice";
 
 const DriverPricing = () => {
+  const dispatch = useAppDispatch();
+  const { hotspots } = useAppSelector((state) => state.hotspot);
   const [activeTab, setActiveTab] = useState("configuration");
+
+  // Centralized fetching for hotspots
+  useEffect(() => {
+    if (hotspots.length === 0) {
+      dispatch(fetchHotspots({}));
+    }
+  }, [dispatch, hotspots.length]);
+
   const navigate = useNavigate();
   const [country, setCountry] = useState("");
   const [state, setState] = useState("");
-  const [district, setDistrict] = useState("Kanchipuram");
-  const [area, setArea] = useState("Madippakkam");
-  const [pincode, setPincode] = useState("60091");
+  const [district, setDistrict] = useState("");
+  const [area, setArea] = useState("");
+  const [pincode, setPincode] = useState("");
   const [globalPrice, setGlobalPrice] = useState(1000);
 
   const [timeSlots, setTimeSlots] = useState<UserTimeSlots>({

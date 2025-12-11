@@ -1,11 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import locationReducer from "./slices/locationSlice";
+import hotspotReducer from "./slices/hotspotSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     location: locationReducer,
+    hotspot: hotspotReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Button,
   Card,
@@ -8,11 +8,9 @@ import {
   Form,
   Input,
   InputNumber,
-  Switch,
   message,
   Spin,
   Popconfirm,
-  Tag,
 } from "antd";
 import {
   PlusOutlined,
@@ -21,34 +19,23 @@ import {
   LoadingOutlined,
 } from "@ant-design/icons";
 import { LuZap } from "react-icons/lu";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
-  mockHotspotApi,
-  type HotspotType,
-} from "../../utilities/mockHotspotApi";
+  addHotspot,
+  updateHotspot,
+  deleteHotspot,
+  type Hotspot,
+} from "../../store/slices/hotspotSlice";
 
 const HotspotTypes = () => {
-  const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { hotspots, loading } = useAppSelector((state) => state.hotspot);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingType, setEditingType] = useState<HotspotType | null>(null);
+  const [editingType, setEditingType] = useState<Hotspot | null>(null);
   const [form] = Form.useForm();
 
   // Load hotspot types on component mount
-  useEffect(() => {
-    loadHotspotTypes();
-  }, []);
-
-  const loadHotspotTypes = async () => {
-    try {
-      setLoading(true);
-      const types = await mockHotspotApi.getHotspotTypes();
-      setHotspotTypes(types);
-    } catch (error) {
-      message.error("Failed to load hotspot types");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fetching moved to parent page (DriverPricing)
 
   const handleAdd = () => {
     setEditingType(null);
@@ -56,42 +43,22 @@ const HotspotTypes = () => {
     setModalVisible(true);
   };
 
-  const handleEdit = (type: HotspotType) => {
+  const handleEdit = (type: Hotspot) => {
     setEditingType(type);
     form.setFieldsValue({
-      name: type.name,
-      addition: type.addition,
+      hotspot_name: type.hotspot_name,
+      fare: type.fare,
       multiplier: type.multiplier,
-      isActive: type.isActive,
     });
     setModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
-      const success = await mockHotspotApi.deleteHotspotType(id);
-      if (success) {
-        message.success("Hotspot type deleted successfully");
-        loadHotspotTypes();
-      } else {
-        message.error("Failed to delete hotspot type");
-      }
-    } catch (error) {
+      await dispatch(deleteHotspot(id)).unwrap();
+      message.success("Hotspot type deleted successfully");
+    } catch {
       message.error("Failed to delete hotspot type");
-    }
-  };
-
-  const handleToggleActive = async (id: number) => {
-    try {
-      const updatedType = await mockHotspotApi.toggleHotspotType(id);
-      if (updatedType) {
-        message.success(
-          `Hotspot type ${updatedType.isActive ? "activated" : "deactivated"}`
-        );
-        loadHotspotTypes();
-      }
-    } catch (error) {
-      message.error("Failed to toggle hotspot type status");
     }
   };
 
@@ -101,24 +68,20 @@ const HotspotTypes = () => {
 
       if (editingType) {
         // Update existing
-        const updatedType = await mockHotspotApi.updateHotspotType(
-          editingType.id,
-          values
-        );
-        if (updatedType) {
-          message.success("Hotspot type updated successfully");
-        }
+        await dispatch(
+          updateHotspot({ id: editingType.id, data: values })
+        ).unwrap();
+        message.success("Hotspot type updated successfully");
       } else {
         // Create new
-        const newType = await mockHotspotApi.createHotspotType(values);
-        if (newType) {
-          message.success("Hotspot type created successfully");
-        }
+        await dispatch(
+          addHotspot({ ...values, id: crypto.randomUUID() })
+        ).unwrap(); // Generating ID purely for optimistic UI if needed, or if backend requires it as per previous analysis
+        message.success("Hotspot type created successfully");
       }
 
       setModalVisible(false);
-      loadHotspotTypes();
-    } catch (error) {
+    } catch {
       message.error("Failed to save hotspot type");
     }
   };
@@ -128,7 +91,7 @@ const HotspotTypes = () => {
     form.resetFields();
   };
 
-  if (loading) {
+  if (loading && hotspots.length === 0) {
     return (
       <Card size="small">
         <div className="flex justify-center items-center h-32">
@@ -166,37 +129,22 @@ const HotspotTypes = () => {
 
         <List
           itemLayout="horizontal"
-          dataSource={hotspotTypes}
+          dataSource={hotspots}
           renderItem={(item) => (
             <List.Item>
               <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 bg-white rounded-md border">
                 <div className="flex items-center gap-3 flex-1">
-                  <LuZap
-                    className={`text-lg ${
-                      item.isActive ? "text-yellow-500" : "text-gray-400"
-                    }`}
-                  />
+                  <LuZap className="text-lg text-yellow-500" />
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                      <span className="font-semibold">{item.name}</span>
-                      <Tag
-                        color={item.isActive ? "green" : "red"}
-                        className="w-fit"
-                      >
-                        {item.isActive ? "Active" : "Inactive"}
-                      </Tag>
+                      <span className="font-semibold">{item.hotspot_name}</span>
                     </div>
                     <span className="text-xs text-gray-600">
-                      +₹{item.addition} addition • {item.multiplier}x multiplier
+                      +₹{item.fare} fare • {item.multiplier}x multiplier
                     </span>
                   </div>
                 </div>
                 <div className="flex gap-2 items-center justify-end sm:justify-start">
-                  <Switch
-                    checked={item.isActive}
-                    onChange={() => handleToggleActive(item.id)}
-                    size="small"
-                  />
                   <Button
                     icon={<EditOutlined />}
                     onClick={() => handleEdit(item)}
@@ -228,13 +176,12 @@ const HotspotTypes = () => {
             form={form}
             layout="vertical"
             initialValues={{
-              isActive: true,
-              addition: 0,
+              fare: 0,
               multiplier: 1,
             }}
           >
             <Form.Item
-              name="name"
+              name="hotspot_name"
               label="Hotspot Type Name"
               rules={[
                 { required: true, message: "Please enter hotspot type name" },
@@ -244,11 +191,9 @@ const HotspotTypes = () => {
             </Form.Item>
 
             <Form.Item
-              name="addition"
-              label="Addition Amount (₹)"
-              rules={[
-                { required: true, message: "Please enter addition amount" },
-              ]}
+              name="fare"
+              label="Fare (₹)"
+              rules={[{ required: true, message: "Please enter fare amount" }]}
             >
               <InputNumber
                 min={0}
@@ -270,14 +215,6 @@ const HotspotTypes = () => {
                 style={{ width: "100%" }}
                 addonAfter="x"
               />
-            </Form.Item>
-
-            <Form.Item
-              name="isActive"
-              label="Active Status"
-              valuePropName="checked"
-            >
-              <Switch />
             </Form.Item>
           </Form>
         </Modal>
