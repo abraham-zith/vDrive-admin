@@ -94,6 +94,7 @@ const ResetPassword = lazy(() => import("./login/ResetPassword"));
 // {children || <p>Content for the {title.toLowerCase()} page.</p>}
 // </div>
 // );
+//comment added
 
 const { Content, Sider, Header } = Layout;
 
