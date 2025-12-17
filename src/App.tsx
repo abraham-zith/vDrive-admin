@@ -174,6 +174,8 @@ const RootLayout: React.FC = () => {
     }
   };
 
+  
+
   const menuItems: MenuProps["items"] = [
     { label: <Link to="/">Dashboard</Link>, key: "/", icon: <HomeOutlined /> },
     {
@@ -218,8 +220,10 @@ const RootLayout: React.FC = () => {
       key: "/Deductions",
       icon: <MdOutlineMoneyOff />,
     },
+
     {
-      label: <span>Setting</span>,
+      label: <Link to="/setting">Settings</Link>,
+      //key: "/setting/managelocation",
       key: "/setting",
       icon: <SettingOutlined />,
       children: [
@@ -227,6 +231,7 @@ const RootLayout: React.FC = () => {
           label: <Link to="/setting/managelocation">Manage Location</Link>,
           key: "/setting/managelocation",
         },
+       
       ],
     },
   ];
@@ -240,7 +245,7 @@ const RootLayout: React.FC = () => {
           location.pathname.startsWith(item.key as string)
         );
       })
-      .map((item) => item.key as string);
+      .map((item) => item?.key as string);
 
     setOpenMenuKeys(keys);
   }, [location.pathname]);
