@@ -28,6 +28,8 @@ import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
 import { AntdStaticHolder } from "./utilities/antdStaticHolder";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
+import DriversReconciliation from "./pages/DriversReconciliation";
+import { MdOutlinePerson  } from "react-icons/md";
 
 
 // Loading component for route suspense
@@ -197,6 +199,16 @@ const RootLayout: React.FC = () => {
       label: <Link to="/Deductions">Deduction Management</Link>,
       key: "/Deductions",
       icon: <MdOutlineMoneyOff />,
+    },
+    //   {
+    //   label: <Link to="/drivers-reconciliation">Drivers Reconciliation</Link>,
+    //   key: "/DriversReconciliation",
+    //   icon: <MdOutlinePerson  />,
+    // },
+    {
+      label: <Link to="/drivers-reconciliation">Drivers Reconciliation</Link>,
+      key: "/drivers-reconciliation",
+      icon: <MdOutlinePerson />,
     },
   ];
   return (
@@ -505,6 +517,15 @@ const router = createBrowserRouter([
           },
         ],
       },
+
+      {
+        path: "drivers-reconciliation",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <DriversReconciliation />
+          </Suspense>
+        ),
+      },
     ],
   },
   {
@@ -531,6 +552,7 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
+  
 ]);
 
 const App = () => (
@@ -538,6 +560,5 @@ const App = () => (
     <RouterProvider router={router} />
   </ErrorBoundary>
 );
-//comment
 
 export default App;
