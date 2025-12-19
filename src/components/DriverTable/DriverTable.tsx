@@ -13,6 +13,7 @@ import {
   Space,
   Dropdown,
   Menu,
+  Modal,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 
@@ -25,30 +26,75 @@ import {
   EditOutlined,
   StopOutlined,
   ClockCircleOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import { capitalize } from "../../utilities/capitalize";
+import axiosIns from "../../api/axios";
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import type { InputRef, TableColumnType } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import DriverDetails from "../DriverDetails/DriverDetails";
+import AddDriverModal from "../DriverDetails/AddDriver";
 import { useGetHeight } from "../../utilities/customheightWidth";
 interface DriverTableProps {
   data: Driver[];
+  onRefresh?: () => void;
 }
 
 type DataIndex = keyof Driver;
 
-const DriverTable = ({ data }: DriverTableProps) => {
+const DriverTable = ({ data, onRefresh }: DriverTableProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const tableHeight = useGetHeight(contentRef);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
   const searchInput = useRef<InputRef>(null);
   const openDrawer = (driver: Driver) => {
     setSelectedDriver(driver);
     setDrawerOpen(true);
+  };
+
+  const handleEditDriver = (driver: Driver) => {
+    setSelectedDriver(driver);
+    setEditModalOpen(true);
+    setEditModalOpen(true);
+  };
+
+  const handleAction = async (action: string, driver: Driver) => {
+    try {
+      if (action === "block") {
+        await axiosIns.patch(`/api/users/block/${driver.driverId}`);
+        message.success("Driver blocked");
+        if (onRefresh) onRefresh();
+      } else if (action === "suspend") {
+        await axiosIns.patch(`/api/users/disable/${driver.driverId}`);
+        message.success("Driver suspended");
+        if (onRefresh) onRefresh();
+      } else if (action === "delete") {
+        Modal.confirm({
+          title: "Are you sure you want to delete this driver?",
+          content: "This action cannot be undone.",
+          okText: "Yes, Delete",
+          okType: "danger",
+          onOk: async () => {
+            try {
+              await axiosIns.delete(`/api/users/delete/${driver.driverId}`);
+              message.success("Driver deleted");
+              if (onRefresh) onRefresh();
+            } catch (e) {
+              console.error(e);
+              message.error("Failed to delete driver");
+            }
+          },
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      message.error(`Failed to ${action} driver`);
+    }
   };
   const handleSearch = (
     selectedKeys: string[],
@@ -299,18 +345,36 @@ const DriverTable = ({ data }: DriverTableProps) => {
             <Menu.Item key="view" icon={<EyeOutlined />}>
               View Details
             </Menu.Item>
-            <Menu.Item key="edit" icon={<EditOutlined />}>
+            <Menu.Item
+              key="edit"
+              icon={<EditOutlined />}
+              onClick={() => handleEditDriver(record)}
+            >
               Edit Profile
             </Menu.Item>
-            <Menu.Item key="block" icon={<StopOutlined />} danger>
+            <Menu.Item 
+              key="block" 
+              icon={<StopOutlined />} 
+              danger
+              onClick={() => handleAction("block", record)}
+            >
               Block Driver
             </Menu.Item>
             <Menu.Item
               key="suspend"
               icon={<ClockCircleOutlined />}
               style={{ color: "#fa8c16" }}
+              onClick={() => handleAction("suspend", record)}
             >
               Suspend Driver
+            </Menu.Item>
+            <Menu.Item
+              key="delete"
+              icon={<DeleteOutlined />}
+              danger
+              onClick={() => handleAction("delete", record)}
+            >
+              Delete Driver
             </Menu.Item>
           </Menu>
         );
@@ -359,6 +423,17 @@ const DriverTable = ({ data }: DriverTableProps) => {
         driver={selectedDriver}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        onUpdate={onRefresh}
+      />
+      <AddDriverModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSubmit={() => {
+          setEditModalOpen(false);
+          if (onRefresh) onRefresh();
+        }}
+        initial={selectedDriver || undefined}
+        mode="edit"
       />
     </>
   );

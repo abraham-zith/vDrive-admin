@@ -38,16 +38,21 @@ import {
   SendOutlined,
 } from "@ant-design/icons";
 import { capitalize } from "../../utilities/capitalize";
+import AddDriverModal from "./AddDriver";
+import { message } from "antd";
+import axiosIns from "../../api/axios";
 interface DriverDetailsProps {
   driver: Driver | null;
   onClose: () => void;
   open: boolean;
+  onUpdate?: () => void;
 }
 
 const DriverDetails: React.FC<DriverDetailsProps> = ({
   driver,
   onClose,
   open,
+  onUpdate,
 }) => {
   if (!driver) return null;
   const actionLabels: Record<string, string> = {
@@ -57,6 +62,85 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
   };
 
   const [activeKey, setActiveKey] = useState("1");
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!driver) return;
+    try {
+      if (newStatus === "blocked") {
+        await axiosIns.patch(`/api/users/block/${driver.driverId}`);
+        message.success(`Driver blocked successfully`);
+      } else if (newStatus === "suspended") {
+        await axiosIns.patch(`/api/users/disable/${driver.driverId}`);
+        message.success(`Driver disabled successfully`);
+      } else if (newStatus === "active" && (driver.status === "blocked" || driver.status === "suspended")) {
+        await axiosIns.patch(`/api/users/unblock/${driver.driverId}`);
+        message.success(`Driver activated successfully`);
+      } else {
+        await axiosIns.patch(`/api/users/update/${driver.driverId}`, {
+          status: newStatus,
+        });
+        message.success(`Driver status updated to ${newStatus}`);
+      }
+      
+      if (onUpdate) onUpdate();
+      onClose();
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      message.error("Failed to update driver status");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!driver) return;
+    try {
+      await axiosIns.post(`/api/drivers/${driver.driverId}/reset-password`);
+      message.success(`Password reset link sent to ${driver.email}`);
+    } catch (error) {
+      console.error("Failed to reset password:", error);
+      message.error("Failed to reset password");
+    }
+  };
+
+  const handleDownload = async (url: string, filename: string) => {
+    if (!url) {
+      message.error("Document URL not available");
+      return;
+    }
+    const hide = message.loading("Downloading...", 0);
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+      });
+
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+
+      // Delay cleanup to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+
+      hide();
+      message.success("Download started");
+    } catch (error) {
+      hide();
+      console.error("Download failed:", error);
+      message.error("Direct download failed. Opening document in new tab.");
+      // Fallback to opening in new tab if fetch fails
+      window.open(url, "_blank");
+    }
+  };
+
   const basicInfo = (
     <Card
       title="Basic Information"
@@ -178,7 +262,17 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
             </div>
           </div>
 
-          <Button type="default" block icon={<DownloadOutlined />}>
+          <Button
+            type="default"
+            block
+            icon={<DownloadOutlined />}
+            onClick={() =>
+              handleDownload(
+                driver.vehicle?.rcDocumentUrl || "",
+                "RC_Document.pdf"
+              )
+            }
+          >
             Download RC Document
           </Button>
         </div>
@@ -217,11 +311,31 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
             </div>
           </div>
 
+
           <Space className="mt-4">
-            <Button type="default" icon={<EyeOutlined />}>
+            <Button
+              type="default"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                if (doc?.documentUrl) {
+                  window.open(doc.documentUrl, "_blank");
+                } else {
+                  message.error("Document URL not available");
+                }
+              }}
+            >
               View
             </Button>
-            <Button type="primary" icon={<DownloadOutlined />}>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              onClick={() =>
+                handleDownload(
+                  doc.documentUrl,
+                  `${doc.documentType}_${doc.documentNumber}.pdf`
+                )
+              }
+            >
               Download
             </Button>
           </Space>
@@ -423,6 +537,7 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
             <Button
               icon={<CheckCircleOutlined />}
               style={{ borderColor: "green", color: "green" }}
+              onClick={() => handleStatusUpdate("active")}
             >
               Approve
             </Button>
@@ -430,11 +545,16 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
               type="default"
               icon={<CloseCircleOutlined />}
               style={{ borderColor: "red", color: "red" }}
+              onClick={() => handleStatusUpdate("blocked")}
             >
               Reject
             </Button>
-            <Button icon={<EditOutlined />}>Edit</Button>
-            <Button icon={<SendOutlined />}>Reset Password</Button>
+            <Button icon={<EditOutlined />} onClick={() => setEditModalOpen(true)}>
+              Edit
+            </Button>
+            <Button icon={<SendOutlined />} onClick={handleResetPassword}>
+              Reset Password
+            </Button>
           </Space>
         );
       case "blocked":
@@ -445,11 +565,19 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
               <Button
                 icon={<CheckCircleOutlined />}
                 style={{ borderColor: "green", color: "green" }}
+                onClick={() => handleStatusUpdate("active")}
               >
                 Activate
               </Button>
-              <Button icon={<EditOutlined />}>Edit</Button>
-              <Button type="default" icon={<SendOutlined />} className="mb-4">
+              <Button icon={<EditOutlined />} onClick={() => setEditModalOpen(true)}>
+                Edit
+              </Button>
+              <Button
+                type="default"
+                icon={<SendOutlined />}
+                className="mb-4"
+                onClick={handleResetPassword}
+              >
                 Reset Password
               </Button>
             </Space>
@@ -459,17 +587,36 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
         return (
           <>
             <div className="flex items-center gap-3 mb-3">
-              <Button type="default" danger icon={<StopOutlined />}>
+              <Button
+                type="default"
+                danger
+                icon={<StopOutlined />}
+                onClick={() => handleStatusUpdate("blocked")}
+              >
                 Block
               </Button>
-              <Button type="dashed" danger icon={<SyncOutlined />}>
+              <Button
+                type="dashed"
+                danger
+                icon={<SyncOutlined />}
+                onClick={() => handleStatusUpdate("suspended")}
+              >
                 Suspend
               </Button>
-              <Button type="default" icon={<EditOutlined />}>
+              <Button
+                type="default"
+                icon={<EditOutlined />}
+                onClick={() => setEditModalOpen(true)}
+              >
                 Edit
               </Button>
             </div>
-            <Button type="default" icon={<SendOutlined />} className="mb-4">
+            <Button
+              type="default"
+              icon={<SendOutlined />}
+              className="mb-4"
+              onClick={handleResetPassword}
+            >
               Reset Password
             </Button>{" "}
           </>
@@ -526,6 +673,18 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
       <div className="mt-4 p-4 bg-white rounded-lg shadow">
         {segments.find((tab) => tab.key === activeKey)?.content}
       </div>
+
+      <AddDriverModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        onSubmit={() => {
+          setEditModalOpen(false);
+          message.success("Driver updated successfully");
+          if (onUpdate) onUpdate();
+        }}
+        initial={driver || undefined}
+        mode="edit"
+      />
     </Drawer>
   );
 };
