@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Table, Button, Form, Input, Select, InputNumber, Tag, Drawer, Segmented, Modal, message, Switch, Card } from "antd";
+import { Table, Button, Form, Input, Select, InputNumber, Drawer, Segmented, Modal, message, Switch, Card } from "antd";
 import { AppstoreOutlined, BarsOutlined } from '@ant-design/icons';
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 
