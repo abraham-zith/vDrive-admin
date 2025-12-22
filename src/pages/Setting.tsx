@@ -1,7 +1,7 @@
 // import React from "react";
 
-import { Outlet } from "react-router-dom";
+// import { Outlet } from "react-router-dom";
 
-export const Setting = () => {
-  return <Outlet />;
-};
+// export const Setting = () => {
+//   return <Outlet />;
+// };

@@ -37,7 +37,7 @@ import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
 import { AntdStaticHolder } from "./utilities/antdStaticHolder";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
-import { Setting } from "./pages/Setting";
+//import { Setting } from "./pages/Setting";
 import { ManageLocation } from "./pages/ManageLocation";
 
 // Loading component for route suspense
@@ -222,16 +222,14 @@ const RootLayout: React.FC = () => {
     },
 
     {
-      label: <Link to="/setting">Settings</Link>,
-      //key: "/setting/managelocation",
-      key: "/setting",
+      label: "Settings", 
+      key: "settings", 
       icon: <SettingOutlined />,
       children: [
         {
           label: <Link to="/setting/managelocation">Manage Location</Link>,
           key: "/setting/managelocation",
         },
-       
       ],
     },
   ];
@@ -481,7 +479,12 @@ const RootLayout: React.FC = () => {
                     theme="dark"
                     mode="vertical"
                     items={menuItems}
-                    selectedKeys={[location.pathname]}
+                    selectedKeys={[
+                      location.pathname.startsWith("/setting")
+                        ? "/setting/managelocation"
+                        : location.pathname,
+                    ]}
+                    //selectedKeys={[location.pathname]}
                     openKeys={openMenuKeys}
                     onOpenChange={setOpenMenuKeys}
                   />
@@ -581,15 +584,16 @@ const router = createBrowserRouter([
 
       {
         path: "setting",
-        element: (
-          <Suspense fallback={<RouteLoadingFallback />}>
-            <Setting />
-          </Suspense>
-        ),
+         element: <Outlet />,
+        //(
+        //   <Suspense fallback={<RouteLoadingFallback />}>
+        //     <Setting />
+        //   </Suspense>
+        // ),
 
         children: [
           {
-            path: "managelocation",
+            path:  "managelocation",
             element: (
               <Suspense fallback={<RouteLoadingFallback />}>
                 <ManageLocation />

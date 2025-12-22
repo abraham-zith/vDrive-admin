@@ -8,7 +8,6 @@ import {
   Modal,
   Form,
   Select,
-  //Checkbox,
   Tag,
 } from "antd";
 import moment from "moment";
@@ -26,22 +25,10 @@ import {
   EditOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
-// import AdvancedFilters, {
-//   type FilterField,yarn add file-saver
-// } from "../components/AdvancedFilters/AdvanceFilters";
+
 
 import type { ColumnType } from "antd/es/table";
-
-//import { size } from "lodash";
-//import { values } from "lodash";
-
-// const fields: FilterField[] = [
-//   {
-//     name: "states",
-//     label: "States",
-//     type: "select",
-//   },
-// ];
+  
 
 export interface Location {
   id: string;
@@ -170,7 +157,7 @@ const DATA: Location[] = [
 ];
 
 
-const indianStates = ["Andhra Pradesh", "Arunachal Pradesh"];
+const indianStates = [ "Andhra Pradesh", "Arunachal Pradesh", "India"];
 const searchCat = [
   "puducherry",
   "TamilNadu",
@@ -179,7 +166,7 @@ const searchCat = [
 ];
 
 
-//const applyFilters = () => {};
+
 
 
 
@@ -253,23 +240,7 @@ export const ManageLocation = () => {
     
   };
 
-  // const handleSelectAll = (checked: boolean) => {
-  //   console.log("checked", checked);
-
-  // };
-
-  //const hasChecked = locationdetails?.some((data)=> data.checked)
-
-  // const handleRowCheck = (id: string, checked:boolean) => {
-  //   setLocationDetails((prev) =>
-  //     prev.map((item) => (item.id == id ? { ...item, checked: checked } : item))
-  //   );
-  // };
-  // const handleBulkDelete = ()=>{
-  //   setLocationDetails((prev)=>
-  //     prev.filter((data)=> !data?.checked)
-  //   )
-  // }
+ 
 
   const filteredData = locationdetails?.filter((item) =>{
     const mathSearch =  Object.values(item).some((data) =>
@@ -283,7 +254,7 @@ export const ManageLocation = () => {
   });
 
   const handleExportExcel = () => {
-    // You can export filtered data or full data
+    
     const exportData = filteredData?.map((item) => ({
       ID: item.id,
       Area: item.area_name,
@@ -314,22 +285,7 @@ export const ManageLocation = () => {
   };
 
   const columns: ColumnType<Location>[] = [
-    // {
-    //   title: (
-    //     <Checkbox
-    //       checked={false}
-    //       onChange={(e) => {
-    //         handleSelectAll(e.target.checked);
-    //       }}
-    //     />
-    //   ),
-    //   render: (_: any, record: Location) => (
-    //     <Checkbox
-    //       checked={record.checked}
-    //       onChange={(e) => handleRowCheck(record.id, e.target.checked)}
-    //     />
-    //   ),
-    // },
+    
     {
       title: "Area",
       dataIndex: "area_name",
@@ -385,6 +341,7 @@ export const ManageLocation = () => {
     },
   ];
   
+  
   return (
     <div
       style={{
@@ -414,12 +371,6 @@ export const ManageLocation = () => {
           </div>
         }
       >
-        {/* <div>
-          <AdvancedFilters filterFields={fields} applyFilters={applyFilters} />
-        </div> */}
-        {/* <div>
-          {hasChecked && <button onClick={handleBulkDelete}>delete</button>}
-        </div> */}
         <div
           style={{
             display: "flex",
@@ -429,6 +380,13 @@ export const ManageLocation = () => {
             justifyContent: "flex-end",
             marginBottom: "10px",
           }}
+          // style={{
+          //   display: "flex",
+          //   justifyContent: "flex-end",
+          //   gap: "16px",
+          //   marginBottom: "16px",
+          // }}
+        
         >
           <Button type="primary" onClick={() => setIsModalOpen(true)}>
             + Add New
@@ -447,7 +405,7 @@ export const ManageLocation = () => {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 16 }}>
+        <div style={{ display: "flex", gap: 16 ,alignItems: "flex-start",}}>
           <div style={{ width: "70%" }}>
             <Table
               columns={columns}
@@ -488,20 +446,19 @@ export const ManageLocation = () => {
                         {/* Date Time Tag — FIRST */}
                         <Tag
                           style={{
-                            border: "1px solid #34D399", // light green border
+                            border: "1px solid #34D399",
                             color: "#059669",
                             background: "#ECFDF5",
                             boxShadow: "0 1px 3px rgba(16, 185, 129, 0.25)",
                             fontSize: "9px",
                             padding: "0 8px",
-                            lineHeight: "18px",
+                            lineHeight: "14px",
                             borderRadius: "6px",
                           }}
                         >
-                          {moment(item.created_at).format("DD MMM, HH:mm")}
+                          {moment(item.created_at).format("DD MMM  , HH:mm")}
                         </Tag>
 
-                        {/* Manual Tag — SECOND */}
                         <Tag
                           style={{
                             border: "1px solid #1F3A8A",
@@ -655,12 +612,10 @@ export const ManageLocation = () => {
           <div
             style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}
           >
-            {/* Icon */}
             <ExclamationCircleOutlined
               style={{ fontSize: "28px", color: "#FF4D4F" }}
             />
 
-            {/* Content */}
             <div>
               <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>
                 Delete this location?
