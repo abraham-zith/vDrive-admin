@@ -15,6 +15,24 @@ import * as XLSX from "xlsx";
 import dayjs, { Dayjs } from "dayjs";
 import utc from "dayjs/plugin/utc";
 
+type TripFilters = {
+  status: string;
+  globalSearch: string;
+  driverAssigned: string | string[];
+  from: Dayjs | null;
+  to: Dayjs | null;
+};
+
+const initialFilters: TripFilters = {
+  status: "requested",
+  globalSearch: "",
+  driverAssigned: "all",
+  // from: null,
+  // to: null,
+  from: dayjs().startOf("day"),
+  to: dayjs().endOf("day"),
+};
+
 export const exportTripsToExcel = (
   data: TripDetailsType[],
   fileName: string
@@ -44,33 +62,21 @@ export const exportTripsToExcel = (
   XLSX.writeFile(workbook, fileName);
 };
 
+dayjs.extend(utc);
+
 const TripDetails = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const { trips, loading } = useSelector((state: RootState) => state.trips);
   const [filteredTrips, setFilteredTrips] = useState<TripDetailsType[]>([]);
-  const [filters, setFilters] = useState({
-    status: "requested",
-    globalSearch: "",
-    driverAssigned: "all",
-    from: undefined,
-    to: undefined,
-  });
+  const [filters, setFilters] = useState(initialFilters);
 
   const handleRefresh = () => {
     dispatch(fetchTrips());
   };
 
-  useEffect(() => {
+  const getBaseFilteredTrips = () => {
     let temp = [...trips];
-    console.log("FILTERS STATE 👉", filters);
-
-    // 🔹 Status (Segmented)
-    if (filters.status !== "all") {
-      temp = temp.filter(
-        (t) => t.trip_status?.toLowerCase() === filters.status
-      );
-    }
 
     // 🔹 Global Search
     if (filters.globalSearch) {
@@ -88,27 +94,46 @@ const TripDetails = () => {
     }
 
     // 🔹 Driver Assigned
-    if (filters.driverAssigned === "driverAssigned") {
-      temp = temp.filter(
-        (t) => t.driver_id && t.driver_name && t.driver_name.trim() !== ""
-      );
+
+    const driverAssignedValue = normalizeDriverAssigned(filters.driverAssigned);
+
+    // 🔹 Driver Assigned (FIXED)
+    if (driverAssignedValue === "driverAssigned") {
+      temp = temp.filter((t) => typeof t.driver_id === "string");
     }
 
-    if (filters.driverAssigned === "driverNotAssigned") {
-      temp = temp.filter(
-        (t) => !t.driver_id || !t.driver_name || t.driver_name.trim() === ""
-      );
+    if (driverAssignedValue === "driverNotAssigned") {
+      temp = temp.filter((t) => t.driver_id === null);
     }
 
-    // 🔹 From – To DateTime filter
+    // 🔹 Date filter
+
+    // 🔹 Date filter (FIXED)
     if (filters.from || filters.to) {
-      const fromDate = normalize(filters.from);
-      const toDate = normalize(filters.to);
+      let fromDate: Dayjs | null = null;
+      let toDate: Dayjs | null = null;
+
+      // ✅ Only FROM selected → same day range
+      if (filters.from && !filters.to) {
+        fromDate = dayjs(filters.from).startOf("day");
+        toDate = dayjs(filters.from).endOf("day");
+      }
+
+      // ✅ Only TO selected → same day range
+      if (!filters.from && filters.to) {
+        fromDate = dayjs(filters.to).startOf("day");
+        toDate = dayjs(filters.to).endOf("day");
+      }
+
+      // ✅ Both selected → proper range
+      if (filters.from && filters.to) {
+        fromDate = dayjs(filters.from).startOf("day");
+        toDate = dayjs(filters.to).endOf("day");
+      }
 
       temp = temp.filter((t) => {
         if (!t.created_at) return false;
 
-        // 🔥 convert UTC → local before comparing
         const tripDate = dayjs.utc(t.created_at).local();
 
         if (fromDate && tripDate.isBefore(fromDate)) return false;
@@ -116,6 +141,19 @@ const TripDetails = () => {
 
         return true;
       });
+    }
+
+    return temp;
+  };
+
+  useEffect(() => {
+    let temp = getBaseFilteredTrips();
+
+    // 🔹 Status (Segmented)
+    if (filters.status !== "all") {
+      temp = temp.filter(
+        (t) => t.trip_status?.toLowerCase() === filters.status
+      );
     }
 
     setFilteredTrips(temp);
@@ -127,34 +165,30 @@ const TripDetails = () => {
 
   //apply filters
 
-  dayjs.extend(utc);
-
-  const normalize = (v?: string | Dayjs) => {
-    if (!v) return null;
-    return typeof v === "string" ? dayjs(v) : v;
-  };
-
   const applyFilters = (values: Record<string, any>) => {
-    let driverAssigned = "all";
-    if (
-      Array.isArray(values?.driverAssigned) &&
-      values.driverAssigned.length > 0
-    ) {
-      driverAssigned = values.driverAssigned[0];
-    }
     setFilters((prev) => ({
       ...prev,
-      globalSearch: values.globalSearch || "",
-      driverAssigned, // ✅ now STRING
+      ...values,
+      from: values.from ?? null,
+      to: values.to ?? null,
     }));
+  };
+
+  const normalizeDriverAssigned = (value: any) => {
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+    return value;
   };
 
   //count function
 
   const getStatusCount = (status: string) => {
-    if (status === "all") return trips.length;
+    const base = getBaseFilteredTrips();
 
-    return trips.filter((t) => t.trip_status?.toLowerCase() === status).length;
+    if (status === "all") return base.length;
+
+    return base.filter((t) => t.trip_status?.toLowerCase() === status).length;
   };
 
   // export
@@ -185,14 +219,12 @@ const TripDetails = () => {
       label: "From",
       type: "date",
       showTime: true,
-      defaultValue: dayjs().startOf("day"),
     },
     {
       name: "to",
       label: "To",
       type: "date",
       showTime: true,
-      defaultValue: dayjs().endOf("day"),
     },
   ];
 

@@ -915,6 +915,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
               </Popconfirm>
 
               <Popconfirm
+                key={adjustedFare} // 👈 IMPORTANT
                 title="Adjust Fare"
                 description={AdjustFareContent}
                 open={
@@ -923,21 +924,28 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
                 icon={<DollarOutlined />}
                 okText="Update"
                 cancelText="Cancel"
-                okButtonProps={{ disabled: !adjustedFare }}
+                okButtonProps={{
+                  disabled: isTripCompleted(actionTrip) || !adjustedFare,
+                }}
                 onConfirm={() => confirmAdjustFare(actionTrip)}
                 onCancel={closeAdjustFare}
               >
-                <Button
-                  onClick={() => {
-                    if (!trip) return;
-                    setActionTrip(trip);
-                    setActionSource("DRAWER");
-                    setActiveAction("ADJUST_FARE");
-                  }}
+                <Tooltip
+                  title={isTripCompleted(trip) ? "Trip already completed" : ""}
                 >
-                  <DollarOutlined />
-                  Adjust Fare
-                </Button>
+                  <Button
+                    disabled={isTripCompleted(trip)}
+                    onClick={() => {
+                      if (!trip) return;
+                      setActionTrip(trip);
+                      setActionSource("DRAWER");
+                      setActiveAction("ADJUST_FARE");
+                    }}
+                  >
+                    <DollarOutlined />
+                    Adjust Fare
+                  </Button>
+                </Tooltip>
               </Popconfirm>
 
               <Popconfirm
@@ -953,18 +961,23 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
                 onConfirm={() => confirmCancelTrip(trip)}
                 onCancel={closeCancelTrip}
               >
-                <Button
-                  danger
-                  onClick={() => {
-                    if (!trip) return;
-                    setActionTrip(trip);
-                    setActionSource("DRAWER");
-                    setActiveAction("CANCEL_TRIP");
-                  }}
+                <Tooltip
+                  title={isTripCompleted(trip) ? "Trip already completed" : ""}
                 >
-                  <CloseCircleOutlined />
-                  Cancel Trip
-                </Button>
+                  <Button
+                    disabled={isTripCompleted(trip)}
+                    danger
+                    onClick={() => {
+                      if (!trip) return;
+                      setActionTrip(trip);
+                      setActionSource("DRAWER");
+                      setActiveAction("CANCEL_TRIP");
+                    }}
+                  >
+                    <CloseCircleOutlined />
+                    Cancel Trip
+                  </Button>
+                </Tooltip>
               </Popconfirm>
 
               <Popconfirm
@@ -979,17 +992,22 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
                 onConfirm={() => confirmTriggerDrivers(trip)}
                 onCancel={closeTriggerDrivers}
               >
-                <Button
-                  onClick={() => {
-                    if (!trip) return;
-                    setActionTrip(trip);
-                    setActionSource("DRAWER");
-                    setActiveAction("TRIGGER_DRIVER");
-                  }}
+                <Tooltip
+                  title={isTripCompleted(trip) ? "Trip already completed" : ""}
                 >
-                  <BellOutlined />
-                  Trigger Drivers
-                </Button>
+                  <Button
+                    disabled={isTripCompleted(trip)}
+                    onClick={() => {
+                      if (!trip) return;
+                      setActionTrip(trip);
+                      setActionSource("DRAWER");
+                      setActiveAction("TRIGGER_DRIVER");
+                    }}
+                  >
+                    <BellOutlined />
+                    Trigger Drivers
+                  </Button>
+                </Tooltip>
               </Popconfirm>
             </div>
           </div>
