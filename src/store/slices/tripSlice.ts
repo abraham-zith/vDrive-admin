@@ -10,6 +10,8 @@ export interface TripDetailsType {
   driver_name: string | null;
   driver_phone: string | null;
   vehicle_id: string | null;
+  car_number: string | null;
+  car_type: string | null;
 
   ride_type: "ONE_WAY" | "ROUND_TRIP" | "DAILY" | "OUTSTATION";
   service_type: "DRIVER_ONLY" | "CAB+DRIVER";
@@ -112,7 +114,9 @@ const initialState: TripState = {
       driver_name: "Ramesh",
       driver_phone: "9123456789",
 
-      vehicle_id: null,
+      vehicle_id: "vehicle_11",
+      car_number: "TN01AB1234",
+      car_type: "Sedan",
 
       ride_type: "ONE_WAY",
       service_type: "DRIVER_ONLY",
@@ -223,7 +227,9 @@ const initialState: TripState = {
       driver_name: "Manikandan",
       driver_phone: "9003201234",
 
-      vehicle_id: null,
+      vehicle_id: "vehicle_10",
+      car_number: "KA05MK4567",
+      car_type: "Hatchback",
       ride_type: "ONE_WAY",
       service_type: "DRIVER_ONLY",
       trip_status: "COMPLETED",
@@ -313,7 +319,9 @@ const initialState: TripState = {
       driver_name: "Vijay",
       driver_phone: "8888888888",
 
-      vehicle_id: null,
+      vehicle_id: "vehicle_09",
+      car_number: "MH12XY7890",
+      car_type: "SUV",
 
       ride_type: "ROUND_TRIP",
       service_type: "DRIVER_ONLY",
@@ -406,7 +414,9 @@ const initialState: TripState = {
       driver_name: "Senthil",
       driver_phone: "9222222222",
 
-      vehicle_id: null,
+      vehicle_id: "vehicle_08",
+      car_number: "TS09EF6789",
+      car_type: "Compact SUV",
 
       ride_type: "OUTSTATION",
       service_type: "CAB+DRIVER",
@@ -498,6 +508,8 @@ const initialState: TripState = {
       driver_phone: "9333333333",
 
       vehicle_id: "vehicle_01",
+      car_number: "TN22GH3456",
+      car_type: "Mini",
 
       ride_type: "ONE_WAY",
       service_type: "CAB+DRIVER",
@@ -576,7 +588,9 @@ const initialState: TripState = {
       driver_name: null,
       driver_phone: null,
 
-      vehicle_id: null,
+      vehicle_id: "vehicle_07",
+      car_number: "KL07JK9012",
+      car_type: "MPV",
 
       ride_type: "ROUND_TRIP",
       service_type: "CAB+DRIVER",
@@ -656,7 +670,9 @@ const initialState: TripState = {
       driver_name: "Manoj",
       driver_phone: "9888877777",
 
-      vehicle_id: "vehicle_01",
+      vehicle_id: "vehicle_02",
+      car_number: "AP16LM5678",
+      car_type: "Sedan",
 
       ride_type: "ONE_WAY",
       service_type: "DRIVER_ONLY",
@@ -728,7 +744,9 @@ const initialState: TripState = {
       driver_name: null,
       driver_phone: null,
 
-      vehicle_id: null,
+      vehicle_id: "vehicle_03",
+      car_number: "WB24NP4321",
+      car_type: "Hatchback",
 
       ride_type: "ONE_WAY",
       service_type: "DRIVER_ONLY",
@@ -800,7 +818,9 @@ const initialState: TripState = {
       driver_name: null,
       driver_phone: null,
 
-      vehicle_id: null,
+      vehicle_id: "vehicle_04",
+      car_number: "GJ01QR8765",
+      car_type: "SUV",
 
       ride_type: "ROUND_TRIP",
       service_type: "DRIVER_ONLY",
@@ -871,7 +891,9 @@ const initialState: TripState = {
       driver_name: null,
       driver_phone: null,
 
-      vehicle_id: null,
+      vehicle_id: "vehicle_05",
+      car_number: "RJ14ST1098",
+      car_type: "Luxury Sedan",
 
       ride_type: "ONE_WAY",
       service_type: "DRIVER_ONLY",
@@ -942,7 +964,9 @@ const initialState: TripState = {
       driver_name: null,
       driver_phone: null,
 
-      vehicle_id: null,
+      vehicle_id: "vehicle_06",
+      car_number: "RJ14ST1098",
+      car_type: "Luxury Sedan",
 
       ride_type: "ONE_WAY",
       service_type: "DRIVER_ONLY",
