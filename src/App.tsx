@@ -174,8 +174,6 @@ const RootLayout: React.FC = () => {
     }
   };
 
-  
-
   const menuItems: MenuProps["items"] = [
     { label: <Link to="/">Dashboard</Link>, key: "/", icon: <HomeOutlined /> },
     {
@@ -222,8 +220,8 @@ const RootLayout: React.FC = () => {
     },
 
     {
-      label: "Settings", 
-      key: "settings", 
+      label: "Settings",
+      key: "settings",
       icon: <SettingOutlined />,
       children: [
         {
@@ -253,7 +251,7 @@ const RootLayout: React.FC = () => {
       theme={{
         token: {
           colorPrimary: "#1d2a5c",
-          colorPrimaryBg: "#ffffff",
+          // colorPrimaryBg: "#ffffff",
         },
         components: {
           Layout: {
@@ -261,6 +259,7 @@ const RootLayout: React.FC = () => {
           },
           Menu: {
             darkItemBg: "#FFFFFF",
+
             darkPopupBg: "#FFFFFF",
             darkItemSelectedBg: "#1D2A5C",
             darkItemSelectedColor: "#FFFFFF",
@@ -312,7 +311,7 @@ const RootLayout: React.FC = () => {
                   /> */}
 
                   <Menu
-                    theme="dark"
+                    // theme="dark"
                     mode="inline"
                     items={menuItems}
                     selectedKeys={[location.pathname]}
@@ -584,7 +583,7 @@ const router = createBrowserRouter([
 
       {
         path: "setting",
-         element: <Outlet />,
+        element: <Outlet />,
         //(
         //   <Suspense fallback={<RouteLoadingFallback />}>
         //     <Setting />
@@ -593,7 +592,7 @@ const router = createBrowserRouter([
 
         children: [
           {
-            path:  "managelocation",
+            path: "managelocation",
             element: (
               <Suspense fallback={<RouteLoadingFallback />}>
                 <ManageLocation />

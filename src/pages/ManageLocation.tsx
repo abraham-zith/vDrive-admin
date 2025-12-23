@@ -1,23 +1,12 @@
 import { useEffect, useState } from "react";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
-import {
-  Button,
-  Input,
-  Table,
-  Card,
-  Modal,
-  Form,
-  Select,
-  Tag,
-} from "antd";
-import moment from "moment";
+import { Button, Input, Table, Card, Modal, Form, Select, Tag } from "antd";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import {
   ExclamationCircleOutlined,
   EnvironmentOutlined,
 } from "@ant-design/icons";
-
 
 import {
   SearchOutlined,
@@ -26,9 +15,9 @@ import {
   DeleteOutlined,
 } from "@ant-design/icons";
 
-
 import type { ColumnType } from "antd/es/table";
-  
+
+import { format, toZonedTime } from "date-fns-tz";
 
 export interface Location {
   id: string;
@@ -52,8 +41,8 @@ const DATA: Location[] = [
     state: "Puducherry",
     country: "India",
     type: "manual",
-    created_at: "2025-01-10T10:15:30",
-    updated_at: "2025-01-10T10:15:30",
+    created_at: "2025-01-10T10:15:30Z",
+    updated_at: "2025-01-10T10:15:30Z",
   },
   {
     id: "A002",
@@ -63,8 +52,8 @@ const DATA: Location[] = [
     state: "Puducherry",
     country: "India",
     type: "manual",
-    created_at: "2025-01-11T09:20:00",
-    updated_at: "2025-01-11T09:20:00",
+    created_at: "2025-01-11T09:20:00Z",
+    updated_at: "2025-01-11T09:20:00Z",
   },
   {
     id: "A003",
@@ -74,8 +63,8 @@ const DATA: Location[] = [
     state: "Puducherry",
     country: "India",
     type: "manual",
-    created_at: "2025-01-12T11:45:10",
-    updated_at: "2025-01-12T11:45:10",
+    created_at: "2025-01-12T11:45:10Z",
+    updated_at: "2025-01-12T11:45:10Z",
   },
   {
     id: "A004",
@@ -85,8 +74,8 @@ const DATA: Location[] = [
     state: "TamilNadu",
     country: "India",
     type: "manual",
-    created_at: "2025-01-13T14:30:00",
-    updated_at: "2025-01-13T14:30:00",
+    created_at: "2025-01-13T14:30:00Z",
+    updated_at: "2025-01-13T14:30:00Z",
   },
   {
     id: "A005",
@@ -96,8 +85,8 @@ const DATA: Location[] = [
     state: "TamilNadu",
     country: "India",
     type: "manual",
-    created_at: "2025-01-14T16:10:45",
-    updated_at: "2025-01-14T16:10:45",
+    created_at: "2025-01-14T16:10:45Z",
+    updated_at: "2025-01-14T16:10:45Z",
   },
   {
     id: "A006",
@@ -107,8 +96,8 @@ const DATA: Location[] = [
     state: "Puducherry",
     country: "India",
     type: "manual",
-    created_at: "2025-01-15T08:55:00",
-    updated_at: "2025-01-15T08:55:00",
+    created_at: "2025-01-15T08:55:00Z",
+    updated_at: "2025-01-15T08:55:00Z",
   },
   {
     id: "A007",
@@ -118,8 +107,8 @@ const DATA: Location[] = [
     state: "TamilNadu",
     country: "India",
     type: "manual",
-    created_at: "2025-01-16T12:40:20",
-    updated_at: "2025-01-16T12:40:20",
+    created_at: "2025-01-16T12:40:20Z",
+    updated_at: "2025-01-16T12:40:20Z",
   },
   {
     id: "A008",
@@ -129,8 +118,8 @@ const DATA: Location[] = [
     state: "Puducherry",
     country: "India",
     type: "manual",
-    created_at: "2025-01-17T15:05:00",
-    updated_at: "2025-01-17T15:05:00",
+    created_at: "2025-01-17T15:05:00Z",
+    updated_at: "2025-01-17T15:05:00Z",
   },
   {
     id: "A009",
@@ -140,8 +129,8 @@ const DATA: Location[] = [
     state: "TamilNadu",
     country: "India",
     type: "manual",
-    created_at: "2025-01-18T10:00:00",
-    updated_at: "2025-01-18T10:00:00",
+    created_at: "2025-01-18T10:00:00Z",
+    updated_at: "2025-01-18T10:00:00Z",
   },
   {
     id: "A010",
@@ -151,13 +140,12 @@ const DATA: Location[] = [
     state: "AndhraPradesh",
     country: "India",
     type: "manual",
-    created_at: "2025-01-19T18:25:35",
-    updated_at: "2025-01-19T18:25:35",
+    created_at: "2025-01-19T18:25:35Z",
+    updated_at: "2025-01-19T18:25:35Z",
   },
 ];
 
-
-const indianStates = [ "Andhra Pradesh", "Arunachal Pradesh", "India"];
+const indianStates = ["Andhra Pradesh", "Arunachal Pradesh", "India"];
 const searchCat = [
   "puducherry",
   "TamilNadu",
@@ -165,29 +153,21 @@ const searchCat = [
   "Arunachal Pradesh",
 ];
 
-
-
-
-
-
 export const ManageLocation = () => {
   const [locationdetails, setLocationDetails] = useState<Location[]>([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isDeleteModal, setIsDeleteModal] = useState<boolean>(false);
   const [form] = Form.useForm();
-  const [selectedRow,setSelectedRow]=useState<Location | null >(null);
+  const [selectedRow, setSelectedRow] = useState<Location | null>(null);
   const [editingRecord, setEditingRecord] = useState<Location | null>(null);
   const [searchText, setSearchText] = useState("");
   const [selectedState, setSelectedState] = useState<string | null>(null);
 
-
-
   useEffect(() => {
-    setLocationDetails(DATA?.map((item)=>({...item,checked:false})));
+    setLocationDetails(DATA?.map((item) => ({ ...item, checked: false })));
   }, []);
 
   const handleEdit = (rowData: Location) => {
-   // console.log(rowData);
     setIsModalOpen(true);
     setEditingRecord(rowData);
     form.setFieldsValue({
@@ -197,7 +177,6 @@ export const ManageLocation = () => {
       state: rowData?.state,
       country: rowData?.country,
     });
-
   };
 
   const handleDelete = () => {
@@ -211,41 +190,41 @@ export const ManageLocation = () => {
     setIsDeleteModal(false);
   };
 
-   
   const handleAddAndEdit = (values: Omit<Location, "id">) => {
-
+    const now = new Date().toISOString();
     if (editingRecord) {
-
-      setLocationDetails((prev)=>
-        prev?.map((item) => item?.id === editingRecord?.id ? {...item,...values}:item)
-     )
-     form.resetFields();
-     setEditingRecord(null);
-     setIsModalOpen(false);
-  
+      setLocationDetails((prev) =>
+        prev.map((item) =>
+          item.id === editingRecord.id
+            ? {
+                ...item,
+                ...values,
+                updated_at: now,
+              }
+            : item
+        )
+      );
     } else {
-      const newData = {
-      id: `A${Date.now()}`,
-      ...values,
-    };
+      const newData: Location = {
+        id: `A${Date.now()}`,
+        ...values,
+        type: "manual",
+        created_at: now,
+        updated_at: now,
+      };
 
-    setLocationDetails((pre) => [
-      { ...newData, type: "manual" },
-      ...pre,
-    ]);
+      setLocationDetails((prev) => [newData, ...prev]);
+    }
+
     form.resetFields();
     setIsModalOpen(false);
-    setEditingRecord(null)
-   }
-    
+    setEditingRecord(null);
   };
 
- 
-
-  const filteredData = locationdetails?.filter((item) =>{
-    const mathSearch =  Object.values(item).some((data) =>
+  const filteredData = locationdetails?.filter((item) => {
+    const mathSearch = Object.values(item).some((data) =>
       String(data)?.toLowerCase()?.includes(searchText.toLowerCase())
-    )
+    );
     const matcheState = selectedState
       ? item?.state.toLowerCase() === selectedState.toLowerCase()
       : true;
@@ -254,17 +233,22 @@ export const ManageLocation = () => {
   });
 
   const handleExportExcel = () => {
-    
     const exportData = filteredData?.map((item) => ({
-      ID: item.id,
-      Area: item.area_name,
-      Pincode: item.pincode,
-      District: item.district,
-      State: item.state,
-      Country: item.country,
-      Type: item.type,
-      "Created At": moment(item.created_at).format("DD MMM YYYY, HH:mm"),
-      "Updated At": moment(item.updated_at).format("DD MMM YYYY, HH:mm"),
+      ID: item?.id,
+      Area: item?.area_name,
+      Pincode: item?.pincode,
+      District: item?.district,
+      State: item?.state,
+      Country: item?.country,
+      Type: item?.type,
+      "Created At": format(
+        toZonedTime(new Date(item?.created_at), "Asia/Kolkata"),
+        "dd MMM, HH:mm"
+      ),
+      "Updated At": format(
+        toZonedTime(new Date(item?.updated_at), "Asia/Kolkata"),
+        "dd MMM, HH:mm"
+      ),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -285,7 +269,6 @@ export const ManageLocation = () => {
   };
 
   const columns: ColumnType<Location>[] = [
-    
     {
       title: "Area",
       dataIndex: "area_name",
@@ -340,8 +323,7 @@ export const ManageLocation = () => {
       ),
     },
   ];
-  
-  
+
   return (
     <div
       style={{
@@ -380,13 +362,6 @@ export const ManageLocation = () => {
             justifyContent: "flex-end",
             marginBottom: "10px",
           }}
-          // style={{
-          //   display: "flex",
-          //   justifyContent: "flex-end",
-          //   gap: "16px",
-          //   marginBottom: "16px",
-          // }}
-        
         >
           <Button type="primary" onClick={() => setIsModalOpen(true)}>
             + Add New
@@ -405,7 +380,7 @@ export const ManageLocation = () => {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 16 ,alignItems: "flex-start",}}>
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
           <div style={{ width: "70%" }}>
             <Table
               columns={columns}
@@ -443,7 +418,6 @@ export const ManageLocation = () => {
                           alignItems: "center",
                         }}
                       >
-                        {/* Date Time Tag — FIRST */}
                         <Tag
                           style={{
                             border: "1px solid #34D399",
@@ -456,7 +430,13 @@ export const ManageLocation = () => {
                             borderRadius: "6px",
                           }}
                         >
-                          {moment(item.created_at).format("DD MMM  , HH:mm")}
+                          {format(
+                            toZonedTime(
+                              new Date(item.created_at),
+                              "Asia/Kolkata"
+                            ),
+                            "dd MMM, HH:mm"
+                          )}
                         </Tag>
 
                         <Tag
@@ -494,7 +474,6 @@ export const ManageLocation = () => {
             <div
               style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}
             >
-              {/* Location Icon */}
               <div
                 style={{
                   background: "#EEF2FF",
@@ -509,7 +488,6 @@ export const ManageLocation = () => {
                 <EnvironmentOutlined style={{ fontSize: 20 }} />
               </div>
 
-              {/* Title + Subtitle */}
               <div>
                 <div style={{ fontSize: 18, fontWeight: 600 }}>
                   {editingRecord ? "Edit Location" : "Add New Location"}
