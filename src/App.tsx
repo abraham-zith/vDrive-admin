@@ -6,6 +6,7 @@ import {
   LogoutOutlined,
   DollarOutlined,
   MenuOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import {
@@ -36,6 +37,8 @@ import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
 import { AntdStaticHolder } from "./utilities/antdStaticHolder";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
+//import { Setting } from "./pages/Setting";
+import { ManageLocation } from "./pages/ManageLocation";
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -94,6 +97,7 @@ const ResetPassword = lazy(() => import("./login/ResetPassword"));
 // {children || <p>Content for the {title.toLowerCase()} page.</p>}
 // </div>
 // );
+//comment added
 
 const { Content, Sider, Header } = Layout;
 
@@ -127,6 +131,8 @@ const RootLayout: React.FC = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const [openMenuKeys, setOpenMenuKeys] = useState<string[]>([]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -180,6 +186,13 @@ const RootLayout: React.FC = () => {
       key: "/PricingAndFareRules",
       icon: <DollarOutlined />,
     },
+
+    // {
+    //   label: <Link to="/pricing">Pricing</Link>,
+    //   key: "/pricing",
+    //   icon: <DollarOutlined />,
+    // },
+
     {
       label: <Link to="/drivers">Drivers</Link>,
       key: "/drivers",
@@ -205,13 +218,40 @@ const RootLayout: React.FC = () => {
       key: "/Deductions",
       icon: <MdOutlineMoneyOff />,
     },
+
+    {
+      label: "Settings",
+      key: "settings",
+      icon: <SettingOutlined />,
+      children: [
+        {
+          label: <Link to="/setting/managelocation">Manage Location</Link>,
+          key: "/setting/managelocation",
+        },
+      ],
+    },
   ];
+
+  useEffect(() => {
+    const keys = menuItems
+      .filter((item) => {
+        return (
+          item &&
+          "children" in item && // Safe check if the object has a 'children' key
+          location.pathname.startsWith(item.key as string)
+        );
+      })
+      .map((item) => item?.key as string);
+
+    setOpenMenuKeys(keys);
+  }, [location.pathname]);
+
   return (
     <ConfigProvider
       theme={{
         token: {
           colorPrimary: "#1d2a5c",
-          colorPrimaryBg: "#ffffff",
+          // colorPrimaryBg: "#ffffff",
         },
         components: {
           Layout: {
@@ -219,6 +259,7 @@ const RootLayout: React.FC = () => {
           },
           Menu: {
             darkItemBg: "#FFFFFF",
+
             darkPopupBg: "#FFFFFF",
             darkItemSelectedBg: "#1D2A5C",
             darkItemSelectedColor: "#FFFFFF",
@@ -257,7 +298,7 @@ const RootLayout: React.FC = () => {
                 </div>
 
                 <div className="flex-grow overflow-y-auto">
-                  <Menu
+                  {/* <Menu
                     theme="dark"
                     mode="inline"
                     selectedKeys={
@@ -266,6 +307,16 @@ const RootLayout: React.FC = () => {
                         : [location.pathname]
                     }
                     items={menuItems}
+                    className="font-medium"
+                  /> */}
+
+                  <Menu
+                    // theme="dark"
+                    mode="inline"
+                    items={menuItems}
+                    selectedKeys={[location.pathname]}
+                    openKeys={openMenuKeys}
+                    onOpenChange={setOpenMenuKeys}
                     className="font-medium"
                   />
                 </div>
@@ -412,7 +463,7 @@ const RootLayout: React.FC = () => {
                 onTouchEnd={handleTouchEnd}
               >
                 <div style={{ flex: 1 }}>
-                  <Menu
+                  {/* <Menu
                     theme="dark"
                     mode="vertical"
                     selectedKeys={
@@ -421,6 +472,20 @@ const RootLayout: React.FC = () => {
                         : [location.pathname]
                     }
                     items={menuItems}
+                  /> */}
+
+                  <Menu
+                    theme="dark"
+                    mode="vertical"
+                    items={menuItems}
+                    selectedKeys={[
+                      location.pathname.startsWith("/setting")
+                        ? "/setting/managelocation"
+                        : location.pathname,
+                    ]}
+                    //selectedKeys={[location.pathname]}
+                    openKeys={openMenuKeys}
+                    onOpenChange={setOpenMenuKeys}
                   />
                 </div>
                 <div className="p-4 border-t">
@@ -510,6 +575,27 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<RouteLoadingFallback />}>
                 <DriverPricing />
+              </Suspense>
+            ),
+          },
+        ],
+      },
+
+      {
+        path: "setting",
+        element: <Outlet />,
+        //(
+        //   <Suspense fallback={<RouteLoadingFallback />}>
+        //     <Setting />
+        //   </Suspense>
+        // ),
+
+        children: [
+          {
+            path: "managelocation",
+            element: (
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <ManageLocation />
               </Suspense>
             ),
           },
