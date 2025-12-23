@@ -210,7 +210,7 @@ const RootLayout: React.FC = () => {
       icon: <MdOutlineMoneyOff />,
     },
     {
-      label: <Link to="/basefarecalculation">Base Fare Calculation</Link>,
+      label: <Link to="/basefarecalculation">Fare Configuration</Link>,
       key: "/basefarecalculation",
       icon: <FundOutlined />,
     },
