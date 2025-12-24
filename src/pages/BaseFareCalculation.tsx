@@ -1,8 +1,11 @@
 import { useState } from "react";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
-import { Table, Button, Card, Modal, Form, Input } from "antd";
+import { Table, Button, Card, Modal, Form, Input, Grid } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { EditOutlined, AccountBookOutlined } from "@ant-design/icons";
+
+const { useBreakpoint } = Grid;
+const screens = useBreakpoint();
 
 export const BaseFareCalculation = () => {
   const [fareRules, setFareRules] = useState<FareRule[]>([
@@ -118,52 +121,6 @@ export const BaseFareCalculation = () => {
       ),
     },
   ];
-
-  //   const data: FareRule[] = [
-  //     {
-  //       key: "1",
-  //       title: "Base Fare",
-  //       perunit: "Per Trip",
-  //       price: "₹50",
-  //     },
-  //     {
-  //       key: "2",
-  //       title: "Waiting Fare",
-  //       perunit: "Per Minute",
-  //       price: "₹12",
-  //     },
-  //     {
-  //       key: "3",
-  //       title: "Driver Allowance",
-  //       perunit: "Per Trip",
-  //       price: "₹2",
-  //     },
-  //     {
-  //       key: "4",
-  //       title: "Return Compensation",
-  //       perunit: "Per Hour",
-  //       price: "₹2",
-  //     },
-  //     {
-  //       key: "5",
-  //       title: "Night Charge",
-  //       perunit: "Per Trip",
-  //       price: "₹20",
-  //     },
-  //     {
-  //       key: "6",
-  //       title: "GST",
-  //       perunit: "Percentage",
-  //       price: "18%",
-  //     },
-  //     {
-  //       key: "7",
-  //       title: "Platform Fee",
-  //       perunit: "Per Trip",
-  //       price: "₹20",
-  //     },
-  //   ];
-
   return (
     <div className="w-full">
       <TitleBar
@@ -171,21 +128,22 @@ export const BaseFareCalculation = () => {
         description="Where your trip’s pricing begins."
       />
 
-      <div className="flex w-full gap-4 mt-4">
-        <div className="w-[70%]">
+      <div className="flex w-full gap-4 mt-4 flex-col lg:flex-row">
+        <div className="w-full lg:w-[70%] order-2 lg:order-1">
           <Table
             columns={columns}
             dataSource={fareRules}
             pagination={false}
             bordered
             size="middle"
+            scroll={!screens.sm ? { x: "max-content" } : undefined}
             rowClassName={(_, index) =>
               index % 2 === 0 ? "fare-row-even" : "fare-row-odd"
             }
           />
         </div>
 
-        <div className="w-[30%]">
+        <div className="w-full lg:w-[30%] order-1 lg:order-2">
           <Card
             title={
               <span className="flex items-center gap-2 text-black font-semibold text-base">
