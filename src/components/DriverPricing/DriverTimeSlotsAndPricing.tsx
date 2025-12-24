@@ -322,21 +322,26 @@ const DriverTimeSlotsAndPricing = ({
             </Button>
           </div>
         </div>
-        <List
-          itemLayout="horizontal"
-          dataSource={timeSlots[userType]}
-          renderItem={(item, index) => (
-            <List.Item>
-              <TimeSlotItem
-                slot={item}
-                index={index}
-                updateTimeSlot={updateTimeSlot}
-                removeTimeSlot={removeTimeSlot}
-                globalPrice={globalPrice}
-              />
-            </List.Item>
-          )}
-        />
+        <div className="max-h-[37vh] overflow-y-auto pr-1">
+          <List
+            size="small"
+            split={false}
+            itemLayout="horizontal"
+            dataSource={timeSlots[userType]}
+            renderItem={(item, index) => (
+              <List.Item className="py-0">
+                <TimeSlotItem
+                  slot={item}
+                  index={index}
+                  updateTimeSlot={updateTimeSlot}
+                  removeTimeSlot={removeTimeSlot}
+                  globalPrice={globalPrice}
+                />
+              </List.Item>
+            )}
+          />
+        </div>
+
         {hotspotEnabled && selectedHotspotType && (
           <div className="w-full p-4 flex flex-col gap-2 bg-[#F8F9FA] rounded-md">
             <div className="flex gap-2 items-center">

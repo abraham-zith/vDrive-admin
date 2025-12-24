@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Segmented, Button, Card } from "antd";
+import { Segmented, Button, Card, Drawer } from "antd";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import LocationConfiguration from "../components/DriverPricing/LocationConfiguration";
@@ -10,6 +10,7 @@ import HotspotConfiguration from "../components/DriverPricing/HotspotConfigurati
 import PricingPreview from "../components/DriverPricing/PricingPreview";
 import HotspotTypes from "../components/DriverPricing/HotspotTypes";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
+import { EyeOutlined } from "@ant-design/icons";
 
 const DriverPricing = () => {
   const [activeTab, setActiveTab] = useState("configuration");
@@ -20,6 +21,7 @@ const DriverPricing = () => {
   const [area, setArea] = useState("Madippakkam");
   const [pincode, setPincode] = useState("60091");
   const [globalPrice, setGlobalPrice] = useState(1000);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const [timeSlots, setTimeSlots] = useState<UserTimeSlots>({
     "normal-user": [
@@ -54,37 +56,48 @@ const DriverPricing = () => {
 
   return (
     <div className="h-full w-full">
-      <div className="h-full flex justify-center px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6">
-        <div className="w-full max-w-6xl xl:max-w-7xl flex flex-col gap-2">
-          <div className="flex-grow overflow-y-auto flex flex-col custom-scrollbar">
-            <TitleBar
-              className="w-full h-full "
-              title="Add Pricing"
-              description="Configure pricing for different user types and time slots"
-            >
-              <div className="w-full my-4">
-                <Segmented<string>
-                  options={[
-                    {
-                      label: "Configuration",
-                      className: "w-full",
-                      value: "configuration",
-                    },
-                    {
-                      label: "Hotspot Types",
-                      className: "w-full",
-                      value: "hotspot-types",
-                    },
-                  ]}
-                  size="large"
-                  className="w-full"
-                  value={activeTab}
-                  onChange={setActiveTab}
-                />
+      <div className="h-full flex justify-center px-0">
+        <div className="w-full flex flex-col min-h-screen gap-2">
+          <TitleBar
+            className="w-full h-full "
+            title="Add Pricing"
+            description="Configure pricing for different user types and time slots"
+            extraContent={
+              <div>
+                <Button
+                  icon={<EyeOutlined />}
+                  type="primary"
+                  onClick={() => setIsDrawerOpen(true)}
+                >
+                  Pricing Preview
+                </Button>
               </div>
-              {activeTab === "configuration" ? (
-                <div className="w-full flex flex-col lg:flex-row gap-4 lg:gap-6 xl:gap-8 my-4">
-                  <div className="w-full lg:w-2/3 flex flex-col gap-4">
+            }
+          >
+            <div className="w-full">
+              <Segmented<string>
+                options={[
+                  {
+                    label: "Configuration",
+                    className: "w-full",
+                    value: "configuration",
+                  },
+                  {
+                    label: "Hotspot Types",
+                    className: "w-full",
+                    value: "hotspot-types",
+                  },
+                ]}
+                size="large"
+                className="w-full"
+                value={activeTab}
+                onChange={setActiveTab}
+              />
+            </div>
+            {activeTab === "configuration" ? (
+              <div className="w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-[450px_1fr] gap-4 lg:gap-6 mt-2">
+                  <div className="flex flex-col gap-4 min-w-0">
                     <LocationConfiguration
                       country={country}
                       setCountry={setCountry}
@@ -107,6 +120,8 @@ const DriverPricing = () => {
                       multiplier={multiplier}
                       setMultiplier={setMultiplier}
                     />
+                  </div>
+                  <div className="flex flex-col h-full overflow-auto">
                     <DriverTimeSlotsAndPricing
                       timeSlots={timeSlots}
                       setTimeSlots={setTimeSlots}
@@ -116,26 +131,14 @@ const DriverPricing = () => {
                       globalPrice={globalPrice}
                     />
                   </div>
-                  <div className="w-full lg:w-1/3">
-                    <PricingPreview
-                      country={country}
-                      state={state}
-                      district={district}
-                      area={area}
-                      pincode={pincode}
-                      timeSlots={timeSlots}
-                      hotspotEnabled={hotspotEnabled}
-                      hotspotType={hotspotType}
-                      multiplier={multiplier}
-                    />
-                  </div>
                 </div>
-              ) : (
-                <HotspotTypes />
-              )}
-            </TitleBar>
-          </div>
-          <div className="w-full">
+              </div>
+            ) : (
+              <HotspotTypes />
+            )}
+          </TitleBar>
+
+          <div className="w-full mt-1">
             {activeTab === "configuration" ? (
               <Card className="w-full mt-auto">
                 <div className="flex flex-col sm:flex-row justify-end gap-2">
@@ -165,6 +168,26 @@ const DriverPricing = () => {
           </div>
         </div>
       </div>
+      <Drawer
+        title="Pricing Preview"
+        open={isDrawerOpen}
+        width={"40%"}
+        onClose={() => setIsDrawerOpen(false)}
+      >
+        <div className="lg:col-span-1">
+          <PricingPreview
+            country={country}
+            state={state}
+            district={district}
+            area={area}
+            pincode={pincode}
+            timeSlots={timeSlots}
+            hotspotEnabled={hotspotEnabled}
+            hotspotType={hotspotType}
+            multiplier={multiplier}
+          />
+        </div>
+      </Drawer>
     </div>
   );
 };
