@@ -194,7 +194,7 @@ const DriversReconciliation: React.FC = () => {
     const newDriver: Driver = {
       ...values,
       id: editingDriver ? editingDriver.id : crypto.randomUUID(),
-      dob: values.dob ? values.dob.format("YYYY-MM-DD") : "", 
+      dob: values.dob ? values.dob.format("YYYY-MM-DD") : "",
     };
 
     if (editingDriver) {
@@ -218,7 +218,7 @@ const DriversReconciliation: React.FC = () => {
     setIsModalOpen(true);
     form.setFieldsValue({
       ...item,
-      dob: item.dob ? dayjs(item.dob) : null, 
+      dob: item.dob ? dayjs(item.dob) : null,
     });
   };
 
@@ -288,10 +288,10 @@ const DriversReconciliation: React.FC = () => {
       Country: d.country,
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData); 
-    const workbook = XLSX.utils.book_new(); 
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Drivers"); 
-    XLSX.writeFile(workbook, "drivers_reconciliation.xlsx"); 
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Drivers");
+    XLSX.writeFile(workbook, "drivers_reconciliation.xlsx");
   };
 
   const rowSelection = {
@@ -331,11 +331,12 @@ const DriversReconciliation: React.FC = () => {
 
   return (
     <div>
-      <TitleBar
+      <TitleBar    
         title="Driver Reconciliation"
         description="Manage and track driver onboarding status"
         extraContent={
-          <div style={{ display: "flex", gap: 20 }}>
+          
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
             <div style={{ background: "#fff", borderRadius: 8 }}>
               <h4>Total Drivers</h4>
               <TeamOutlined style={{ color: "#7cb9f9ff", fontSize: 22 }} />
@@ -355,22 +356,22 @@ const DriversReconciliation: React.FC = () => {
               <span>{onboardedCount}</span>
             </div>
           </div>
+         
         }
       />
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
         <Input
           placeholder="Search by name,phone, or email..."
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: 300 }}
         />
 
         <Button type="primary" icon={<FaRegFileExcel />}>
           <label style={{ cursor: "pointer" }}>
             Import Excel
             <input
-              type="file"
+              type="file" 
               hidden
               accept=".xlsx,.xls"
               onChange={handleFileUpload}
@@ -435,7 +436,7 @@ const DriversReconciliation: React.FC = () => {
         columns={columns}
         dataSource={tableData}
         rowKey="id"
-        pagination={{ pageSize: 8 }}
+        pagination={{ pageSize: 7 }}
         size="small"
         scroll={{ x: "max-content" }}
         bordered
@@ -451,7 +452,7 @@ const DriversReconciliation: React.FC = () => {
         title={editingDriver ? "Edit Driver" : "Add New Driver"}
         open={isModalOpen}
         onOk={handleSaveDriver}
-        width={400}
+        width={360}
         centered
         bodyStyle={{ padding: 12 }}
         okText={editingDriver ? "Save Changes" : "Add Driver"}
@@ -461,46 +462,73 @@ const DriversReconciliation: React.FC = () => {
           form.resetFields();
         }}
       >
-        <Form layout="vertical" form={form}>
+        <Form
+          layout="vertical"
+          form={form}
+          size={"small"}
+          style={{ marginTop: 0 }}
+        >
+          <Form.Item
+            name="driver_name"
+            label="Driver Name"
+            rules={[{ required: true }]}
+            style={{ marginTop: 0, marginBottom: 2 }}
+          >
+            <Input placeholder="e.g, john doe" />
+          </Form.Item>
+
+          <Form.Item
+            name="mail"
+            label="Email"
+            rules={[{ required: true }]}
+            style={{ marginTop: 0, marginBottom: 2 }}
+          >
+            <Input placeholder="john123@gmail.com" />
+          </Form.Item>
+
           <div style={{ display: "flex", gap: 10 }}>
             <Form.Item
-              name="driver_name"
-              label="Driver Name"
+              name="phone"
+              label="Phone"
               rules={[{ required: true }]}
+              style={{ flex: 1, marginTop: 0, marginBottom: 2 }}
             >
-              <Input placeholder="e.g, john doe" />
-            </Form.Item>
-
-            <Form.Item name="phone" label="Phone" rules={[{ required: true }]}>
               <Input placeholder="6732882912" />
             </Form.Item>
-          </div>
 
-          <div style={{ display: "flex", gap: 10 }}>
-            <Form.Item name="mail" label="Email">
-              <Input placeholder="john123@gmail.com" />
-            </Form.Item>
-
-            <Form.Item name="dob" label="Date of Birth">
-              <DatePicker style={{ width: "100%" }} placeholder="Select DOB" />
+            <Form.Item
+              name="dob"
+              label="Date of Birth"
+              style={{ flex: 1, marginTop: 0, marginBottom: 2 }}
+            >
+              <DatePicker style={{ width: "100%" }} />
             </Form.Item>
           </div>
 
-          <div style={{ display: "flex", gap: 10 }}>
-            <Form.Item name="area" label="Area">
-              <Input placeholder="velachery" />
-            </Form.Item>
+          <Form.Item
+            name="street"
+            label="Street"
+            style={{ marginTop: 0, marginBottom: 2 }}
+          >
+            <Input placeholder="123 Main St" />
+          </Form.Item>
 
-            <Form.Item name="street" label="Street">
-              <Input placeholder="123 Main St" />
-            </Form.Item>
-          </div>
+          <Form.Item
+            name="area"
+            label="Area"
+            style={{ marginTop: 0, marginBottom: 2 }}
+          >
+            <Input placeholder="velachery" />
+          </Form.Item>
 
           <div style={{ display: "flex", gap: 10 }}>
-            <Form.Item name="district" label="District">
+            <Form.Item
+              name="district"
+              label="District"
+              style={{ marginTop: 0, marginBottom: 2 }}
+            >
               <Input placeholder="Central District" />
             </Form.Item>
-
             <Form.Item
               name="pincode"
               label="Pincode"
@@ -510,21 +538,27 @@ const DriversReconciliation: React.FC = () => {
                   message: "Pincode must be exactly 6 digits",
                 },
               ]}
+              style={{ marginTop: 0, marginBottom: 2 }}
             >
               <Input maxLength={6} placeholder="101001" />
             </Form.Item>
           </div>
-
           <div style={{ display: "flex", gap: 10 }}>
-            <Form.Item name="state" label="State">
+            <Form.Item
+              name="state"
+              label="State"
+              style={{ marginTop: 0, marginBottom: 2 }}
+            >
               <Input placeholder="Tamilnadu" />
             </Form.Item>
-
-            <Form.Item name="country" label="Country">
+            <Form.Item
+              name="country"
+              label="Country"
+              style={{ marginTop: 0, marginBottom: 2 }}
+            >
               <Input placeholder="India" />
             </Form.Item>
           </div>
-
           <div style={{ display: "flex", gap: 100 }}>
             {editingDriver && (
               <>
@@ -535,7 +569,6 @@ const DriversReconciliation: React.FC = () => {
                 >
                   <Switch checkedChildren="Yes" unCheckedChildren="No" />
                 </Form.Item>
-
                 <Form.Item
                   name="onboarding"
                   label="Onboarded"
@@ -565,7 +598,7 @@ const DriversReconciliation: React.FC = () => {
           undone.
         </p>
       </Modal>
-      
+
       <Modal
         title="Send WhatsApp Message"
         open={isWhatsAppModalOpen}
@@ -576,19 +609,19 @@ const DriversReconciliation: React.FC = () => {
         }}
         okText="Send Message"
       >
-        <div style={{display: 'flex', gap: 6, marginBottom: 8}}>
-        {whatsappDrivers.slice(0, 3).map((d, index, arr) => (
-          <span key={d.id}>
-            {d.driver_name}
-            {index < arr.length - 1 && ", "}
-          </span>
-        ))}
+        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+          {whatsappDrivers.slice(0, 3).map((d, index, arr) => (
+            <span key={d.id}>
+              {d.driver_name}
+              {index < arr.length - 1 && ", "}
+            </span>
+          ))}
 
-        {whatsappDrivers.length > 3 && (
-          <p style={{ margin: 0, color: "#888", fontStyle: "italic" }}>
-            +{whatsappDrivers.length - 3} others
-          </p>
-        )}
+          {whatsappDrivers.length > 3 && (
+            <p style={{ margin: 0, color: "#888", fontStyle: "italic" }}>
+              +{whatsappDrivers.length - 3} others
+            </p>
+          )}
         </div>
 
         <Input.TextArea
