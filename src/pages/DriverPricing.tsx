@@ -24,7 +24,7 @@ const DriverPricing = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const [timeSlots, setTimeSlots] = useState<UserTimeSlots>({
-    "normal-user": [
+    "normal-driver": [
       {
         id: 1,
         day: "monday",
@@ -32,7 +32,7 @@ const DriverPricing = () => {
         price: 300,
       },
     ],
-    "premium-user": [
+    "premium-driver": [
       {
         id: 1,
         day: "monday",
@@ -40,7 +40,7 @@ const DriverPricing = () => {
         price: 400,
       },
     ],
-    "elite-user": [
+    "elite-driver": [
       {
         id: 1,
         day: "monday",
@@ -171,7 +171,7 @@ const DriverPricing = () => {
       <Drawer
         title="Pricing Preview"
         open={isDrawerOpen}
-        width={"40%"}
+        width={"80%"}
         onClose={() => setIsDrawerOpen(false)}
       >
         <div className="lg:col-span-1">
