@@ -134,7 +134,7 @@ const LocationConfiguration = ({
           </div>
           <div className=""></div>
         </div>
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="w-full grid grid-cols-2 gap-4">
           <div className="w-full flex flex-col">
             <span className="text-sm font-medium mb-1">Country</span>
             <Select
@@ -167,16 +167,20 @@ const LocationConfiguration = ({
               }
             />
           </div>
+        </div>
+
+        <div className="w-full grid grid-cols-2 gap-4">
           <div className="w-full flex flex-col">
             <span className="text-sm font-medium mb-1">District</span>
             <Select value={district} onChange={setDistrict} options={[]} />
           </div>
-        </div>
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="w-full flex flex-col">
             <span className="text-sm font-medium mb-1">Area</span>
             <Input value={area} onChange={(e) => setArea(e.target.value)} />
           </div>
+        </div>
+
+        <div className="w-full grid grid-cols-2 gap-4">
           <div className="w-full flex flex-col">
             <span className="text-sm font-medium mb-1">Pincode</span>
             <Input
