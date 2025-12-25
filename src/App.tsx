@@ -28,7 +28,8 @@ import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
 import { AntdStaticHolder } from "./utilities/antdStaticHolder";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
-
+import RoleAndPermissions from "./pages/RoleAndPermissions";
+import { LockOutlined } from "@ant-design/icons";
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -198,6 +199,12 @@ const RootLayout: React.FC = () => {
       key: "/Deductions",
       icon: <MdOutlineMoneyOff />,
     },
+     {
+      label: <Link to="/RoleAndPermissions">Role And Permissions</Link>,
+      key: "/RoleAndPermissions",
+     icon: <LockOutlined />
+    },
+    
   ];
   return (
     <ConfigProvider
@@ -488,6 +495,15 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "RoleAndPermissions",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <RoleAndPermissions />
+          </Suspense>
+        ),
+      },
+       
+      {
         path: "PricingAndFareRules",
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
@@ -505,6 +521,7 @@ const router = createBrowserRouter([
           },
         ],
       },
+      
     ],
   },
   {
