@@ -2,7 +2,12 @@ import { useState } from "react";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
 import { Table, Button, Card, Modal, Form, Input, Grid } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, AccountBookOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  AccountBookOutlined,
+  DeleteOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
 
 const { useBreakpoint } = Grid;
 
@@ -65,11 +70,21 @@ export const BaseFareCalculation = () => {
 
   const handleModalOk = () => {
     form.validateFields().then((values) => {
-      setFareRules((prev) =>
-        prev.map((rule) =>
-          rule.key === editingRule?.key ? { ...rule, ...values } : rule
-        )
-      );
+      if (editingRule) {
+        setFareRules((prev) =>
+          prev.map((rule) =>
+            rule.key === editingRule?.key ? { ...rule, ...values } : rule
+          )
+        );
+      } else {
+        const newRule: FareRule = {
+          key: Date.now().toString(),
+          title: values.title,
+          perunit: values.perunit,
+          price: values.price,
+        };
+        setFareRules((prev) => [...prev, newRule]);
+      }
 
       setIsModalOpen(false);
       setEditingRule(null);
@@ -85,12 +100,35 @@ export const BaseFareCalculation = () => {
 
   const handleEdit = (record: FareRule) => {
     setEditingRule(record);
-    form.setFieldsValue({
-      title: record.title,
-      perunit: record.perunit,
-      price: record.price,
-    });
+    form.setFieldsValue(record);
     setIsModalOpen(true);
+  };
+  const handleAddFare = () => {
+    setEditingRule(null);
+    form.resetFields();
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (key: string) => {
+    setFareRules((prev) => prev.filter((rule) => rule.key !== key));
+  };
+
+  const confirmDelete = (record: FareRule) => {
+    Modal.confirm({
+      title: "Delete Fare",
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <span>
+          Are you sure you want to delete <b>{record.title}</b>?
+        </span>
+      ),
+      okText: "Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk() {
+        handleDelete(record.key);
+      },
+    });
   };
 
   const columns: ColumnsType<FareRule> = [
@@ -113,11 +151,19 @@ export const BaseFareCalculation = () => {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <Button
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => handleEdit(record)}
-        ></Button>
+        <div className="flex gap-2">
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+          <Button
+            icon={<DeleteOutlined />}
+            type="link"
+            danger
+            onClick={() => confirmDelete(record)}
+          ></Button>
+        </div>
       ),
     },
   ];
@@ -126,6 +172,13 @@ export const BaseFareCalculation = () => {
       <TitleBar
         title="Fare Configuration"
         description="Where your trip’s pricing begins."
+        extraContent={
+          <div>
+            <Button type="primary" onClick={handleAddFare}>
+              + Add Fare
+            </Button>
+          </div>
+        }
       />
 
       <div className="flex w-full gap-4 mt-4 flex-col lg:flex-row">
@@ -162,15 +215,12 @@ export const BaseFareCalculation = () => {
                   key={rule.key}
                   className="flex items-center justify-between py-3 px-2 rounded-md transition hover:bg-violet-50"
                 >
-                  {/* Left */}
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
                       {rule.title}
                     </p>
                     <p className="text-xs text-gray-500">{rule.perunit}</p>
                   </div>
-
-                  {/* Right */}
                   <div className="text-sm font-semibold text-violet-700">
                     {rule.price}
                   </div>
@@ -180,18 +230,16 @@ export const BaseFareCalculation = () => {
           </Card>
         </div>
       </div>
-
-      {/* Modal */}
       <Modal
-        title={`Edit ${editingRule?.title}`}
+        title={editingRule ? `Edit ${editingRule.title}` : "Add Fare"}
         open={isModalOpen}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
         okText="Save"
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="Title" name="title">
-            <Input disabled />
+          <Form.Item label="Title" name="title" rules={[{ required: true }]}>
+            <Input disabled={!!editingRule} />
           </Form.Item>
 
           <Form.Item
