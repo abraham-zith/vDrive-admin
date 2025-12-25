@@ -5,9 +5,9 @@ import type { ColumnsType } from "antd/es/table";
 import { EditOutlined, AccountBookOutlined } from "@ant-design/icons";
 
 const { useBreakpoint } = Grid;
-const screens = useBreakpoint();
 
 export const BaseFareCalculation = () => {
+  const screens = useBreakpoint();
   const [fareRules, setFareRules] = useState<FareRule[]>([
     {
       key: "1",
@@ -129,7 +129,7 @@ export const BaseFareCalculation = () => {
       />
 
       <div className="flex w-full gap-4 mt-4 flex-col lg:flex-row">
-        <div className="w-full lg:w-[70%] order-2 lg:order-1">
+        <div className="w-full lg:w-[70%] order-1">
           <Table
             columns={columns}
             dataSource={fareRules}
@@ -143,7 +143,7 @@ export const BaseFareCalculation = () => {
           />
         </div>
 
-        <div className="w-full lg:w-[30%] order-1 lg:order-2">
+        <div className="w-full lg:w-[30%] order-2">
           <Card
             title={
               <span className="flex items-center gap-2 text-black font-semibold text-base">
