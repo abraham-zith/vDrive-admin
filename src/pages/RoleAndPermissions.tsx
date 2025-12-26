@@ -59,7 +59,6 @@ const ROLE_DESCRIPTION_MAP: Record<string, string> = {
 };
 const FULL_ACCESS_LEVELS = ["View", "Create", "Edit", "Delete"];
 
-
 const accessColorMap: Record<string, string> = {
   View: "blue",
   Edit: "geekblue",
@@ -502,17 +501,16 @@ const RoleAndPermissions: React.FC = () => {
 
   /* ================= JSX ================= */
   return (
-    <div  className="w-full max-w-screen-2xl mx-auto px-4 lg:px-8">
+    <div className="w-full max-w-screen-2xl mx-auto px-4 lg:px-8">
       <TitleBar
         icon={<SafetyCertificateOutlined />}
         title="Access Control Management"
         description="Manage roles, pages, and access levels across the system."
         extraContent={
-         <div className="flex flex-wrap gap-2 items-center justify-end">
+          <div className="flex flex-wrap gap-2 items-center justify-end">
             {/* SEGMENTED */}
             <Segmented
               value={activeSegment}
-              
               onChange={(val) =>
                 setActiveSegment(val as "permissions" | "users")
               }
@@ -528,18 +526,18 @@ const RoleAndPermissions: React.FC = () => {
             >
               Manage
             </Button>
-            
+
             {activeSegment === "permissions" && (
-            <Button
-              type="primary"
-              onClick={() => {
-                setEditingRow(null);
-                form.resetFields();
-                setIsModalOpen(true);
-              }}
-            >
-              + Add Permission
-            </Button>
+              <Button
+                type="primary"
+                onClick={() => {
+                  setEditingRow(null);
+                  form.resetFields();
+                  setIsModalOpen(true);
+                }}
+              >
+                + Add Permission
+              </Button>
             )}
           </div>
         }
@@ -548,12 +546,8 @@ const RoleAndPermissions: React.FC = () => {
       {activeSegment === "permissions" && (
         <>
           {/* FILTERS */}
-          <div  className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-            <Select
-              value={selectedRole}
-              onChange={setSelectedRole}
-             
-            >
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+            <Select value={selectedRole} onChange={setSelectedRole}>
               <Option value="all">All Roles</Option>
               {roles.map((r) => (
                 <Option key={r.name} value={r.name}>
@@ -562,11 +556,7 @@ const RoleAndPermissions: React.FC = () => {
               ))}
             </Select>
 
-            <Select
-              value={selectedPage}
-              onChange={setSelectedPage}
-              
-            >
+            <Select value={selectedPage} onChange={setSelectedPage}>
               {/* <Option value="all">All Pages</Option>
           <Option value="Dashboard">Dashboard</Option>
           <Option value="Users">Users</Option>
@@ -581,11 +571,7 @@ const RoleAndPermissions: React.FC = () => {
               ))}
             </Select>
 
-            <Select
-              value={selectedAccess}
-              onChange={setSelectedAccess}
-              
-            >
+            <Select value={selectedAccess} onChange={setSelectedAccess}>
               <Option value="all">All Access Levels</Option>
               {accessLevels.map((a) => (
                 <Option key={a.name} value={a.name}>
@@ -602,40 +588,40 @@ const RoleAndPermissions: React.FC = () => {
           </div>
 
           <div className="w-full overflow-x-auto mt-4">
-          <Table
-            rowKey="id"
-            columns={columns}
-            dataSource={filteredPermissions}
-            bordered
-            pagination={{ pageSize: 8, size: "small" }}
-            size="small"
-            style={{ marginTop: 20 }}
-            components={{
-              header: {
-                cell: (props: any) => (
-                  <th
-                    {...props}
-                    style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      //borderBottom: "2px solid #d1d5db",
-                      fontWeight: 600,
-                      background: "#f9fafb",
-                    }}
-                  />
-                ),
-              },
-              body: {
-                cell: (props: any) => (
-                  <td
-                    {...props}
-                    style={{
-                      borderBottom: "1px solid #e5e7eb",
-                    }}
-                  />
-                ),
-              },
-            }}
-          />
+            <Table
+              rowKey="id"
+              columns={columns}
+              dataSource={filteredPermissions}
+              bordered
+              pagination={{ pageSize: 8, size: "small" }}
+              size="small"
+              style={{ marginTop: 20 }}
+              components={{
+                header: {
+                  cell: (props: any) => (
+                    <th
+                      {...props}
+                      style={{
+                        borderBottom: "1px solid #e5e7eb",
+                        //borderBottom: "2px solid #d1d5db",
+                        fontWeight: 600,
+                        background: "#f9fafb",
+                      }}
+                    />
+                  ),
+                },
+                body: {
+                  cell: (props: any) => (
+                    <td
+                      {...props}
+                      style={{
+                        borderBottom: "1px solid #e5e7eb",
+                      }}
+                    />
+                  ),
+                },
+              }}
+            />
           </div>
           <div
             style={{
@@ -705,16 +691,16 @@ const RoleAndPermissions: React.FC = () => {
               + Add User
             </Button>
           </Space>
-            
-            <div className="w-full overflow-x-auto">
-          <Table
-            rowKey="id"
-            columns={userTableColumns}
-            dataSource={filteredUsers}
-            bordered
-            pagination={false}
-            size="small"
-          />
+
+          <div className="w-full overflow-x-auto">
+            <Table
+              rowKey="id"
+              columns={userTableColumns}
+              dataSource={filteredUsers}
+              bordered
+              pagination={false}
+              size="small"
+            />
           </div>
         </>
       )}
@@ -801,17 +787,28 @@ const RoleAndPermissions: React.FC = () => {
         onOk={async () => {
           const values = await userForm.validateFields();
 
-          if (editingUser) {
-            setUsers((prev) =>
-              prev.map((u) =>
-                u.id === editingUser.id ? { ...u, ...values } : u
-              )
+          setUsers((prev) => {
+            const userWithSameName = prev.find(
+              (u) => u.name.toLowerCase() === values.name.toLowerCase()
             );
-            message.success("User updated");
-          } else {
-            setUsers((prev) => [...prev, { id: Date.now(), ...values }]);
-            message.success("User added");
-          }
+
+            //  ADD MODE
+            if (!editingUser) {
+              if (userWithSameName) {
+                message.error("User already exists");
+                return prev; //  duplicate add block
+              }
+
+              return [...prev, { id: Date.now(), ...values }];
+            }
+
+            //  EDIT MODE → same user role update allowed
+            return prev.map((u) =>
+              u.id === editingUser.id
+                ? { ...u, name: values.name, role: values.role } // role editable
+                : u
+            );
+          });
 
           setIsUserModalOpen(false);
           setEditingUser(null);
