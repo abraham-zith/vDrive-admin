@@ -13,6 +13,7 @@ import {
   Slider,
 } from "antd";
 import { FilterOutlined } from "@ant-design/icons";
+import { Dayjs } from "dayjs";
 
 const { Panel } = Collapse;
 const { Option } = Select;
@@ -33,6 +34,11 @@ export interface FilterField {
   max?: number;
   step?: number;
   mode?: "multiple" | "tags";
+  defaultValue?: Dayjs;
+
+  showTime?: boolean;
+  timeFormat?: string;
+  dateFormat?: string;
 }
 
 export interface FilterValues {
@@ -48,7 +54,7 @@ interface AdvancedFiltersProps {
 const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
   filterFields,
   applyFilters,
-  initialValues = {},
+  //initialValues = {},
 }) => {
   const [activeFilterPanel, setActiveFilterPanel] = useState<string[]>([]);
   const [filterForm] = Form.useForm();
@@ -132,17 +138,50 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           />
         );
       case "date":
-        return <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />;
+        return (
+          <DatePicker
+            style={{ width: "100%" }}
+            showTime={
+              field.showTime ? { format: field.timeFormat ?? "hh:mm A" } : false
+            }
+            format={
+              field.showTime
+                ? `${field.dateFormat ?? "YYYY-MM-DD"} ${
+                    field.timeFormat ?? "hh:mm A"
+                  }`
+                : field.dateFormat ?? "YYYY-MM-DD"
+            }
+          />
+        );
+
       default:
         return null;
     }
   };
 
+  const computedInitialValues = React.useMemo(() => {
+    const values: Record<string, any> = {};
+
+    filterFields.forEach((field) => {
+      if (field.defaultValue !== undefined) {
+        values[field.name] = field.defaultValue;
+      }
+    });
+
+    return values;
+  }, [filterFields]);
+
+  // ✅ 2️⃣ APPLY defaults to form (THIS IS THE FIX)
+  React.useEffect(() => {
+    filterForm.setFieldsValue(computedInitialValues);
+  }, [computedInitialValues, filterForm]);
+
   return (
     <Collapse
       activeKey={activeFilterPanel}
       onChange={(key) => setActiveFilterPanel(Array.isArray(key) ? key : [key])}
-      style={{ marginBottom: 24, backgroundColor: "white" }}
+      style={{ backgroundColor: "white" }}
+      //marginBottom: 24,
       expandIconPosition="end"
     >
       <Panel
@@ -180,7 +219,9 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           name="advanced_filters"
           onValuesChange={onFilterValuesChange}
           layout="vertical"
-          initialValues={initialValues}
+          initialValues={computedInitialValues}
+
+          //initialValues={initialValues}
         >
           <Row gutter={[16, 16]}>
             {filterFields.map((field) => (

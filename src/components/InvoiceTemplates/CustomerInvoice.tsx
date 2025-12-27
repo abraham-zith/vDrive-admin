@@ -5,29 +5,30 @@ import {
   IoPersonOutline,
   IoCarOutline,
 } from "react-icons/io5";
+import type { TripDetailsType } from "../../store/slices/tripSlice";
 
-type TripInvoice = {
-  pickup: string;
-  drop: string;
-  distance: string;
-  duration: string;
+// type TripInvoice = {
+//   pickup: string;
+//   drop: string;
+//   distance: string;
+//   duration: string;
 
-  baseFare: number;
-  distanceFare?: number;
-  timeFare?: number;
-  discount: number;
-  fare: number;
+//   baseFare: number;
+//   distanceFare?: number;
+//   timeFare?: number;
+//   discount: number;
+//   fare: number;
 
-  driverName: string;
-  driverPhone: string;
-  carNumber: string;
-  carType: string;
-};
+//   driverName: string;
+//   driverPhone: string;
+//   carNumber: string;
+//   carType: string;
+// };
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  trip?: TripInvoice;
+  trip?: TripDetailsType;
 };
 
 const CustomerInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
@@ -56,18 +57,18 @@ const CustomerInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
             <IoLocationOutline size={20} className="text-green-500" />
             <div>
               <p className="font-semibold text-gray-700">Pickup</p>
-              <p className="text-gray-500 text-sm">{trip.pickup}</p>
+              <p className="text-gray-500 text-sm">{trip.pickup_address}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 mb-3">
             <IoLocationOutline size={20} className="text-red-500 rotate-180" />
             <div>
               <p className="font-semibold text-gray-700">Drop</p>
-              <p className="text-gray-500 text-sm">{trip.drop}</p>
+              <p className="text-gray-500 text-sm">{trip.drop_address}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-gray-600 text-sm">
-            <IoTimerOutline /> {trip.distance} • {trip.duration}
+            <IoTimerOutline /> {trip.distance_km} • {trip.trip_duration_minutes}
           </div>
         </div>
 
@@ -77,18 +78,18 @@ const CustomerInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Base Fare</span>
-              <span>₹{trip.baseFare.toFixed(2)}</span>
+              <span>₹{trip.base_fare.toFixed(2)}</span>
             </div>
-            {trip.distanceFare !== undefined && (
+            {trip.distance_fare !== undefined && (
               <div className="flex justify-between">
                 <span>Distance Fare</span>
-                <span>₹{trip.distanceFare.toFixed(2)}</span>
+                <span>₹{trip.distance_fare.toFixed(2)}</span>
               </div>
             )}
-            {trip.timeFare !== undefined && (
+            {trip.time_fare !== undefined && (
               <div className="flex justify-between">
                 <span>Time Fare</span>
-                <span>₹{trip.timeFare.toFixed(2)}</span>
+                <span>₹{trip.time_fare.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between text-red-500">
@@ -98,7 +99,7 @@ const CustomerInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
             <div className="border-t my-2" />
             <div className="flex justify-between font-bold text-lg text-gray-800">
               <span>Total</span>
-              <span>₹{trip.fare.toFixed(2)}</span>
+              <span>₹{trip.total_fare.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -109,10 +110,10 @@ const CustomerInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
           <div className="flex items-center gap-4 p-4 border rounded-xl bg-gray-50">
             <IoPersonOutline size={40} className="text-gray-600" />
             <div className="text-sm">
-              <p className="font-semibold">{trip.driverName}</p>
-              <p className="text-gray-500 text-sm">📞 {trip.driverPhone}</p>
+              <p className="font-semibold">{trip.driver_name}</p>
+              <p className="text-gray-500 text-sm">📞 {trip.driver_phone}</p>
               <p className="flex items-center gap-1 text-gray-700 mt-1">
-                <IoCarOutline /> {trip.carNumber} • {trip.carType}
+                <IoCarOutline /> {trip.car_number} • {trip.car_type}
               </p>
             </div>
           </div>

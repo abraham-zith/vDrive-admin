@@ -15,13 +15,12 @@ type Props = {
 const DriverInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
   if (!isOpen || !trip) return null;
 
-  const commission = trip.fare * 0.2; // 20% platform fee
-  const payout = trip.fare - commission;
+  const commission = trip.total_fare * 0.2; // 20% platform fee
+  const payout = trip.total_fare - commission;
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
-
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -42,8 +41,8 @@ const DriverInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
           <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border">
             <IoPersonOutline size={40} className="text-gray-600" />
             <div className="text-sm">
-              <p className="font-semibold">{trip.customerName}</p>
-              <p className="text-gray-500 text-sm">{trip.customerPhone}</p>
+              <p className="font-semibold">{trip.user_name}</p>
+              <p className="text-gray-500 text-sm">{trip.user_phone}</p>
             </div>
           </div>
         </div>
@@ -54,14 +53,18 @@ const DriverInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
           <div className="bg-gray-50 p-4 rounded-xl space-y-3 text-sm">
             <div className="flex items-center gap-3">
               <IoLocationOutline size={20} className="text-green-500" />
-              <p>{trip.pickup}</p>
+              <p>{trip.pickup_address}</p>
             </div>
             <div className="flex items-center gap-3">
-              <IoLocationOutline size={20} className="text-red-500 rotate-180" />
-              <p>{trip.drop}</p>
+              <IoLocationOutline
+                size={20}
+                className="text-red-500 rotate-180"
+              />
+              <p>{trip.drop_address}</p>
             </div>
             <div className="flex items-center gap-2 text-gray-600">
-              <IoTimerOutline /> {trip.distance} • {trip.duration}
+              <IoTimerOutline /> {trip.distance_km} •{" "}
+              {trip.trip_duration_minutes}
             </div>
           </div>
         </div>
@@ -72,7 +75,7 @@ const DriverInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span>Ride Fare</span>
-              <span>₹{trip.fare.toFixed(2)}</span>
+              <span>₹{trip.total_fare.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-red-500">
               <span>Platform Commission (20%)</span>
