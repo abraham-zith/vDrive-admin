@@ -37,6 +37,8 @@ import { MdOutlineMoneyOff } from "react-icons/md";
 import { AntdStaticHolder } from "./utilities/antdStaticHolder";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
 import { MdOutlineAccountBalanceWallet } from "react-icons/md";
+import DriversReconciliation from "./pages/DriversReconciliation";
+import { MdOutlinePerson } from "react-icons/md";
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -212,6 +214,16 @@ const RootLayout: React.FC = () => {
       key: "/RechargePlan",
       icon: <MdOutlineAccountBalanceWallet />,
     },
+    //   {
+    //   label: <Link to="/drivers-reconciliation">Drivers Reconciliation</Link>,
+    //   key: "/DriversReconciliation",
+    //   icon: <MdOutlinePerson  />,
+    // },
+    {
+      label: <Link to="/drivers-reconciliation">Drivers Reconciliation</Link>,
+      key: "/drivers-reconciliation",
+      icon: <MdOutlinePerson />,
+    },
   ];
   return (
     <ConfigProvider
@@ -337,8 +349,8 @@ const RootLayout: React.FC = () => {
                 isMobile || !isAuthenticated || location.pathname === "/login"
                   ? 0
                   : collapsed
-                    ? 80
-                    : 250,
+                  ? 80
+                  : 250,
               transition: "margin-left 0.2s",
             }}
           >
@@ -509,6 +521,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <RechargePlan />
+          </Suspense>
+        ),
+      },
+      {
+        path: "drivers-reconciliation",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <DriversReconciliation />
           </Suspense>
         ),
       },
