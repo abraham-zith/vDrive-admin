@@ -398,7 +398,7 @@ const RechargePlan: React.FC = () => {
                 <Select placeholder="Select plan type">
                   <Select.Option value="ROUND_TRIP">Round Trip</Select.Option>
                   <Select.Option value="OUTSTATION">Outstation</Select.Option>
-                  <Select.Option value="DAILY_PASS">Daily</Select.Option>
+                  <Select.Option value="DAILY">Daily</Select.Option>
                 </Select>
               </Form.Item>
 
