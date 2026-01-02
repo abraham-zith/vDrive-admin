@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, lazy, Suspense } from "react";
 import {
   TeamOutlined,
@@ -38,6 +40,8 @@ import { MdOutlineMoneyOff } from "react-icons/md";
 import { AntdStaticHolder } from "./utilities/antdStaticHolder";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
 import { BaseFareCalculation } from "./pages/BaseFareCalculation";
+import { MdOutlineAccountBalanceWallet } from "react-icons/md";
+
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -83,9 +87,13 @@ const Drivers = lazy(() => import("./pages/Drivers"));
 const DriverPricing = lazy(() => import("./pages/DriverPricing"));
 const PricingAndFareRules = lazy(() => import("./pages/Pricing&FareRules"));
 const Deductions = lazy(() => import("./pages/Deductions"));
+const RechargePlan = lazy(() => import("./pages/RechargePlan"));
 const SignUp = lazy(() => import("./signup/Signup"));
 const Login = lazy(() => import("./login/Login"));
 const ResetPassword = lazy(() => import("./login/ResetPassword"));
+
+
+
 
 // const PlaceholderContent: React.FC<{
 // title: string;
@@ -208,6 +216,12 @@ const RootLayout: React.FC = () => {
       icon: <MdOutlineMoneyOff />,
     },
     {
+      label: <Link to="/RechargePlan">Recharge Plan</Link>,
+      key: "/RechargePlan",
+      icon: <MdOutlineAccountBalanceWallet />,
+    }
+
+    {
       label: <Link to="/basefarecalculation">Fare Configuration</Link>,
       key: "/basefarecalculation",
       icon: <FundOutlined />,
@@ -281,19 +295,17 @@ const RootLayout: React.FC = () => {
                   className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
                 >
                   <div
-                    className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
-                      collapsed ? "justify-center" : "gap-3"
-                    }`}
+                    className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${collapsed ? "justify-center" : "gap-3"
+                      }`}
                   >
                     {collapsed ? null : (
                       <Avatar size="large" icon={<UserOutlined />} />
                     )}
                     <div
-                      className={`grid transition-all duration-300 ease-in-out ${
-                        collapsed
-                          ? "grid-rows-[0fr] opacity-0"
-                          : "grid-rows-[1fr] opacity-100"
-                      }`}
+                      className={`grid transition-all duration-300 ease-in-out ${collapsed
+                        ? "grid-rows-[0fr] opacity-0"
+                        : "grid-rows-[1fr] opacity-100"
+                        }`}
                     >
                       <div className="overflow-hidden">
                         <div className="flex flex-col text-black">
@@ -337,8 +349,8 @@ const RootLayout: React.FC = () => {
                 isMobile || !isAuthenticated || location.pathname === "/login"
                   ? 0
                   : collapsed
-                  ? 80
-                  : 250,
+                    ? 80
+                    : 250,
               transition: "margin-left 0.2s",
             }}
           >
@@ -383,11 +395,10 @@ const RootLayout: React.FC = () => {
             )}
             <Content>
               <div
-                className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
-                  isMobile && isAuthenticated && location.pathname !== "/login"
-                    ? "pt-16 h-[100dvh]"
-                    : "h-[100dvh]"
-                }`}
+                className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${isMobile && isAuthenticated && location.pathname !== "/login"
+                  ? "pt-16 h-[100dvh]"
+                  : "h-[100dvh]"
+                  }`}
               >
                 <Outlet />
               </div>
@@ -505,6 +516,18 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "RechargePlan",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <RechargePlan />
+          </Suspense>
+        ),
+      },
+
+
+
+
+      {
         path: "PricingAndFareRules",
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
@@ -522,24 +545,7 @@ const router = createBrowserRouter([
           },
         ],
       },
-
-      {
-        path: "basefarecalculation",
-        element: (
-          <Suspense fallback={<RouteLoadingFallback />}>
-            <BaseFareCalculation />
-          </Suspense>
-        ),
-      },
     ],
-  },
-  {
-    path: "/signup",
-    element: (
-      <Suspense fallback={<RouteLoadingFallback />}>
-        <SignUp />
-      </Suspense>
-    ),
   },
   {
     path: "/login",
@@ -557,6 +563,15 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
+  {
+    path: "/signup",
+    element: (
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <SignUp />
+      </Suspense>
+    ),
+  },
+
 ]);
 
 const App = () => (
@@ -564,5 +579,9 @@ const App = () => (
     <RouterProvider router={router} />
   </ErrorBoundary>
 );
-
+//comment added
 export default App;
+
+
+
+
