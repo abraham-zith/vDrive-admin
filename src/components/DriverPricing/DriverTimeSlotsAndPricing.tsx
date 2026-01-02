@@ -37,12 +37,12 @@ export interface TimeSlot {
   price: number;
 }
 
-export type UserType = "normal-user" | "premium-user" | "elite-user";
+export type UserType = "normal-driver" | "premium-driver" | "elite-driver";
 
 export interface UserTimeSlots {
-  "normal-user": TimeSlot[];
-  "premium-user": TimeSlot[];
-  "elite-user": TimeSlot[];
+  "normal-driver": TimeSlot[];
+  "premium-driver": TimeSlot[];
+  "elite-driver": TimeSlot[];
 }
 
 const dayOptions = [
@@ -160,7 +160,7 @@ const DriverTimeSlotsAndPricing = ({
   multiplier,
   globalPrice,
 }: DriverTimeSlotsAndPricingProps) => {
-  const [userType, setUserType] = useState<UserType>("elite-user");
+  const [userType, setUserType] = useState<UserType>("elite-driver");
   const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
 
   // Load hotspot types on component mount
@@ -179,26 +179,26 @@ const DriverTimeSlotsAndPricing = ({
 
   // Get selected hotspot type details
   const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType
+    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType,
   );
 
   const userTypeDetails = {
-    "normal-user": {
-      tag: "Normal User",
+    "normal-driver": {
+      tag: "Normal Driver",
       description: "Standard ride pricing",
       icon: <FiUsers />,
       color: "#5599FF",
       badge: "+5%",
     },
-    "premium-user": {
-      tag: "Premium User",
+    "premium-driver": {
+      tag: "Premium Driver",
       description: "Enhanced service features",
       icon: <FaRegStar className="text-yellow-400" />,
       color: "gold",
       badge: "+10%",
     },
-    "elite-user": {
-      tag: "Elite User",
+    "elite-driver": {
+      tag: "Elite Driver",
       description: "Luxury ride experience",
       icon: <FaRegStar className="text-blue-400" />,
       color: "#5599FF",
@@ -216,7 +216,7 @@ const DriverTimeSlotsAndPricing = ({
       day: "monday" as Day,
       timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")] as [
         Dayjs,
-        Dayjs
+        Dayjs,
       ],
       price: 500,
     };
@@ -266,10 +266,10 @@ const DriverTimeSlotsAndPricing = ({
                 label: (
                   <div className="flex gap-1 items-center justify-center flex-wrap py-1 sm:py-0 ">
                     <FiUsers />
-                    <span>Normal User</span>
+                    <span>Normal Driver</span>
                   </div>
                 ),
-                value: "normal-user",
+                value: "normal-driver",
               },
               {
                 className: "w-full",
@@ -278,10 +278,10 @@ const DriverTimeSlotsAndPricing = ({
                     <span>
                       <FaRegStar className="text-yellow-400" />
                     </span>
-                    <span>Premium User</span>
+                    <span>Premium Driver</span>
                   </div>
                 ),
-                value: "premium-user",
+                value: "premium-driver",
               },
               {
                 className: "w-full",
@@ -290,10 +290,10 @@ const DriverTimeSlotsAndPricing = ({
                     <span>
                       <FaRegStar className="text-yellow-400" />
                     </span>
-                    <span>Elite User</span>
+                    <span>Elite Driver</span>
                   </div>
                 ),
-                value: "elite-user",
+                value: "elite-driver",
               },
             ]}
             size="large"
@@ -322,21 +322,26 @@ const DriverTimeSlotsAndPricing = ({
             </Button>
           </div>
         </div>
-        <List
-          itemLayout="horizontal"
-          dataSource={timeSlots[userType]}
-          renderItem={(item, index) => (
-            <List.Item>
-              <TimeSlotItem
-                slot={item}
-                index={index}
-                updateTimeSlot={updateTimeSlot}
-                removeTimeSlot={removeTimeSlot}
-                globalPrice={globalPrice}
-              />
-            </List.Item>
-          )}
-        />
+        <div className="max-h-[37vh] overflow-y-auto pr-1">
+          <List
+            size="small"
+            split={false}
+            itemLayout="horizontal"
+            dataSource={timeSlots[userType]}
+            renderItem={(item, index) => (
+              <List.Item className="py-0">
+                <TimeSlotItem
+                  slot={item}
+                  index={index}
+                  updateTimeSlot={updateTimeSlot}
+                  removeTimeSlot={removeTimeSlot}
+                  globalPrice={globalPrice}
+                />
+              </List.Item>
+            )}
+          />
+        </div>
+
         {hotspotEnabled && selectedHotspotType && (
           <div className="w-full p-4 flex flex-col gap-2 bg-[#F8F9FA] rounded-md">
             <div className="flex gap-2 items-center">

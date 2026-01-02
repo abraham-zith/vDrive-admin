@@ -36,7 +36,7 @@ const AppliedFilters = <T extends object>({
   };
 
   const hasFilters = Object.values(filters).some((v) =>
-    Array.isArray(v) ? v.length > 0 : v !== null
+    Array.isArray(v) ? v.length > 0 : v !== null,
   );
 
   if (!hasFilters) return null;

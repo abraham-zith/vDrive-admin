@@ -41,7 +41,7 @@ const Login = () => {
 
   const handleKeyDown = (
     evt: React.KeyboardEvent<HTMLInputElement>,
-    field: string
+    field: string,
   ) => {
     if (evt.key === "Enter") {
       if (field === "userName" && login.userName.trim()) {
@@ -57,7 +57,7 @@ const Login = () => {
   };
 
   const validate = () => {
-    let newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
     if (!login?.userName) {
       newErrors.userName = "Registered Email/Mobile Number is required";
     }

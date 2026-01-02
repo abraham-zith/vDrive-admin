@@ -45,16 +45,16 @@ const TripInvoiceList: React.FC<{
     type === "customer"
       ? "sentToCustomer"
       : type === "driver"
-      ? "sentToDriver"
-      : "sentToAdmin";
+        ? "sentToDriver"
+        : "sentToAdmin";
 
-  const completedTrips = data.filter((t) => t.status === "Completed");
+  const completedTrips = data.filter((t) => t.trip_status === "COMPLETED");
 
   const pageSize = 10;
   const [page, setPage] = useState(1);
   const paginated = completedTrips.slice(
     (page - 1) * pageSize,
-    page * pageSize
+    page * pageSize,
   );
 
   return (
@@ -62,21 +62,21 @@ const TripInvoiceList: React.FC<{
       <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-3">
         {paginated.map((trip) => (
           <div
-            key={trip.tripId}
+            key={trip.trip_id}
             className="p-4 border bg-gray-50 rounded-lg flex justify-between items-center"
           >
             <div className="w-[60%]">
               <p className="font-semibold">
-                {type === "customer" && `${trip.customerName} • ${trip.tripId}`}
-                {type === "driver" && `${trip.driverName} • ${trip.tripId}`}
-                {type === "admin" && `Trip ${trip.tripId}`}
+                {type === "customer" && `${trip.user_name} • ${trip.trip_id}`}
+                {type === "driver" && `${trip.driver_name} • ${trip.trip_id}`}
+                {type === "admin" && `Trip ${trip.trip_id}`}
               </p>
               <p className="text-xs text-gray-500">
-                {trip.pickup} → {trip.drop}
+                {trip.pickup_address} → {trip.drop_address}
               </p>
               {type === "driver" && (
                 <p className="text-xs text-gray-500">
-                  Vehicle: {trip.carNumber} • {trip.carType}
+                  Vehicle: {trip.car_number} • {trip.car_type}
                 </p>
               )}
             </div>
@@ -121,7 +121,7 @@ const TripInvoiceList: React.FC<{
 
 const InvoiceTemplates: React.FC = () => {
   const tripData = useSelector(
-    (state: RootState) => state.trips.trips
+    (state: RootState) => state.trips.trips,
   ) as TripInvoiceState[];
 
   const [openModal, setOpenModal] = useState({
@@ -132,12 +132,12 @@ const InvoiceTemplates: React.FC = () => {
   });
 
   const [selectedTrip, setSelectedTrip] = useState<TripInvoiceState | null>(
-    null
+    null,
   );
 
   const openPreview = (
     key: keyof typeof openModal,
-    trip?: TripInvoiceState
+    trip?: TripInvoiceState,
   ) => {
     setSelectedTrip(trip ?? null);
     setOpenModal({ ...openModal, [key]: true });
@@ -149,7 +149,7 @@ const InvoiceTemplates: React.FC = () => {
   };
 
   const mockSend = (t: TripInvoiceState) =>
-    alert(`Sending invoice for ${t.tripId}`);
+    alert(`Sending invoice for ${t.trip_id}`);
 
   return (
     <TitleBar

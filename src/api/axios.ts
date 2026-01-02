@@ -21,7 +21,9 @@ axiosIns.interceptors.request.use(
 
     // Dev Logging
     if (import.meta.env.DEV) {
-      console.groupCollapsed(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      console.groupCollapsed(
+        `🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`,
+      );
       console.log("Headers:", config.headers);
       console.log("Data:", config.data);
       console.groupEnd();
@@ -31,7 +33,7 @@ axiosIns.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response Interceptor
@@ -62,7 +64,9 @@ axiosIns.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
     // Dev Logging
     if (import.meta.env.DEV) {
@@ -94,7 +98,7 @@ axiosIns.interceptors.response.use(
         const { data } = await axios.post(
           `${import.meta.env.VITE_BACKEND_URL}/api/auth/refresh-token`,
           {},
-          { withCredentials: true }
+          { withCredentials: true },
         );
 
         const newToken = data?.data?.accessToken;
@@ -103,27 +107,27 @@ axiosIns.interceptors.response.use(
           localStorage.setItem("accessToken", newToken);
           axiosIns.defaults.headers.common.Authorization = `Bearer ${newToken}`;
           processQueue(null, newToken);
-          
+
           // Retry original request
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return axiosIns(originalRequest);
         } else {
-            throw new Error("No access token returned from refresh");
+          throw new Error("No access token returned from refresh");
         }
       } catch (refreshError) {
         processQueue(refreshError, null);
         localStorage.removeItem("accessToken");
-        
+
         // Use the static message instance if available, otherwise fallback to console
         if (messageApi) {
           messageApi.error("Session expired. Please login again.");
         }
-        
+
         // Redirect to login (window.location is safest for non-React files)
         if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
+          window.location.href = "/login";
         }
-        
+
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -132,27 +136,29 @@ axiosIns.interceptors.response.use(
 
     // Global Error Handling for other errors (500, 403, etc.)
     if (error.response && error.response.status !== 401) {
-        const errorMessage = (error.response?.data as any)?.message || "An unexpected error occurred.";
-        if (messageApi) {
-            // Prevent spamming errors if multiple requests fail at once
-            messageApi.open({
-                type: 'error',
-                content: errorMessage,
-                key: 'api_error_message', // Unique key prevents duplicates
-            });
-        }
+      const errorMessage =
+        (error.response?.data as any)?.message ||
+        "An unexpected error occurred.";
+      if (messageApi) {
+        // Prevent spamming errors if multiple requests fail at once
+        messageApi.open({
+          type: "error",
+          content: errorMessage,
+          key: "api_error_message", // Unique key prevents duplicates
+        });
+      }
     } else if (error.code === "ERR_NETWORK") {
-        if (messageApi) {
-             messageApi.open({
-                type: 'error',
-                content: "Network error. Please check your connection.",
-                key: 'network_error',
-            });
-        }
+      if (messageApi) {
+        messageApi.open({
+          type: "error",
+          content: "Network error. Please check your connection.",
+          key: "network_error",
+        });
+      }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosIns;
