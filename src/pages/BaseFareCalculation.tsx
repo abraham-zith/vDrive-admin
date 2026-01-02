@@ -11,6 +11,13 @@ import {
 
 const { useBreakpoint } = Grid;
 
+interface FareRule {
+  key: string;
+  title: string;
+  perunit: string;
+  price: string;
+}
+
 export const BaseFareCalculation = () => {
   const screens = useBreakpoint();
   const [fareRules, setFareRules] = useState<FareRule[]>([
@@ -60,13 +67,6 @@ export const BaseFareCalculation = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<FareRule | null>(null);
   const [form] = Form.useForm();
-
-  interface FareRule {
-    key: string;
-    title: string;
-    perunit: string;
-    price: string;
-  }
 
   const handleModalOk = () => {
     form.validateFields().then((values) => {
