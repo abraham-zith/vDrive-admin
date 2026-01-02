@@ -538,6 +538,15 @@ const router = createBrowserRouter([
           },
         ],
       },
+
+      {
+        path: "basefarecalculation",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <BaseFareCalculation />
+          </Suspense>
+        ),
+      },
     ],
   },
   {
