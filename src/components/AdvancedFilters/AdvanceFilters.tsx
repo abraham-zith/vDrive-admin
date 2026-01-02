@@ -66,7 +66,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
   const onFilterValuesChange = (
     _changedValues: Record<string, any>,
-    allValues: FilterValues
+    allValues: FilterValues,
   ) => {
     applyFilters(allValues);
   };
@@ -149,7 +149,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                 ? `${field.dateFormat ?? "YYYY-MM-DD"} ${
                     field.timeFormat ?? "hh:mm A"
                   }`
-                : field.dateFormat ?? "YYYY-MM-DD"
+                : (field.dateFormat ?? "YYYY-MM-DD")
             }
           />
         );

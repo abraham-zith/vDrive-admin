@@ -58,7 +58,7 @@ const PricingPreview = ({
 
   // Get selected hotspot type details
   const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType
+    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType,
   );
 
   const hotspotAddition = selectedHotspotType?.addition || 40;
@@ -145,7 +145,7 @@ const PricingPreview = ({
                     <span className="text-[12px] text-gray-600">
                       {slot.timeRange
                         ? `${slot.timeRange[0].format(
-                            "h:mm A"
+                            "h:mm A",
                           )} - ${slot.timeRange[1].format("h:mm A")}`
                         : "No time set"}
                     </span>

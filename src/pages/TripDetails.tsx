@@ -35,7 +35,7 @@ const initialFilters: TripFilters = {
 
 export const exportTripsToExcel = (
   data: TripDetailsType[],
-  fileName: string
+  fileName: string,
 ) => {
   if (!data.length) return;
 
@@ -53,7 +53,7 @@ export const exportTripsToExcel = (
       Payment: trip.payment_status,
       Service: trip.service_type,
       Type: trip.ride_type,
-    }))
+    })),
   );
 
   const workbook = XLSX.utils.book_new();
@@ -89,7 +89,7 @@ const TripDetails = () => {
           t.driver_name?.toLowerCase().includes(s) ||
           t.driver_phone?.includes(s) ||
           t.pickup_address?.toLowerCase().includes(s) ||
-          t.drop_address?.toLowerCase().includes(s)
+          t.drop_address?.toLowerCase().includes(s),
       );
     }
 
@@ -152,7 +152,7 @@ const TripDetails = () => {
     // 🔹 Status (Segmented)
     if (filters.status !== "all") {
       temp = temp.filter(
-        (t) => t.trip_status?.toLowerCase() === filters.status
+        (t) => t.trip_status?.toLowerCase() === filters.status,
       );
     }
 

@@ -10,7 +10,7 @@ export interface HotspotType {
 }
 
 // Simulated database - in a real app, this would be API calls
-let mockHotspotTypes: HotspotType[] = [
+const mockHotspotTypes: HotspotType[] = [
   {
     id: 1,
     name: "Rush Zone",
@@ -49,7 +49,7 @@ let mockHotspotTypes: HotspotType[] = [
 ];
 
 // Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Mock API functions
 export const mockHotspotApi = {
@@ -62,13 +62,13 @@ export const mockHotspotApi = {
   // GET /api/hotspot-types/:id
   async getHotspotType(id: number): Promise<HotspotType | null> {
     await delay(200);
-    return mockHotspotTypes.find(type => type.id === id) || null;
+    return mockHotspotTypes.find((type) => type.id === id) || null;
   },
 
   // POST /api/hotspot-types
-  async createHotspotType(data: Omit<HotspotType, 'id'>): Promise<HotspotType> {
+  async createHotspotType(data: Omit<HotspotType, "id">): Promise<HotspotType> {
     await delay(400);
-    const newId = Math.max(...mockHotspotTypes.map(t => t.id)) + 1;
+    const newId = Math.max(...mockHotspotTypes.map((t) => t.id)) + 1;
     const newHotspotType: HotspotType = {
       id: newId,
       ...data,
@@ -78,9 +78,12 @@ export const mockHotspotApi = {
   },
 
   // PUT /api/hotspot-types/:id
-  async updateHotspotType(id: number, data: Partial<HotspotType>): Promise<HotspotType | null> {
+  async updateHotspotType(
+    id: number,
+    data: Partial<HotspotType>,
+  ): Promise<HotspotType | null> {
     await delay(300);
-    const index = mockHotspotTypes.findIndex(type => type.id === id);
+    const index = mockHotspotTypes.findIndex((type) => type.id === id);
     if (index === -1) return null;
 
     mockHotspotTypes[index] = { ...mockHotspotTypes[index], ...data };
@@ -90,7 +93,7 @@ export const mockHotspotApi = {
   // DELETE /api/hotspot-types/:id
   async deleteHotspotType(id: number): Promise<boolean> {
     await delay(300);
-    const index = mockHotspotTypes.findIndex(type => type.id === id);
+    const index = mockHotspotTypes.findIndex((type) => type.id === id);
     if (index === -1) return false;
 
     mockHotspotTypes.splice(index, 1);
@@ -100,10 +103,10 @@ export const mockHotspotApi = {
   // PATCH /api/hotspot-types/:id/toggle
   async toggleHotspotType(id: number): Promise<HotspotType | null> {
     await delay(200);
-    const index = mockHotspotTypes.findIndex(type => type.id === id);
+    const index = mockHotspotTypes.findIndex((type) => type.id === id);
     if (index === -1) return null;
 
     mockHotspotTypes[index].isActive = !mockHotspotTypes[index].isActive;
     return mockHotspotTypes[index];
-  }
+  },
 };

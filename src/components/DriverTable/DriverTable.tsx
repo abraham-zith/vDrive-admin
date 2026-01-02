@@ -52,7 +52,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
   const handleSearch = (
     selectedKeys: string[],
     confirm: FilterDropdownProps["confirm"],
-    dataIndex: DataIndex
+    dataIndex: DataIndex,
   ) => {
     confirm();
     setSearchText(selectedKeys[0]);
@@ -61,7 +61,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
 
   const handleReset = (
     clearFilters: () => void,
-    confirm: FilterDropdownProps["confirm"]
+    confirm: FilterDropdownProps["confirm"],
   ) => {
     clearFilters();
     setSearchText("");
@@ -70,7 +70,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
 
   const getColumnSearchProps = (
     dataIndex: DataIndex,
-    copyKey?: keyof Driver
+    copyKey?: keyof Driver,
   ): TableColumnType<Driver> => ({
     filterDropdown: ({
       setSelectedKeys,
@@ -349,7 +349,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
           onRow={(record) => ({
             onClick: (event) => {
               const isActionClick = (event.target as HTMLElement).closest(
-                ".driver-action"
+                ".driver-action",
               );
               if (!isActionClick) {
                 openDrawer(record);

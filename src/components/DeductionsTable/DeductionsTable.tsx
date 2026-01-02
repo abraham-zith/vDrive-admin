@@ -35,7 +35,7 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
   const handleSearch = (
     selectedKeys: string[],
     confirm: () => void,
-    dataIndex: DataIndex
+    dataIndex: DataIndex,
   ) => {
     confirm();
     setSearchText(selectedKeys[0]);
@@ -49,7 +49,7 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
   };
 
   const getColumnSearchProps = (
-    dataIndex: DataIndex
+    dataIndex: DataIndex,
   ): TableColumnType<Deduction> => ({
     filterDropdown: ({
       setSelectedKeys,
@@ -250,7 +250,7 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
         ),
       },
     ],
-    [searchText, searchedColumn]
+    [searchText, searchedColumn],
   );
 
   return (

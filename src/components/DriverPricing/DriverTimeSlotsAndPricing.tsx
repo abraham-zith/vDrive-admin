@@ -179,7 +179,7 @@ const DriverTimeSlotsAndPricing = ({
 
   // Get selected hotspot type details
   const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType
+    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType,
   );
 
   const userTypeDetails = {
@@ -216,7 +216,7 @@ const DriverTimeSlotsAndPricing = ({
       day: "monday" as Day,
       timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")] as [
         Dayjs,
-        Dayjs
+        Dayjs,
       ],
       price: 500,
     };

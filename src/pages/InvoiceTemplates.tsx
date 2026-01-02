@@ -45,8 +45,8 @@ const TripInvoiceList: React.FC<{
     type === "customer"
       ? "sentToCustomer"
       : type === "driver"
-      ? "sentToDriver"
-      : "sentToAdmin";
+        ? "sentToDriver"
+        : "sentToAdmin";
 
   const completedTrips = data.filter((t) => t.trip_status === "COMPLETED");
 
@@ -54,7 +54,7 @@ const TripInvoiceList: React.FC<{
   const [page, setPage] = useState(1);
   const paginated = completedTrips.slice(
     (page - 1) * pageSize,
-    page * pageSize
+    page * pageSize,
   );
 
   return (
@@ -121,7 +121,7 @@ const TripInvoiceList: React.FC<{
 
 const InvoiceTemplates: React.FC = () => {
   const tripData = useSelector(
-    (state: RootState) => state.trips.trips
+    (state: RootState) => state.trips.trips,
   ) as TripInvoiceState[];
 
   const [openModal, setOpenModal] = useState({
@@ -132,12 +132,12 @@ const InvoiceTemplates: React.FC = () => {
   });
 
   const [selectedTrip, setSelectedTrip] = useState<TripInvoiceState | null>(
-    null
+    null,
   );
 
   const openPreview = (
     key: keyof typeof openModal,
-    trip?: TripInvoiceState
+    trip?: TripInvoiceState,
   ) => {
     setSelectedTrip(trip ?? null);
     setOpenModal({ ...openModal, [key]: true });

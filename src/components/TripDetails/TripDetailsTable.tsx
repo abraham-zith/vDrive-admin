@@ -173,7 +173,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
       {
         key: "assign_driver",
         label: withTooltip(
-          isDriverAssigned(r) ? "Reassign Driver" : "Assign Driver"
+          isDriverAssigned(r) ? "Reassign Driver" : "Assign Driver",
         ),
         icon: <UserAddOutlined />,
         disabled: completed,
@@ -306,14 +306,14 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
             r.trip_status === "LIVE"
               ? "green"
               : r.trip_status === "COMPLETED"
-              ? "blue"
-              : r.trip_status === "REQUESTED"
-              ? "yellow"
-              : r.trip_status === "CANCELLED"
-              ? "red"
-              : r.trip_status === "MID-CANCELLED"
-              ? "pink"
-              : "orange"
+                ? "blue"
+                : r.trip_status === "REQUESTED"
+                  ? "yellow"
+                  : r.trip_status === "CANCELLED"
+                    ? "red"
+                    : r.trip_status === "MID-CANCELLED"
+                      ? "pink"
+                      : "orange"
           }
         >
           {r.trip_status}
@@ -481,7 +481,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
           driver_id: selectedDriver.id,
           driver_name: selectedDriver.name,
           driver_phone: selectedDriver.phonenumber,
-        })
+        }),
       );
 
       // 🔹 3️⃣ UPDATE TO SUCCESS NOTIFICATION
@@ -546,7 +546,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
       adjustFareUI({
         trip_id: trip.trip_id,
         total_fare: Number(adjustedFare),
-      })
+      }),
     );
 
     setAdjustedFare("");
@@ -672,8 +672,8 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
               ? "Reassign Driver"
               : "Assign Driver"
             : activeAction
-            ? okTitleMap[activeAction]
-            : ""
+              ? okTitleMap[activeAction]
+              : ""
         }
         okButtonProps={{
           disabled:

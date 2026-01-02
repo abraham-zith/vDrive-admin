@@ -26,7 +26,7 @@ interface Props {
   onTriggerDriversClick: () => void;
 
   getAssignDriverPopconfirmProps: (
-    trip: TripDetailsType | null
+    trip: TripDetailsType | null,
   ) => PopconfirmProps;
 
   isTripCompleted: (trip: TripDetailsType | null) => boolean;
