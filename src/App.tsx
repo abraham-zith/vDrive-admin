@@ -524,6 +524,14 @@ const router = createBrowserRouter([
           </Suspense>
         ),
       },
+      {
+        path: "drivers-reconciliation",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <DriversReconciliation />
+          </Suspense>
+        ),
+      },
 
       {
         path: "PricingAndFareRules",
