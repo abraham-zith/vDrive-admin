@@ -205,14 +205,14 @@ const TripDetailsMasonry: React.FC<Props> = ({ trip }) => {
                 trip.trip_status === "LIVE"
                   ? "green"
                   : trip.trip_status === "COMPLETED"
-                  ? "blue"
-                  : trip.trip_status === "REQUESTED"
-                  ? "yellow"
-                  : trip.trip_status === "CANCELLED"
-                  ? "red"
-                  : trip.trip_status === "MID-CANCELLED"
-                  ? "pink"
-                  : "orange"
+                    ? "blue"
+                    : trip.trip_status === "REQUESTED"
+                      ? "yellow"
+                      : trip.trip_status === "CANCELLED"
+                        ? "red"
+                        : trip.trip_status === "MID-CANCELLED"
+                          ? "pink"
+                          : "orange"
               }
             >
               {trip?.trip_status}
@@ -325,10 +325,10 @@ const TripDetailsMasonry: React.FC<Props> = ({ trip }) => {
                 trip?.payment_status === "PAID"
                   ? "bg-green-100 text-green-700 border-green-300"
                   : trip?.payment_status === "PENDING"
-                  ? "bg-amber-100 text-amber-700 border-amber-300"
-                  : trip?.payment_status === "FAILED"
-                  ? "bg-red-100 text-red-700 border-red-300"
-                  : "bg-gray-100 text-gray-600 border-gray-300"
+                    ? "bg-amber-100 text-amber-700 border-amber-300"
+                    : trip?.payment_status === "FAILED"
+                      ? "bg-red-100 text-red-700 border-red-300"
+                      : "bg-gray-100 text-gray-600 border-gray-300"
               }
             `}
                   >

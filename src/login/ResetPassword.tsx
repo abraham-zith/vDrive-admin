@@ -31,7 +31,7 @@ const ResetPassword = () => {
   };
 
   const validateUsername = () => {
-    let newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
     if (!fields?.userName) {
       newErrors.userName = "Registered Email/Mobile Number is required";
     }
@@ -54,7 +54,7 @@ const ResetPassword = () => {
   };
 
   const handleResetPassword = () => {
-    let newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
     if (!fields.newPassword) {
       newErrors.newPassword = "New password is required";
     }

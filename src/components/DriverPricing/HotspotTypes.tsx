@@ -86,7 +86,7 @@ const HotspotTypes = () => {
       const updatedType = await mockHotspotApi.toggleHotspotType(id);
       if (updatedType) {
         message.success(
-          `Hotspot type ${updatedType.isActive ? "activated" : "deactivated"}`
+          `Hotspot type ${updatedType.isActive ? "activated" : "deactivated"}`,
         );
         loadHotspotTypes();
       }
@@ -103,7 +103,7 @@ const HotspotTypes = () => {
         // Update existing
         const updatedType = await mockHotspotApi.updateHotspotType(
           editingType.id,
-          values
+          values,
         );
         if (updatedType) {
           message.success("Hotspot type updated successfully");

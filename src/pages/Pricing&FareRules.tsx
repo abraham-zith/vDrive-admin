@@ -136,7 +136,7 @@ const flattenApiItem = (item: ApiItem, keyPrefix: string): PriceSetting[] => {
         day: cap(t.day),
         timeRange: `${asTime(t.from.time, t.from.type)} - ${asTime(
           t.to.time,
-          t.to.type
+          t.to.type,
         )}`,
         rateRange: String(t.rate),
       });
@@ -523,7 +523,7 @@ const PricingAndFareRules: React.FC = () => {
         num(r.rateRange),
         (() => {
           const m = (r.waitingFee || "").match(
-            /(\d+)\s*min\s*\/\s*[^0-9]*([\d.]+)/i
+            /(\d+)\s*min\s*\/\s*[^0-9]*([\d.]+)/i,
           );
           return m ? `${m[1]}|${m[2]}` : "";
         })(),
@@ -541,7 +541,7 @@ const PricingAndFareRules: React.FC = () => {
 
   const initialTableData: PriceSetting[] = useMemo(() => {
     const rows = apiResponse.flatMap((item, idx) =>
-      flattenApiItem(item, `row${idx}`)
+      flattenApiItem(item, `row${idx}`),
     );
     return dedupeRows(rows);
   }, [apiResponse]);
@@ -559,19 +559,19 @@ const PricingAndFareRules: React.FC = () => {
     if (values.country) {
       const v = values.country.toLowerCase();
       tempData = tempData.filter((item) =>
-        item.country.toLowerCase().includes(v)
+        item.country.toLowerCase().includes(v),
       );
     }
     if (values.state) {
       const v = values.state.toLowerCase();
       tempData = tempData.filter((item) =>
-        item.state.toLowerCase().includes(v)
+        item.state.toLowerCase().includes(v),
       );
     }
     if (values.district) {
       const v = values.district.toLowerCase();
       tempData = tempData.filter((item) =>
-        item.district.toLowerCase().includes(v)
+        item.district.toLowerCase().includes(v),
       );
     }
     if (values.area) {
@@ -581,7 +581,7 @@ const PricingAndFareRules: React.FC = () => {
     if (values.pincode) {
       const v = values.pincode.toLowerCase();
       tempData = tempData.filter((item) =>
-        item.pincode.toLowerCase().includes(v)
+        item.pincode.toLowerCase().includes(v),
       );
     }
     if (values.isHotspot !== undefined) {
@@ -590,13 +590,13 @@ const PricingAndFareRules: React.FC = () => {
     if (values.hotspotId) {
       const v = values.hotspotId.toLowerCase();
       tempData = tempData.filter((item) =>
-        item.hotspotId.toLowerCase().includes(v)
+        item.hotspotId.toLowerCase().includes(v),
       );
     }
     if (values.hotspotName) {
       const v = values.hotspotName.toLowerCase();
       tempData = tempData.filter((item) =>
-        item.hotspotName.toLowerCase().includes(v)
+        item.hotspotName.toLowerCase().includes(v),
       );
     }
     if (values.driverType) {
@@ -723,7 +723,7 @@ const PricingAndFareRules: React.FC = () => {
   };
 
   const toMinutesFromAny = (
-    v: Date | number | string | null | undefined
+    v: Date | number | string | null | undefined,
   ): number | null => {
     if (v == null) return null;
     if (v instanceof Date) return getHours(v) * 60 + getMinutes(v);
@@ -823,12 +823,12 @@ const PricingAndFareRules: React.FC = () => {
           const s = v == null ? "" : String(v);
           return `"${s.replace(/"/g, '""')}"`;
         })
-        .join(",")
+        .join(","),
     );
     const csv = [headerLine, ...bodyLines].join("\r\n");
     downloadBlob(
       new Blob([csv], { type: "text/csv;charset=utf-8;" }),
-      `driver_price_settings.csv`
+      `driver_price_settings.csv`,
     );
   };
 
@@ -1266,17 +1266,17 @@ const PricingAndFareRules: React.FC = () => {
                           "premium"
                             ? "#000000"
                             : currentPriceSetting.driverType?.toLowerCase() ===
-                              "elite"
-                            ? "#007BFF"
-                            : "#ffffff",
+                                "elite"
+                              ? "#007BFF"
+                              : "#ffffff",
                         color:
                           currentPriceSetting.driverType?.toLowerCase() ===
                           "premium"
                             ? "#ffffff"
                             : currentPriceSetting.driverType?.toLowerCase() ===
-                              "elite"
-                            ? "#ffffff"
-                            : "#000000",
+                                "elite"
+                              ? "#ffffff"
+                              : "#000000",
                         padding: "4px 14px",
                         borderRadius: "50px",
                         fontWeight: "bold",

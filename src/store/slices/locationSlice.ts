@@ -49,7 +49,7 @@ export const fetchCountries = createAsyncThunk(
   "location/fetchCountries",
   async (
     { limit = 20, search = "" }: { limit?: number; search?: string },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       // Cancel previous request if it exists
@@ -70,7 +70,7 @@ export const fetchCountries = createAsyncThunk(
         `/api/locations/countries?${params.toString()}`,
         {
           cancelToken: cancelTokenSource.token,
-        }
+        },
       );
 
       return response.data.data;
@@ -81,7 +81,7 @@ export const fetchCountries = createAsyncThunk(
       }
       throw error;
     }
-  }
+  },
 );
 export const fetchState = createAsyncThunk(
   "location/fetchState",
@@ -91,7 +91,7 @@ export const fetchState = createAsyncThunk(
       search = "",
       limit = 20,
     }: { search?: string; countryId?: string; limit?: number },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       if (stateCancelTokenSource) {
@@ -108,7 +108,7 @@ export const fetchState = createAsyncThunk(
         `/api/locations/states/${countryId}?${params.toString()}`,
         {
           cancelToken: stateCancelTokenSource.token,
-        }
+        },
       );
 
       return response.data.data;
@@ -119,7 +119,7 @@ export const fetchState = createAsyncThunk(
       }
       throw error;
     }
-  }
+  },
 );
 
 const locationSlice = createSlice({
@@ -153,7 +153,7 @@ const locationSlice = createSlice({
           state.isLoadingCountries = false;
           state.countries = action.payload.data;
           state.totalCountries = action.payload.total;
-        }
+        },
       )
       .addCase(fetchCountries.rejected, (state, action) => {
         // Don't set error state for cancelled requests
@@ -175,7 +175,7 @@ const locationSlice = createSlice({
           state.isLoadingStates = false;
           state.states = action.payload.data;
           state.totalStates = action.payload.total;
-        }
+        },
       )
       .addCase(fetchState.rejected, (state, action) => {
         // Don't set error state for cancelled requests

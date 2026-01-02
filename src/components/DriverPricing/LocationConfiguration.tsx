@@ -42,16 +42,16 @@ const LocationConfiguration = ({
     debounce((searchValue: string) => {
       dispatch(fetchCountries({ limit: 20, search: searchValue }));
     }, 500),
-    [dispatch]
+    [dispatch],
   );
 
   const debouncedStateSearch = useCallback(
     debounce((searchValue: string) => {
       dispatch(
-        fetchState({ countryId: country, search: searchValue, limit: 20 })
+        fetchState({ countryId: country, search: searchValue, limit: 20 }),
       );
     }, 500),
-    [dispatch, country]
+    [dispatch, country],
   );
 
   const handleCountrySearch = (value: string) => {
@@ -68,7 +68,7 @@ const LocationConfiguration = ({
         value: c.id,
         searchValue: c.country_name.toLowerCase(),
       })),
-    [countries]
+    [countries],
   );
   const stateOptions = useMemo(
     () =>
@@ -77,7 +77,7 @@ const LocationConfiguration = ({
         value: c.id,
         searchValue: c.state_name.toLowerCase(),
       })),
-    [states]
+    [states],
   );
 
   useEffect(() => {
@@ -94,7 +94,7 @@ const LocationConfiguration = ({
     if (countries.length > 0 && !country) {
       const indiaCountry = countries.find(
         (c) =>
-          c.country_code === "IN" || c.country_name.toLowerCase() === "india"
+          c.country_code === "IN" || c.country_name.toLowerCase() === "india",
       );
       if (indiaCountry) {
         setCountry(indiaCountry.id);
@@ -104,7 +104,7 @@ const LocationConfiguration = ({
   useEffect(() => {
     if (states.length > 0 && !state && country) {
       const tamilNaduState = states.find(
-        (s) => s.state_name.toLowerCase() === "tamil nadu"
+        (s) => s.state_name.toLowerCase() === "tamil nadu",
       );
       if (tamilNaduState) {
         setState(tamilNaduState.id);

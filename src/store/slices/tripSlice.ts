@@ -1092,7 +1092,7 @@ export const buildTripHistory = (trip: TripDetailsType): TripHistoryItem[] => {
   // 5️⃣ Sort everything by time
   return history.sort(
     (a, b) =>
-      new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime()
+      new Date(a.changed_at).getTime() - new Date(b.changed_at).getTime(),
   );
 };
 
@@ -1106,7 +1106,7 @@ export const fetchTrips = createAsyncThunk(
     } catch (err: any) {
       return rejectWithValue(err.response?.data || "Something went wrong");
     }
-  }
+  },
 );
 
 const tripSlice = createSlice({
@@ -1126,10 +1126,10 @@ const tripSlice = createSlice({
           driver_name: string;
           driver_phone: string;
         };
-      }
+      },
     ) => {
       const trip = state.trips.find(
-        (t) => t.trip_id === action.payload.trip_id
+        (t) => t.trip_id === action.payload.trip_id,
       );
 
       if (trip) {
@@ -1147,10 +1147,10 @@ const tripSlice = createSlice({
           trip_id: string;
           total_fare: number;
         };
-      }
+      },
     ) => {
       const trip = state.trips.find(
-        (t) => t.trip_id === action.payload.trip_id
+        (t) => t.trip_id === action.payload.trip_id,
       );
 
       if (trip) {

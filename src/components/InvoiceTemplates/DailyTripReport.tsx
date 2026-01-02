@@ -10,9 +10,11 @@ const DailyTripReport: React.FC<Props> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div id="daily-report" className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+    <div
+      id="daily-report"
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+    >
       <div className="bg-white shadow-xl rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative p-8 border">
-
         {/* Close Button */}
         <button
           onClick={onClose}
