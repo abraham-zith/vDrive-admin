@@ -89,6 +89,8 @@ const RechargePlan = lazy(() => import("./pages/RechargePlan"));
 const SignUp = lazy(() => import("./signup/Signup"));
 const Login = lazy(() => import("./login/Login"));
 const ResetPassword = lazy(() => import("./login/ResetPassword"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+
 
 
 
@@ -217,8 +219,12 @@ const RootLayout: React.FC = () => {
       label: <Link to="/RechargePlan">Recharge Plan</Link>,
       key: "/RechargePlan",
       icon: <MdOutlineAccountBalanceWallet />,
-    }
-
+    },
+    {
+      label: <Link to="/landing-page">Landing Page</Link>,
+      key: "/landing-page",
+      icon: <MdOutlineAccountBalanceWallet />,
+    },
   ];
   return (
     <ConfigProvider
@@ -517,9 +523,6 @@ const router = createBrowserRouter([
         ),
       },
 
-
-
-
       {
         path: "PricingAndFareRules",
         element: (
@@ -537,6 +540,14 @@ const router = createBrowserRouter([
             ),
           },
         ],
+      },
+      {
+        path: "landing-page",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <LandingPage />
+          </Suspense>
+        ),
       },
     ],
   },
@@ -564,7 +575,6 @@ const router = createBrowserRouter([
       </Suspense>
     ),
   },
-
 ]);
 
 const App = () => (
