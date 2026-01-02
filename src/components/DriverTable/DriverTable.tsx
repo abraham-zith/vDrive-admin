@@ -52,7 +52,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
   const handleSearch = (
     selectedKeys: string[],
     confirm: FilterDropdownProps["confirm"],
-    dataIndex: DataIndex,
+    dataIndex: DataIndex
   ) => {
     confirm();
     setSearchText(selectedKeys[0]);
@@ -61,7 +61,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
 
   const handleReset = (
     clearFilters: () => void,
-    confirm: FilterDropdownProps["confirm"],
+    confirm: FilterDropdownProps["confirm"]
   ) => {
     clearFilters();
     setSearchText("");
@@ -70,7 +70,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
 
   const getColumnSearchProps = (
     dataIndex: DataIndex,
-    copyKey?: keyof Driver,
+    copyKey?: keyof Driver
   ): TableColumnType<Driver> => ({
     filterDropdown: ({
       setSelectedKeys,
@@ -298,6 +298,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
             key: "view",
             icon: <EyeOutlined />,
             label: "View Details",
+            //onClick: () => openDrawer(record),
           },
           {
             key: "edit",
@@ -312,11 +313,11 @@ const DriverTable = ({ data }: DriverTableProps) => {
           },
           {
             key: "suspend",
-            icon: <ClockCircleOutlined />,
-            label: "Suspend Driver",
-            style: { color: "#fa8c16" },
+            icon: <ClockCircleOutlined style={{ color: "#fa8c16" }} />,
+            label: <span style={{ color: "#faad14" }}>Suspend Driver</span>,
           },
         ];
+
         return (
           <Space className="driver-action">
             <Button
@@ -324,7 +325,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
               icon={<EyeOutlined />}
               onClick={() => openDrawer(record)}
             />
-            <Dropdown menu={{ items: menuItems }} trigger={["click"]}>
+            <Dropdown trigger={["click"]} menu={{ items: menuItems }}>
               <Button type="text" icon={<EllipsisOutlined />} />
             </Dropdown>
           </Space>
@@ -349,7 +350,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
           onRow={(record) => ({
             onClick: (event) => {
               const isActionClick = (event.target as HTMLElement).closest(
-                ".driver-action",
+                ".driver-action"
               );
               if (!isActionClick) {
                 openDrawer(record);

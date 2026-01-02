@@ -6,6 +6,7 @@ import {
   LogoutOutlined,
   DollarOutlined,
   MenuOutlined,
+  FundOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import {
@@ -36,6 +37,7 @@ import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
 import { AntdStaticHolder } from "./utilities/antdStaticHolder";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
+import { BaseFareCalculation } from "./pages/BaseFareCalculation";
 import { MdOutlineAccountBalanceWallet } from "react-icons/md";
 
 // Loading component for route suspense
@@ -208,6 +210,11 @@ const RootLayout: React.FC = () => {
       icon: <MdOutlineMoneyOff />,
     },
     {
+      label: <Link to="/basefarecalculation">Fare Configuration</Link>,
+      key: "/basefarecalculation",
+      icon: <FundOutlined />,
+    },
+    {
       label: <Link to="/RechargePlan">Recharge Plan</Link>,
       key: "/RechargePlan",
       icon: <MdOutlineAccountBalanceWallet />,
@@ -337,8 +344,8 @@ const RootLayout: React.FC = () => {
                 isMobile || !isAuthenticated || location.pathname === "/login"
                   ? 0
                   : collapsed
-                    ? 80
-                    : 250,
+                  ? 80
+                  : 250,
               transition: "margin-left 0.2s",
             }}
           >
@@ -530,6 +537,15 @@ const router = createBrowserRouter([
             ),
           },
         ],
+      },
+
+      {
+        path: "basefarecalculation",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <BaseFareCalculation />
+          </Suspense>
+        ),
       },
     ],
   },
