@@ -280,7 +280,7 @@ const RechargePlan: React.FC = () => {
         </div>
       }
     >
-      {/* Filters & Sort */}
+      
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 my-2.5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
         <Input placeholder="Search Plan" className="flex-1 min-w-[200px]" value={filters.planName || ""} onChange={(e) => handleFilterChange("planName", e.target.value)} />
         <Select placeholder="All Status" className="w-[150px]" value={filters.status || undefined} onChange={(value) => handleFilterChange("status", value)} allowClear>
@@ -327,7 +327,7 @@ const RechargePlan: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Modal */}
+      
       <Modal title="Delete Recharge Plan"
         open={deleteConfirm} okText="Delete"
         onOk={handleDelete}
