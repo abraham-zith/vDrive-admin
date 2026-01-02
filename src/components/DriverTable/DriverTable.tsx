@@ -12,7 +12,6 @@ import {
   Input,
   Space,
   Dropdown,
-  Menu,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 
@@ -294,26 +293,30 @@ const DriverTable = ({ data }: DriverTableProps) => {
       title: "Action",
       key: "action",
       render: (_, record) => {
-        const menu = (
-          <Menu>
-            <Menu.Item key="view" icon={<EyeOutlined />}>
-              View Details
-            </Menu.Item>
-            <Menu.Item key="edit" icon={<EditOutlined />}>
-              Edit Profile
-            </Menu.Item>
-            <Menu.Item key="block" icon={<StopOutlined />} danger>
-              Block Driver
-            </Menu.Item>
-            <Menu.Item
-              key="suspend"
-              icon={<ClockCircleOutlined />}
-              style={{ color: "#fa8c16" }}
-            >
-              Suspend Driver
-            </Menu.Item>
-          </Menu>
-        );
+        const menuItems = [
+          {
+            key: "view",
+            icon: <EyeOutlined />,
+            label: "View Details",
+          },
+          {
+            key: "edit",
+            icon: <EditOutlined />,
+            label: "Edit Profile",
+          },
+          {
+            key: "block",
+            icon: <StopOutlined />,
+            label: "Block Driver",
+            danger: true,
+          },
+          {
+            key: "suspend",
+            icon: <ClockCircleOutlined />,
+            label: "Suspend Driver",
+            style: { color: "#fa8c16" },
+          },
+        ];
         return (
           <Space className="driver-action">
             <Button
@@ -321,7 +324,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
               icon={<EyeOutlined />}
               onClick={() => openDrawer(record)}
             />
-            <Dropdown overlay={menu} trigger={["click"]}>
+            <Dropdown menu={{ items: menuItems }} trigger={["click"]}>
               <Button type="text" icon={<EllipsisOutlined />} />
             </Dropdown>
           </Space>
