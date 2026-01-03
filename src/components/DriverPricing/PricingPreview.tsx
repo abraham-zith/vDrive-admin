@@ -58,7 +58,7 @@ const PricingPreview = ({
 
   // Get selected hotspot type details
   const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType
+    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType,
   );
 
   const hotspotAddition = selectedHotspotType?.addition || 40;
@@ -72,9 +72,9 @@ const PricingPreview = ({
   const pincodeLabel = pincode || "N/A";
 
   const userTypeTags = {
-    "normal-user": <Tag color="default">Normal User</Tag>,
-    "premium-user": <Tag color="gold">Premium User</Tag>,
-    "elite-user": <Tag color="blue">Elite User</Tag>,
+    "normal-driver": <Tag color="default">Normal Driver</Tag>,
+    "premium-driver": <Tag color="gold">Premium Driver</Tag>,
+    "elite-driver": <Tag color="blue">Elite Driver</Tag>,
   };
 
   return (
@@ -84,16 +84,43 @@ const PricingPreview = ({
           Pricing Preview
         </Typography.Title>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <MdOutlineLocationOn className="text-[20px] text-[#0080FF]" />
-            <span className="font-semibold">Location</span>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Left: Location */}
+          <div className="flex flex-col gap-2 sm:flex-1">
+            <div className="flex items-center gap-2">
+              <MdOutlineLocationOn className="text-[20px] text-[#0080FF]" />
+              <span className="font-semibold">Location</span>
+            </div>
+
+            <div className="p-2 bg-[#F8F9FA] rounded-md">
+              <span className="text-sm break-all">
+                {countryLabel} - {stateLabel} - {districtLabel} - {areaLabel} -{" "}
+                {pincodeLabel}
+              </span>
+            </div>
           </div>
-          <div className="p-2 bg-[#F8F9FA] rounded-md">
-            <span className="text-sm break-all">
-              {countryLabel} - {stateLabel} - {districtLabel} - {areaLabel} -{" "}
-              {pincodeLabel}
+
+          {/* Right: Total Configuration */}
+          <div className="flex flex-col gap-1 sm:items-end sm:text-right">
+            <span className="text-sm font-medium text-gray-700">
+              Total configuration
             </span>
+
+            <div className="flex gap-2 flex-wrap justify-end text-xs">
+              {Object.entries(timeSlots).map(([userType, slots]) => (
+                <span
+                  key={userType}
+                  className="px-2 py-[2px] rounded-sm border
+                     border-violet-300 bg-violet-50 text-violet-700"
+                >
+                  <span className="capitalize">
+                    {userType.replace("-", " ")}
+                  </span>
+                  <span className="mx-1">:</span>
+                  <span className="font-medium">{slots.length}</span>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -102,37 +129,41 @@ const PricingPreview = ({
             <BsClock className="text-[18px] text-[#0080FF]" />
             <span className="font-semibold">Time Slots Summary</span>
           </div>
-          <div className="flex flex-col gap-2">
-            {Object.entries(timeSlots).map(([userType, slots]) =>
-              slots.map((slot: TimeSlot) => (
-                <div key={`${userType}-${slot.id}`}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {Object.entries(timeSlots).map(([userType, slots]) => (
+              <div key={userType} className="flex flex-col gap-2">
+                <div className="font-semibold text-center">
                   {userTypeTags[userType as UserType]}
-                  <div className="p-2 bg-[#F8F9FA] rounded-md flex flex-col sm:flex-row sm:justify-between gap-2">
-                    <div className="flex-1">
-                      <span className="capitalize font-medium">{slot.day}</span>
-                      <br />
-                      <span className="text-[12px] text-gray-600">
-                        {slot.timeRange
-                          ? `${slot.timeRange[0].format(
-                              "h:mm A"
-                            )} - ${slot.timeRange[1].format("h:mm A")}`
-                          : "No time set"}
-                      </span>
-                      <br />
-                      <span className="text-[12px] text-gray-600">
-                        Base: ₹{slot.price}
-                      </span>
-                    </div>
-                    <div className="font-semibold text-green-600 sm:text-right">
+                </div>
+                {slots.map((slot: TimeSlot) => (
+                  <div
+                    key={slot.id}
+                    className="p-2 bg-[#F8F9FA] rounded-md flex flex-col gap-1"
+                  >
+                    <span className="capitalize font-medium">{slot.day}</span>
+
+                    <span className="text-[12px] text-gray-600">
+                      {slot.timeRange
+                        ? `${slot.timeRange[0].format(
+                            "h:mm A",
+                          )} - ${slot.timeRange[1].format("h:mm A")}`
+                        : "No time set"}
+                    </span>
+
+                    <span className="text-[12px] text-gray-600">
+                      Base: ₹{slot.price}
+                    </span>
+
+                    <span className="font-semibold text-green-600">
                       Final: ₹
                       {hotspotEnabled
                         ? slot.price * multiplier + hotspotAddition
                         : slot.price}
-                    </div>
+                    </span>
                   </div>
-                </div>
-              ))
-            )}
+                ))}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -152,16 +183,6 @@ const PricingPreview = ({
             </div>
           </div>
         )}
-
-        <div className="flex flex-col gap-2">
-          <span className="font-semibold">Total Configuration</span>
-          {Object.entries(timeSlots).map(([userType, slots]) => (
-            <div key={userType} className="text-[12px]">
-              <span className="capitalize">{userType.replace("-", " ")}:</span>{" "}
-              {slots.length} slots
-            </div>
-          ))}
-        </div>
       </div>
     </Card>
   );

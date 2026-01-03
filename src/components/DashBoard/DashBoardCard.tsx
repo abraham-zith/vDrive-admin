@@ -16,7 +16,6 @@ import { RiMapPinRangeFill } from "react-icons/ri";
 import { FaSackDollar } from "react-icons/fa6";
 import { FaCircle } from "react-icons/fa";
 
-
 interface Metric {
   title: string;
   value: string;
@@ -25,7 +24,6 @@ interface Metric {
   iconBgKey: string;
   subIcon: React.ReactNode;
 }
-
 
 const MetricCard: React.FC<Metric> = ({
   title,
@@ -37,7 +35,6 @@ const MetricCard: React.FC<Metric> = ({
 }) => {
   return (
     <div className="relative bg-white rounded-xl shadow p-6 overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-lg">
-
       <div
         className={`absolute -top-6 -right-6 w-20 h-20 rounded-full flex items-center justify-center ${iconBgKey}`}
         style={{ fontSize: "22px", color: "white" }}
@@ -53,7 +50,6 @@ const MetricCard: React.FC<Metric> = ({
     </div>
   );
 };
-
 
 const DashboardCard: React.FC = () => {
   const metrics: Metric[] = [
@@ -124,11 +120,11 @@ const DashboardCard: React.FC = () => {
   ];
 
   return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        {metrics.map((metric, index) => (
-          <MetricCard key={index} {...metric} />
-        ))}
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      {metrics.map((metric, index) => (
+        <MetricCard key={index} {...metric} />
+      ))}
+    </div>
   );
 };
 

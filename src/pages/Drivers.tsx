@@ -178,7 +178,7 @@ const Drivers = () => {
         ? values?.status
         : [values?.status];
       tempData = tempData.filter((user) =>
-        selectedStatuses.includes(user?.status)
+        selectedStatuses.includes(user?.status),
       );
     }
     if (values?.role?.length > 0) {
@@ -189,7 +189,7 @@ const Drivers = () => {
     }
     if (values?.joined) {
       tempData = tempData.filter((user) =>
-        dayjs(user?.createdAt).isSame(values?.joined, "day")
+        dayjs(user?.createdAt).isSame(values?.joined, "day"),
       );
     }
 

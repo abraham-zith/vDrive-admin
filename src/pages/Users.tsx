@@ -385,7 +385,7 @@ const Users = () => {
         ? values?.status
         : [values?.status];
       tempData = tempData.filter((user) =>
-        selectedStatuses.includes(user?.status)
+        selectedStatuses.includes(user?.status),
       );
     }
     if (values?.role?.length > 0) {
@@ -396,12 +396,12 @@ const Users = () => {
     }
     if (values?.lastLogin) {
       tempData = tempData.filter((user) =>
-        dayjs(user?.lastLogin).isSame(values?.lastLogin, "day")
+        dayjs(user?.lastLogin).isSame(values?.lastLogin, "day"),
       );
     }
     if (values?.createdAt) {
       tempData = tempData.filter((user) =>
-        dayjs(user?.createdAt).isSame(values?.createdAt, "day")
+        dayjs(user?.createdAt).isSame(values?.createdAt, "day"),
       );
     }
 

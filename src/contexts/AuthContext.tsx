@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, loading, error } = useAppSelector(
-    (state) => state.auth
+    (state) => state.auth,
   );
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     async (credentials: Login) => {
       await dispatch(loginAsync(credentials)).unwrap();
     },
-    [dispatch]
+    [dispatch],
   );
 
   const logout = useCallback(async () => {
@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       login,
       logout,
     }),
-    [isAuthenticated, loading, error, login, logout]
+    [isAuthenticated, loading, error, login, logout],
   );
 
   return (

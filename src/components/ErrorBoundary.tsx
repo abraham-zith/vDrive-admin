@@ -6,6 +6,7 @@ import { ReloadOutlined } from "@ant-design/icons";
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  onReset?: () => void;
 }
 
 interface State {
@@ -27,6 +28,15 @@ class ErrorBoundary extends Component<Props, State> {
     console.error("Error caught by boundary:", error, errorInfo);
   }
 
+  handleReset = () => {
+    this.setState({ hasError: false, error: undefined });
+    if (this.props.onReset) {
+      this.props.onReset();
+    } else {
+      window.location.reload();
+    }
+  };
+
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
@@ -34,55 +44,36 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <Result
-          status="error"
-          title="Oops! Something went wrong"
-          subTitle="We're sorry, but something unexpected happened. Please try refreshing the page."
-          extra={
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "16px",
-              }}
-            >
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={() => window.location.reload()}
-                size="large"
-              >
-                Refresh Page
-              </Button>
-              {process.env.NODE_ENV === "development" && this.state.error && (
-                <details
-                  style={{
-                    padding: "10px",
-                    border: "1px solid #d9d9d9",
-                    borderRadius: "4px",
-                    textAlign: "left",
-                    width: "100%",
-                    maxWidth: "600px",
-                  }}
+        <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+          <Result
+            status="error"
+            title="Oops! Something went wrong"
+            subTitle="We're sorry, but something unexpected happened."
+            extra={
+              <div className="flex flex-col items-center gap-4">
+                <Button
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  onClick={this.handleReset}
+                  size="large"
                 >
-                  <summary style={{ cursor: "pointer", marginBottom: "10px" }}>
-                    Error Details (Development Only)
-                  </summary>
-                  <pre
-                    style={{
-                      whiteSpace: "pre-wrap",
-                      fontSize: "12px",
-                      color: "#ff4d4f",
-                    }}
-                  >
-                    {this.state.error.stack}
-                  </pre>
-                </details>
-              )}
-            </div>
-          }
-        />
+                  {this.props.onReset ? "Try Again" : "Refresh Page"}
+                </Button>
+
+                {import.meta.env.DEV && this.state.error && (
+                  <details className="w-full max-w-2xl p-4 border border-gray-200 rounded bg-white text-left">
+                    <summary className="cursor-pointer font-medium mb-2 text-gray-700">
+                      Error Details (Dev Only)
+                    </summary>
+                    <pre className="whitespace-pre-wrap text-xs text-red-500 overflow-auto max-h-64">
+                      {this.state.error.stack}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            }
+          />
+        </div>
       );
     }
 

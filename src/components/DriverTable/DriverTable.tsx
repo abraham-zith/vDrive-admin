@@ -99,7 +99,7 @@ const DriverTable = ({ data, onRefresh }: DriverTableProps) => {
   const handleSearch = (
     selectedKeys: string[],
     confirm: FilterDropdownProps["confirm"],
-    dataIndex: DataIndex
+    dataIndex: DataIndex,
   ) => {
     confirm();
     setSearchText(selectedKeys[0]);
@@ -108,7 +108,7 @@ const DriverTable = ({ data, onRefresh }: DriverTableProps) => {
 
   const handleReset = (
     clearFilters: () => void,
-    confirm: FilterDropdownProps["confirm"]
+    confirm: FilterDropdownProps["confirm"],
   ) => {
     clearFilters();
     setSearchText("");
@@ -117,7 +117,7 @@ const DriverTable = ({ data, onRefresh }: DriverTableProps) => {
 
   const getColumnSearchProps = (
     dataIndex: DataIndex,
-    copyKey?: keyof Driver
+    copyKey?: keyof Driver,
   ): TableColumnType<Driver> => ({
     filterDropdown: ({
       setSelectedKeys,
@@ -385,7 +385,7 @@ const DriverTable = ({ data, onRefresh }: DriverTableProps) => {
               icon={<EyeOutlined />}
               onClick={() => openDrawer(record)}
             />
-            <Dropdown overlay={menu} trigger={["click"]}>
+            <Dropdown menu={{ items: menuItems }} trigger={["click"]}>
               <Button type="text" icon={<EllipsisOutlined />} />
             </Dropdown>
           </Space>
@@ -410,7 +410,7 @@ const DriverTable = ({ data, onRefresh }: DriverTableProps) => {
           onRow={(record) => ({
             onClick: (event) => {
               const isActionClick = (event.target as HTMLElement).closest(
-                ".driver-action"
+                ".driver-action",
               );
               if (!isActionClick) {
                 openDrawer(record);

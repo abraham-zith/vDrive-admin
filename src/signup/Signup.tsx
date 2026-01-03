@@ -74,7 +74,7 @@ const SignUp = () => {
     /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,18}$/;
 
   const validate = () => {
-    let newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
     if (!signupFields?.name) {
       newErrors.name = "Name is required";
     }

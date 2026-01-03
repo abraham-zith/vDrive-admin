@@ -185,14 +185,14 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
           </Text>
           <Text type="secondary">
             {Math?.round(
-              (driver?.credit?.balance / driver?.credit?.limit) * 100
+              (driver?.credit?.balance / driver?.credit?.limit) * 100,
             )}
             %
           </Text>
         </div>
         <Progress
           percent={Math?.round(
-            (driver?.credit?.balance / driver?.credit?.limit) * 100
+            (driver?.credit?.balance / driver?.credit?.limit) * 100,
           )}
           showInfo={false}
         />
@@ -390,7 +390,7 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
           <p>
             {driver?.performance?.lastActive
               ? dayjs(driver?.performance?.lastActive)?.format(
-                  "MMM D, YYYY, hh:mm A"
+                  "MMM D, YYYY, hh:mm A",
                 )
               : "N/A"}
           </p>
@@ -429,14 +429,14 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
               </span>
               <span>
                 {Math.round(
-                  (driver?.credit?.balance / driver?.credit?.limit) * 100
+                  (driver?.credit?.balance / driver?.credit?.limit) * 100,
                 )}
                 %
               </span>
             </div>
             <Progress
               percent={Math.round(
-                (driver?.credit?.balance / driver?.credit?.limit) * 100
+                (driver?.credit?.balance / driver?.credit?.limit) * 100,
               )}
               strokeColor="#1677ff"
               showInfo={false}

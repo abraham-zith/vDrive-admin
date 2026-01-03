@@ -45,7 +45,7 @@ const HotspotConfiguration = ({
 
   // Get selected hotspot type details
   const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType
+    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType,
   );
 
   if (loading) {

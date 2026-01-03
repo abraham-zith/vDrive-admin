@@ -1,11 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import locationReducer from "./slices/locationSlice";
+import tripReducer from "./slices/tripSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     location: locationReducer,
+    trips: tripReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

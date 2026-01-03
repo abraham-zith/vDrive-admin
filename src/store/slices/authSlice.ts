@@ -37,10 +37,10 @@ export const loginAsync = createAsyncThunk(
       return { accessToken: token };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || error.message || "Login failed"
+        error.response?.data?.message || error.message || "Login failed",
       );
     }
-  }
+  },
 );
 
 // Async thunk for logout
@@ -60,10 +60,10 @@ export const logoutAsync = createAsyncThunk(
       // Even if logout fails on server, remove local token
       localStorage.removeItem("accessToken");
       return rejectWithValue(
-        error.response?.data?.message || error.message || "Logout failed"
+        error.response?.data?.message || error.message || "Logout failed",
       );
     }
-  }
+  },
 );
 
 const authSlice = createSlice({

@@ -24,7 +24,7 @@ const UserTable = ({ data }: UserTableProps) => {
   const handleSearch = (
     selectedKeys: string[],
     confirm: FilterDropdownProps["confirm"],
-    dataIndex: DataIndex
+    dataIndex: DataIndex,
   ) => {
     confirm();
     setSearchText(selectedKeys[0]);
@@ -33,7 +33,7 @@ const UserTable = ({ data }: UserTableProps) => {
 
   const handleReset = (
     clearFilters: () => void,
-    confirm: FilterDropdownProps["confirm"]
+    confirm: FilterDropdownProps["confirm"],
   ) => {
     clearFilters();
     setSearchText("");
@@ -41,7 +41,7 @@ const UserTable = ({ data }: UserTableProps) => {
   };
 
   const getColumnSearchProps = (
-    dataIndex: DataIndex
+    dataIndex: DataIndex,
   ): TableColumnType<User> => ({
     filterDropdown: ({
       setSelectedKeys,
@@ -203,7 +203,7 @@ const UserTable = ({ data }: UserTableProps) => {
           new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       },
     ],
-    [searchText, searchedColumn]
+    [searchText, searchedColumn],
   );
 
   return (

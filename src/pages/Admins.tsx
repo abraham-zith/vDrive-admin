@@ -61,8 +61,8 @@ export default function AdminPage() {
       if (editingUser) {
         setUsers(
           users.map((u) =>
-            u.id === editingUser.id ? { ...u, ...values, updatedAt: now } : u
-          )
+            u.id === editingUser.id ? { ...u, ...values, updatedAt: now } : u,
+          ),
         );
       } else {
         const newUser: User = {
@@ -300,7 +300,7 @@ export default function AdminPage() {
                           return Promise.resolve();
                         }
                         return Promise.reject(
-                          new Error("Passwords do not match!")
+                          new Error("Passwords do not match!"),
                         );
                       },
                     }),
