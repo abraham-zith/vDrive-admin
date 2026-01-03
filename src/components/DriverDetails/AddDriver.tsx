@@ -26,6 +26,7 @@ import dayjs from "dayjs";
 import type { UploadFile } from "antd/es/upload/interface";
 import type { Driver } from "../../pages/Drivers";
 import axiosIns from "../../api/axios";
+import axios from "axios";
 
 
 const { Step } = Steps;
@@ -225,37 +226,52 @@ export default function AddDriverModal({
   const prev = () => setCurrent((c) => Math.max(c - 1, 0));
 
   const customUpload = async ({ file, onSuccess, onError, onProgress }: any): Promise<any> => {
-  
-    
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    console.log("FormData created, sending to /api/upload");
-
     try {
-      const response = await axiosIns.post("/api/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      // 1. Get presigned URL from the backend
+      const presignedResponse = await axiosIns.post("/api/generate-presigned-url", {
+        key: file.name,
+        contentType: file.type,
+      });
+
+      // Assuming the response structure is { data: { uploadUrl: string, fileUrl: string } }
+      // Adjust based on your actual backend response
+      const { presignedUrl, blobUrl } = presignedResponse.data?.data?.data|| {};
+
+      if (!presignedUrl) {
+        throw new Error("Failed to get upload URL from server");
+      }
+
+      // 2. Upload the file directly to S3/R2 using the presigned URL
+      // Use plain axios here to avoid interceptors that might add Authorization headers
+      // which would invalidate the presigned URL signature.
+      await axios.put(presignedUrl, file, {
+        headers: {
+          "Content-Type": file.type,
+        },
         onUploadProgress: (progressEvent) => {
           const percent = progressEvent.total
             ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
             : 0;
-          console.log("Upload progress:", percent + "%");
           onProgress({ percent });
         },
       });
+
+      // 3. Prepare the response in a format the rest of the component expects
+      // The component expects the permanent URL to be in response.data.url or response.data.file
+      const successResponse = { data: { url: blobUrl } };
       
-    
-      onSuccess(response.data);
+      onSuccess(successResponse);
       message.success(`${file.name} uploaded successfully`);
       
-      // Return the response data so we can use it in the wrapper
-      return response.data;
+      return successResponse;
     } catch (err: any) {
+      console.error("Upload error details:", err);
       onError(err);
       message.error(`${file.name} upload failed: ${err.response?.data?.message || err.message}`);
       throw err;
     }
   };
+
 
 
   const fileUrlOrDefault = (
