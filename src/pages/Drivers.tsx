@@ -156,8 +156,8 @@ const Drivers = () => {
   const fetchDrivers = async () => {
     setLoading(true);
     try {
-      const response = await axiosIns.get("/api/users/drivers");
-      const driverData = response.data?.data?.users || [];
+      const response = await axiosIns.get("/api/drivers");
+      const driverData = response.data?.data || [];
       setDrivers(driverData);
       setFilteredData(driverData);
     } catch (err) {

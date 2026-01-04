@@ -12,7 +12,6 @@ import {
   Input,
   Space,
   Dropdown,
-  Menu,
   Modal,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
@@ -66,11 +65,11 @@ const DriverTable = ({ data, onRefresh }: DriverTableProps) => {
   const handleAction = async (action: string, driver: Driver) => {
     try {
       if (action === "block") {
-        await axiosIns.patch(`/api/users/block/${driver.driverId}`);
+        await axiosIns.put(`/api/drivers/${driver.driverId}`, { status: "blocked" });
         message.success("Driver blocked");
         if (onRefresh) onRefresh();
       } else if (action === "suspend") {
-        await axiosIns.patch(`/api/users/disable/${driver.driverId}`);
+        await axiosIns.put(`/api/drivers/${driver.driverId}`, { status: "suspended" });
         message.success("Driver suspended");
         if (onRefresh) onRefresh();
       } else if (action === "delete") {
@@ -81,7 +80,7 @@ const DriverTable = ({ data, onRefresh }: DriverTableProps) => {
           okType: "danger",
           onOk: async () => {
             try {
-              await axiosIns.delete(`/api/users/delete/${driver.driverId}`);
+              await axiosIns.delete(`/api/drivers/${driver.driverId}`);
               message.success("Driver deleted");
               if (onRefresh) onRefresh();
             } catch (e) {
@@ -340,44 +339,41 @@ const DriverTable = ({ data, onRefresh }: DriverTableProps) => {
       title: "Action",
       key: "action",
       render: (_, record) => {
-        const menu = (
-          <Menu>
-            <Menu.Item key="view" icon={<EyeOutlined />}>
-              View Details
-            </Menu.Item>
-            <Menu.Item
-              key="edit"
-              icon={<EditOutlined />}
-              onClick={() => handleEditDriver(record)}
-            >
-              Edit Profile
-            </Menu.Item>
-            <Menu.Item 
-              key="block" 
-              icon={<StopOutlined />} 
-              danger
-              onClick={() => handleAction("block", record)}
-            >
-              Block Driver
-            </Menu.Item>
-            <Menu.Item
-              key="suspend"
-              icon={<ClockCircleOutlined />}
-              style={{ color: "#fa8c16" }}
-              onClick={() => handleAction("suspend", record)}
-            >
-              Suspend Driver
-            </Menu.Item>
-            <Menu.Item
-              key="delete"
-              icon={<DeleteOutlined />}
-              danger
-              onClick={() => handleAction("delete", record)}
-            >
-              Delete Driver
-            </Menu.Item>
-          </Menu>
-        );
+        const menuItems = [
+          {
+            key: "view",
+            icon: <EyeOutlined />,
+            label: "View Details",
+            onClick: () => openDrawer(record),
+          },
+          {
+            key: "edit",
+            icon: <EditOutlined />,
+            label: "Edit Profile",
+            onClick: () => handleEditDriver(record),
+          },
+          {
+            key: "block",
+            icon: <StopOutlined />,
+            label: "Block Driver",
+            danger: true,
+            onClick: () => handleAction("block", record),
+          },
+          {
+            key: "suspend",
+            icon: <ClockCircleOutlined />,
+            label: "Suspend Driver",
+            style: { color: "#fa8c16" },
+            onClick: () => handleAction("suspend", record),
+          },
+          {
+            key: "delete",
+            icon: <DeleteOutlined />,
+            label: "Delete Driver",
+            danger: true,
+            onClick: () => handleAction("delete", record),
+          },
+        ];
         return (
           <Space className="driver-action">
             <Button

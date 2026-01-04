@@ -448,11 +448,11 @@ export default function AddDriverModal({
         console.log("Updating driver:", initial.driverId);
         // Only send password if provided during edit
         const updatePayload = values.password ? payload : driver;
-        response = await axiosIns.patch(`/api/users/update/${initial.driverId}`, updatePayload);
+        response = await axiosIns.put(`/api/drivers/${initial.driverId}`, updatePayload);
         message.success("Driver updated successfully");
       } else {
         console.log("Creating new driver");
-        response = await axiosIns.post("/api/users/create", payload);
+        response = await axiosIns.post("/api/drivers", payload);
         message.success("Driver created successfully");
       }
       

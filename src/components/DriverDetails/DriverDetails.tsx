@@ -67,21 +67,10 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
   const handleStatusUpdate = async (newStatus: string) => {
     if (!driver) return;
     try {
-      if (newStatus === "blocked") {
-        await axiosIns.patch(`/api/users/block/${driver.driverId}`);
-        message.success(`Driver blocked successfully`);
-      } else if (newStatus === "suspended") {
-        await axiosIns.patch(`/api/users/disable/${driver.driverId}`);
-        message.success(`Driver disabled successfully`);
-      } else if (newStatus === "active" && (driver.status === "blocked" || driver.status === "suspended")) {
-        await axiosIns.patch(`/api/users/unblock/${driver.driverId}`);
-        message.success(`Driver activated successfully`);
-      } else {
-        await axiosIns.patch(`/api/users/update/${driver.driverId}`, {
-          status: newStatus,
-        });
-        message.success(`Driver status updated to ${newStatus}`);
-      }
+      await axiosIns.put(`/api/drivers/${driver.driverId}`, {
+        status: newStatus,
+      });
+      message.success(`Driver status updated to ${newStatus}`);
       
       if (onUpdate) onUpdate();
       onClose();
@@ -303,12 +292,14 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
               <div className="font-semibold">{doc?.documentNumber}</div>
             </div>
 
-            <div>
-              <Text type="secondary">Expiry Date</Text>
-              <div className="font-semibold">
-                {dayjs(doc?.expiryDate).format("MMMM D, YYYY")}
+            {doc?.documentType === "license" && (
+              <div>
+                <Text type="secondary">Expiry Date</Text>
+                <div className="font-semibold">
+                  {dayjs(doc?.expiryDate).format("MMMM D, YYYY")}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
 
