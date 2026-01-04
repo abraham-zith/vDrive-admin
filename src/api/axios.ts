@@ -4,7 +4,8 @@ import { messageApi } from "../utilities/antdStaticHolder";
 
 // Create Axios instance
 const axiosIns = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
+  // baseURL: import.meta.env.VITE_BACKEND_URL,
+  baseURL: "http://localhost:3001",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -96,7 +97,7 @@ axiosIns.interceptors.response.use(
       try {
         // Attempt to refresh token
         const { data } = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/api/auth/refresh-token`,
+          `http://localhost:3001/api/auth/refresh-token`,
           {},
           { withCredentials: true },
         );

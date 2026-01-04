@@ -5,6 +5,9 @@ import {
   Button,
   Space,
   Tag,
+  Modal,
+  Descriptions,
+  message,
   type TableColumnsType,
   type TableColumnType,
   type InputRef,
@@ -16,7 +19,7 @@ import {
 } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import { format } from "date-fns-tz";
-import type { Deduction, Driver } from "../../pages/Deductions";
+import type { Deduction, Driver } from "../../store/slices/deductionSlice";
 import { useGetHeight } from "../../utilities/customheightWidth";
 
 interface DeductionTableProps {
@@ -31,6 +34,54 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState<DataIndex | "">("");
   const searchInput = useRef<InputRef>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedDeduction, setSelectedDeduction] = useState<Deduction | null>(null);
+
+  const showModal = (record: Deduction) => {
+    setSelectedDeduction(record);
+    setIsModalVisible(true);
+  };
+
+  const handleDownload = (record: Deduction) => {
+    try {
+      const headers = ["Field", "Value"];
+      const rows = [
+        ["Deduction ID", record.id],
+        ["Driver Name", record.driver?.fullName || "N/A"],
+        ["Driver ID", record.driver?.id || "N/A"],
+        ["Driver Phone", record.driver?.phone || "N/A"],
+        ["Amount", record.amount],
+        ["Trip ID", record.trip],
+        ["Type", record.type],
+        ["Status", record.status],
+        ["Date", record.date ? format(new Date(record.date), "PPP p") : "N/A"],
+        ["Balance Before", record.balanceBefore],
+        ["Balance After", record.balanceAfter],
+        ["Reference", record.reference],
+        ["Performed By", record.performedBy]
+      ];
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `receipt_${record.id}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      message.success(`Receipt downloaded for deduction ${record.id}`);
+    } catch (error) {
+      console.error("Download failed:", error);
+      message.error("Failed to download receipt");
+    }
+  };
 
   const handleSearch = (
     selectedKeys: string[],
@@ -143,12 +194,12 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
 
         render: (driver: Driver) => (
           <div>
-            <div className="font-medium">{driver.fullName}</div>
+            <div className="font-medium">{driver?.fullName || "Unknown"}</div>
             <div className="text-xs text-gray-500">
-              {driver.id} • {driver.phone}
+              {driver?.id || "N/A"} • {driver?.phone || "N/A"}
             </div>
           </div>
-        ),
+        )
       },
       {
         title: "Amount",
@@ -157,15 +208,15 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
         minWidth: 110,
 
         sorter: (a, b) =>
-          parseFloat(a.amount.replace("$", "")) -
-          parseFloat(b.amount.replace("$", "")),
+          parseFloat((a?.amount || "0").replace("$", "")) -
+          parseFloat((b?.amount || "0").replace("$", "")),
       },
       {
         title: "Trip ID",
         dataIndex: "trip",
         key: "trip",
         minWidth: 120,
-        sorter: (a, b) => a.trip.localeCompare(b.trip),
+        sorter: (a, b) => (a?.trip || "").localeCompare(b?.trip || ""),
         ...getColumnSearchProps("trip"),
       },
       {
@@ -181,8 +232,8 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
         key: "balanceBefore",
         minWidth: 140,
         sorter: (a: Deduction, b: Deduction) =>
-          parseFloat(a.balanceBefore.replace(/[$,]/g, "")) -
-          parseFloat(b.balanceBefore.replace(/[$,]/g, "")),
+          parseFloat((a?.balanceBefore || "0").replace(/[$,]/g, "")) -
+          parseFloat((b?.balanceBefore || "0").replace(/[$,]/g, "")),
         render: (text: string) => <span className="font-medium">{text}</span>,
       },
       {
@@ -191,8 +242,8 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
         key: "balanceAfter",
         minWidth: 140,
         sorter: (a: Deduction, b: Deduction) =>
-          parseFloat(a.balanceAfter.replace(/[$,]/g, "")) -
-          parseFloat(b.balanceAfter.replace(/[$,]/g, "")),
+          parseFloat((a?.balanceAfter || "0").replace(/[$,]/g, "")) -
+          parseFloat((b?.balanceAfter || "0").replace(/[$,]/g, "")),
         render: (text: string) => <span className="font-medium">{text}</span>,
       },
 
@@ -202,18 +253,18 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
         key: "status",
         minWidth: 110,
         render: (status: string) => (
-          <Tag color={statusColors[status]}>{status}</Tag>
+          <Tag color={statusColors[status] || "default"}>{status || "Unknown"}</Tag>
         ),
-        sorter: (a, b) => a.status.localeCompare(b.status),
+        sorter: (a, b) => (a?.status || "").localeCompare(b?.status || ""),
       },
       {
         title: "Date",
         dataIndex: "date",
         minWidth: 120,
         key: "date",
-        render: (text: string) => format(new Date(text), "MMM dd, yyyy"),
+        render: (text: string) => text ? format(new Date(text), "MMM dd, yyyy") : "N/A",
         sorter: (a, b) =>
-          new Date(a.date).getTime() - new Date(b.date).getTime(),
+          new Date(a?.date || 0).getTime() - new Date(b?.date || 0).getTime(),
       },
       {
         title: "Reference",
@@ -238,13 +289,13 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
               icon={<EyeOutlined />}
               size="small"
               type="default"
-              onClick={() => console.log("View", record.id)}
+              onClick={() => showModal(record)}
             />
             <Button
               icon={<DownloadOutlined />}
               size="small"
               type="primary"
-              onClick={() => console.log("Download", record.id)}
+              onClick={() => handleDownload(record)}
             />
           </Space>
         ),
@@ -258,13 +309,79 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
       <Table
         className="rounded-lg border border-gray-300"
         key={tableHeight}
-        rowKey="driverId"
+        rowKey="id"
         columns={columns}
         dataSource={data}
         showSorterTooltip={false}
         tableLayout="auto"
         scroll={{ y: Math.floor(tableHeight || 0) }}
       />
+      
+      <Modal
+        title="Deduction Details"
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsModalVisible(false)}>
+            Close
+          </Button>,
+          <Button 
+            key="download" 
+            type="primary" 
+            icon={<DownloadOutlined />}
+            onClick={() => selectedDeduction && handleDownload(selectedDeduction)}
+          >
+            Download Receipt
+          </Button>
+        ]}
+        width={700}
+      >
+        {selectedDeduction && (
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="Deduction ID" span={2}>
+              {selectedDeduction.id}
+            </Descriptions.Item>
+            <Descriptions.Item label="Driver Name">
+              {selectedDeduction.driver?.fullName}
+            </Descriptions.Item>
+            <Descriptions.Item label="Driver ID">
+              {selectedDeduction.driver?.id}
+            </Descriptions.Item>
+            <Descriptions.Item label="Phone">
+              {selectedDeduction.driver?.phone}
+            </Descriptions.Item>
+            <Descriptions.Item label="Trip ID">
+              {selectedDeduction.trip}
+            </Descriptions.Item>
+            <Descriptions.Item label="Amount">
+              <span className="text-red-600 font-bold">{selectedDeduction.amount}</span>
+            </Descriptions.Item>
+            <Descriptions.Item label="Type">
+              <Tag color="blue">{selectedDeduction.type}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Status">
+              <Tag color={statusColors[selectedDeduction.status] || "default"}>
+                {selectedDeduction.status}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Date">
+              {selectedDeduction.date ? format(new Date(selectedDeduction.date), "PPP p") : "N/A"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Balance Before">
+              {selectedDeduction.balanceBefore}
+            </Descriptions.Item>
+            <Descriptions.Item label="Balance After">
+              {selectedDeduction.balanceAfter}
+            </Descriptions.Item>
+            <Descriptions.Item label="Reference">
+              {selectedDeduction.reference}
+            </Descriptions.Item>
+            <Descriptions.Item label="Performed By">
+              {selectedDeduction.performedBy}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
     </div>
   );
 };
