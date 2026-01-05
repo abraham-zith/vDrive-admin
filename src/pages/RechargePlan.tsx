@@ -103,7 +103,6 @@ const RechargePlan: React.FC = () => {
     createdDate: new Date(backendPlan.createdAt).toLocaleDateString(),
   });
 
-  // API functions
   const fetchPlans = async () => {
     try {
       setLoading(true);
