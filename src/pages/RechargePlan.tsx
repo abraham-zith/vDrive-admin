@@ -101,6 +101,7 @@ const RechargePlan: React.FC = () => {
     price: backendPlan.price,
     status: backendPlan.isActive ? "Active" : "Inactive",
     createdDate: new Date(backendPlan.createdAt).toLocaleDateString(),
+    
   });
 
   const fetchPlans = async () => {
