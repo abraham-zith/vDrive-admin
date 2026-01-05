@@ -54,7 +54,7 @@ axiosIns.interceptors.response.use(
   (response) => {
     // Dev Logging
     if (import.meta.env.DEV) {
-      console.groupCollapsed(`✅ API Response: ${response.config.url}`);
+      console.groupCollapsed(`API Response: ${response.config.url}`);
       console.log("Status:", response.status);
       console.log("Data:", response.data);
       console.groupEnd();
@@ -66,7 +66,7 @@ axiosIns.interceptors.response.use(
 
     // Dev Logging
     if (import.meta.env.DEV) {
-      console.groupCollapsed(`❌ API Error: ${originalRequest?.url}`);
+      console.groupCollapsed(`API Error: ${originalRequest?.url}`);
       console.log("Error:", error);
       console.groupEnd();
     }
@@ -138,7 +138,7 @@ axiosIns.interceptors.response.use(
             messageApi.open({
                 type: 'error',
                 content: errorMessage,
-                key: 'api_error_message', // Unique key prevents duplicates
+                key: 'api_error_message',
             });
         }
     } else if (error.code === "ERR_NETWORK") {

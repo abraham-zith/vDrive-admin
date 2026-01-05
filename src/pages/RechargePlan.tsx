@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   Button,
@@ -11,31 +11,27 @@ import {
   message,
   Switch,
   Card,
-  Row,
-  Col,
+  Spin,
 } from "antd";
 
 import { AppstoreOutlined, BarsOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
 import type { ColumnsType } from "antd/es/table";
+import { rechargePlanApi, type RechargePlan, type PlanType, type CreateRechargePlanRequest, type UpdateRechargePlanRequest } from "../api/rechargePlan.api";
 
 const { Option } = Select;
 
-type PlanType =
-  | "ROUND_TRIP"
-  | "OUTSTATION"
-  | "DAILY";
-  
+
 export type FilterValues = {
   planName?: string;
   status?: "Active" | "Inactive";
   sortBy?: "price" | "validity";
 };
 
-type RechargePlanType = {
+type FrontendRechargePlanType = {
   id: number;
   name: string;
-  planType: PlanType;
+  planType: PlanType[];
   rideLimit: number | "UNLIMITED";
   validity: number;
   unlimited?: boolean;
@@ -46,69 +42,13 @@ type RechargePlanType = {
 };
 
 const RechargePlan: React.FC = () => {
-  const [plans, setPlans] = useState<RechargePlanType[]>([
-    {
-      id: 1,
-      name: "Premium Plan",
-      planType: "DAILY",
-      description: "Perfect for All Access",
-      rideLimit: "UNLIMITED",
-      validity: 28,
-      price: 1999,
-      status: "Active",
-      createdDate: new Date().toLocaleDateString(),
-    },
-    {
-      id: 2,
-      name: "Basic Plan",
-      planType: "ROUND_TRIP",
-      description: "Perfect for occasional riders",
-      rideLimit: 5,
-      validity: 1,
-      price: 399,
-      status: "Inactive",
-      createdDate: new Date().toLocaleDateString(),
-    },
-    {
-      id: 3,
-      name: "Mini Plan",
-      planType: "OUTSTATION",
-      description: "Limited access only",
-      rideLimit: 1,
-      validity: 1,
-      price: 139,
-      status: "Active",
-      createdDate: new Date().toLocaleDateString(),
-    },
-    {
-      id: 4,
-      name: "Gold Plan",
-      planType: "DAILY",
-      description: "Good for all",
-      rideLimit: "UNLIMITED",
-      validity: 1,
-      price: 299,
-      status: "Inactive",
-      createdDate: new Date().toLocaleDateString(),
-    },
-    {
-      id: 5,
-      name: "Lite Plan",
-      planType: "ROUND_TRIP",
-      description: "Perfect plan",
-      rideLimit: 3,
-      validity: 1,
-      price: 699,
-      status: "Inactive",
-      createdDate: new Date().toLocaleDateString(),
-    },
-
-  ]);
+  const [plans, setPlans] = useState<FrontendRechargePlanType[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const [filters, setFilters] = useState<FilterValues>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<RechargePlanType | null>(null);
-  const [form] = Form.useForm<RechargePlanType>();
+  const [editingPlan, setEditingPlan] = useState<FrontendRechargePlanType | null>(null);
+  const [form] = Form.useForm<FrontendRechargePlanType>();
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
@@ -118,13 +58,77 @@ const RechargePlan: React.FC = () => {
   const activePlansCount = plans.filter(p => p.status === "Active").length;
   const isActiveLimitReached = activePlansCount >= MAX_ACTIVE_PLANS;
 
+  const mapFrontendToBackend = (frontendPlan: FrontendRechargePlanType): CreateRechargePlanRequest => {
+    const backendData = {
+      planName: frontendPlan.name,
+      planType: frontendPlan.planType,
+      description: frontendPlan.description || '',
+      rideLimit: frontendPlan.rideLimit === "UNLIMITED" ? 999999 : frontendPlan.rideLimit,
+      validityDays: frontendPlan.validity,
+      price: frontendPlan.price,
+      isActive: frontendPlan.status === "Active",
+    };
+    console.log('Frontend to Backend Mapping:', {
+      input: frontendPlan,
+      output: backendData
+    });
+    return backendData;
+  };
+
+  const mapFrontendToBackendUpdate = (frontendPlan: FrontendRechargePlanType): UpdateRechargePlanRequest => {
+    const backendData = {
+      planName: frontendPlan.name,
+      planType: frontendPlan.planType,
+      description: frontendPlan.description || '',
+      rideLimit: frontendPlan.rideLimit === "UNLIMITED" ? 999999 : frontendPlan.rideLimit,
+      validityDays: frontendPlan.validity,
+      price: frontendPlan.price,
+    };
+    console.log('Frontend to Backend Update Mapping:', {
+      input: frontendPlan,
+      output: backendData
+    });
+    return backendData;
+  };
+
+  const mapBackendToFrontend = (backendPlan: RechargePlan): FrontendRechargePlanType => ({
+    id: backendPlan.id,
+    name: backendPlan.planName,
+    planType: backendPlan.planType,
+    description: backendPlan.description,
+    rideLimit: backendPlan.rideLimit >= 999999 ? "UNLIMITED" : backendPlan.rideLimit,
+    validity: backendPlan.validityDays,
+    price: backendPlan.price,
+    status: backendPlan.isActive ? "Active" : "Inactive",
+    createdDate: new Date(backendPlan.createdAt).toLocaleDateString(),
+  });
+
+  // API functions
+  const fetchPlans = async () => {
+    try {
+      setLoading(true);
+      const response = await rechargePlanApi.getRechargePlans();
+      const frontendPlans = response.data.map(mapBackendToFrontend);
+      setPlans(frontendPlans);
+    } catch (error) {
+      message.error("Failed to fetch recharge plans");
+      console.error("Error fetching plans:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
   const showAddModal = () => {
     setEditingPlan(null);
     form.resetFields();
     setIsModalOpen(true);
   };
 
-  const showEditModal = (plan: RechargePlanType) => {
+  const showEditModal = (plan: FrontendRechargePlanType) => {
     setEditingPlan(plan);
     form.setFieldsValue({
       ...plan,
@@ -134,20 +138,32 @@ const RechargePlan: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleStatusToggle = (id: number, checked: boolean) => {
-    setPlans(prev => prev.map(plan =>
-      plan.id === id ? { ...plan, status: checked ? "Active" : "Inactive" } : plan
-    ));
-    message.success(`Plan ${checked ? "Activated" : "Deactivated"} successfully`);
+  const handleStatusToggle = async (id: number, checked: boolean) => {
+    try {
+      await rechargePlanApi.toggleRechargePlanStatus(id, checked);
+      setPlans(prev => prev.map(plan =>
+        plan.id === id ? { ...plan, status: checked ? "Active" : "Inactive" } : plan
+      ));
+      message.success(`Plan ${checked ? "Activated" : "Deactivated"} successfully`);
+    } catch (error) {
+      message.error("Failed to update plan status");
+      console.error("Error toggling status:", error);
+    }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteId === null) return;
-    const deletedPlan = plans.find((p) => p.id === deleteId);
-    setPlans(prev => prev.filter((p) => p.id !== deleteId));
-    message.success(`Plan "${deletedPlan?.name}" has been deleted`);
-    setDeleteConfirm(false);
-    setDeleteId(null);
+    try {
+      const deletedPlan = plans.find((p) => p.id === deleteId);
+      await rechargePlanApi.deleteRechargePlan(deleteId);
+      setPlans(prev => prev.filter((p) => p.id !== deleteId));
+      message.success(`Plan "${deletedPlan?.name}" has been deleted`);
+      setDeleteConfirm(false);
+      setDeleteId(null);
+    } catch (error) {
+      message.error("Failed to delete plan");
+      console.error("Error deleting plan:", error);
+    }
   };
 
 
@@ -155,47 +171,56 @@ const RechargePlan: React.FC = () => {
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
+      console.log('Form Values:', values);
 
       if (!editingPlan && values.status && isActiveLimitReached) {
         message.warning("Only 5 active recharge plans are allowed.");
         return;
       }
+      
       const rideLimitValue: number | "UNLIMITED" =
         values.unlimited ? "UNLIMITED" : Number(values.rideLimit);
-      if (editingPlan) {
+      
+      const planData: FrontendRechargePlanType = {
+        id: editingPlan?.id || 0,
+        name: values.name,
+        planType: values.planType,
+        description: values.description,
+        rideLimit: rideLimitValue,
+        validity: Number(values.validity),
+        price: Number(values.price),
+        status: values.status ? "Active" : "Inactive",
+        createdDate: editingPlan?.createdDate || new Date().toLocaleDateString(),
+      };
 
+      console.log('Plan Data before mapping:', planData);
+
+      if (editingPlan) {
+        // Update existing plan
+        const backendData = mapFrontendToBackendUpdate(planData);
+        await rechargePlanApi.updateRechargePlan(editingPlan.id, backendData);
         setPlans(prev =>
           prev.map(p =>
             p.id === editingPlan.id
               ? {
-                ...p,
-                name: values.name,
-                planType: values.planType,
-                description: values.description,
-                rideLimit: rideLimitValue,
-                validity: Number(values.validity),
-                price: Number(values.price),
-                status: values.status ? "Active" : "Inactive",
-              }
+                  ...p,
+                  name: values.name,
+                  planType: values.planType,
+                  description: values.description,
+                  rideLimit: rideLimitValue,
+                  validity: Number(values.validity),
+                  price: Number(values.price),
+                  status: values.status ? "Active" : "Inactive",
+                }
               : p
           )
         );
-
         message.success("Recharge plan updated successfully");
       } else {
-
-        const newPlan: RechargePlanType = {
-          id: Date.now(),
-          name: values.name,
-          planType: values.planType,
-          description: values.description,
-          rideLimit: rideLimitValue,
-          validity: Number(values.validity),
-          price: Number(values.price),
-          status: values.status ? "Active" : "Inactive",
-          createdDate: new Date().toLocaleDateString(),
-        };
-
+        // Create new plan
+        const backendData = mapFrontendToBackend(planData);
+        const response = await rechargePlanApi.createRechargePlan(backendData);
+        const newPlan = mapBackendToFrontend(response.data);
         setPlans(prev => [...prev, newPlan]);
         message.success("Recharge plan created successfully");
       }
@@ -203,8 +228,15 @@ const RechargePlan: React.FC = () => {
       setIsModalOpen(false);
       setEditingPlan(null);
       form.resetFields();
-    } catch {
-
+    } catch (error: any) {
+      if (error.errorFields) {
+        return;
+      }
+      console.error('API Error:', error);
+      if (error.response?.data) {
+        console.error('Error Response:', error.response.data);
+      }
+      message.error(editingPlan ? "Failed to update recharge plan" : "Failed to create recharge plan");
     }
   };
 
@@ -220,7 +252,7 @@ const RechargePlan: React.FC = () => {
       && (!filters.status ? true : plan.status === filters.status))
     .sort((a, b) => !sortBy ? 0 : Number(a[sortBy]) - Number(b[sortBy]));
 
-  const columns: ColumnsType<RechargePlanType> = React.useMemo(() => [
+  const columns: ColumnsType<FrontendRechargePlanType> = React.useMemo(() => [
     {
       title: "Plan Name", dataIndex: "name", render: (_, record) =>
         <div className="flex flex-col"><span className="font-medium">{record.name}</span>{record.description &&
@@ -230,18 +262,21 @@ const RechargePlan: React.FC = () => {
     {
       title: "Plan Type",
       dataIndex: "planType",
-      render: (type: PlanType) => {
-        const planTypeMap: Record<PlanType, string> = {
-          ROUND_TRIP: "Round Trip",
-          OUTSTATION: "Outstation",
-          DAILY: "Daily",
+      render: (types: PlanType[]) => {
+        const planTypeMap: Record<string, string> = {
+          "ONE-WAY": "One Way",
+          "ROUND-TRIP": "Round Trip",
+          "OUT-STATION": "Out Station",
+          "SCHEDULE": "Schedule",
         };
-        return planTypeMap[type];
+
+        return (
+          <span>
+            {types?.map(t => planTypeMap[t]).join(", ")}
+          </span>
+        );
       },
     },
-
-
-
 
     { title: "Ride Limit", dataIndex: "rideLimit", render: (value) => value === "UNLIMITED" ? "∞ rides" : `${value} rides` },
     { title: "Validity (Days)", dataIndex: "validity", render: (value) => `${value} days` },
@@ -280,7 +315,7 @@ const RechargePlan: React.FC = () => {
         </div>
       }
     >
-      
+
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 my-2.5 flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
         <Input placeholder="Search Plan" className="flex-1 min-w-[200px]" value={filters.planName || ""} onChange={(e) => handleFilterChange("planName", e.target.value)} />
         <Select placeholder="All Status" className="w-[150px]" value={filters.status || undefined} onChange={(value) => handleFilterChange("status", value)} allowClear>
@@ -303,7 +338,12 @@ const RechargePlan: React.FC = () => {
           pagination={{ pageSize: 5 }}
           size="small"
           scroll={{ x: 900 }}
+          loading={loading}
         />
+      ) : loading ? (
+        <div className="flex justify-center items-center py-12">
+          <Spin size="large" />
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-2">
           {finalPlans.map(plan => (
@@ -327,7 +367,7 @@ const RechargePlan: React.FC = () => {
         </div>
       )}
 
-      
+
       <Modal title="Delete Recharge Plan"
         open={deleteConfirm} okText="Delete"
         onOk={handleDelete}
@@ -335,153 +375,214 @@ const RechargePlan: React.FC = () => {
         <p>Are you sure you want to delete <b>{plans.find(p => p.id === deleteId)?.name}</b>?</p>
       </Modal>
 
-
+      
       <Modal
-        title={
-          <div className="flex flex-col">
-            <span className="text-lg font-semibold text-gray-900">
-              {editingPlan ? "Edit Plan" : "Create New Plan"}
-            </span>
-            <p className="text-sm text-gray-500">
-              Fill in the details to create a new recharge plan
-            </p>
-          </div>
-        }
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
           form.resetFields();
           setEditingPlan(null);
         }}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={() => {
-              setIsModalOpen(false);
-              form.resetFields();
-              setEditingPlan(null);
-            }}
-          >
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            className="bg-blue-800 text-white hover:bg-blue-900"
-            onClick={handleOk}
-          >
-            {editingPlan ? "Update" : "Create Plan"}
-          </Button>,
-        ]}
-        width={600}
-        bodyStyle={{ padding: "24px" }}
+        footer={null}
+        width={500}
         centered
         destroyOnClose
+        className="recharge-plan-modal"
+        styles={{
+          body: { padding: '24px', maxHeight: '200vh' }
+        }}
       >
-        <Form layout="vertical" form={form}>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Plan Name"
-                name="name"
-                rules={[{ required: true, message: "Enter plan name" }]}
-              >
-                <Input placeholder="Enter plan name" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Plan Type"
-                name="planType"
-                rules={[{ required: true, message: "Select plan type" }]}
-              >
-                <Select placeholder="Select plan type">
-                  <Select.Option value="ROUND_TRIP">Round Trip</Select.Option>
-                  <Select.Option value="OUTSTATION">Outstation</Select.Option>
-                  <Select.Option value="DAILY">Daily</Select.Option>
-                </Select>
-              </Form.Item>
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-xl font-semibold text-gray-900 m-0">
+              {editingPlan ? "Edit Recharge Plan" : "Create New Recharge Plan"}
+            </h2>
+          </div>
+          <p className="text-sm text-gray-600">
+            {editingPlan ? "Update the plan details below" : "Fill in the details to create a new recharge plan"}
+          </p>
+        </div>
 
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Validity (Days)"
-                name="validity"
-                rules={[{ required: true, message: "Enter validity" }]}
-              >
-                <InputNumber className="w-full" min={1} />
-              </Form.Item>
-            </Col>
+        <Form 
+          layout="vertical" 
+          form={form}
+          className="recharge-plan-form"
+          requiredMark={false}
+        >
 
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Price (₹)"
-                name="price"
-                rules={[{ required: true, message: "Enter price" }]}
-              >
-                <InputNumber className="w-full" min={1} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24}>
-              <div className="flex flex-wrap gap-4 items-center">
-
-                <div className="flex-1 min-w-[200px]">
-                  <Form.Item label="Ride Limit" required>
-                    <div className="flex items-center gap-3">
-                      <Form.Item
-                        name="rideLimit"
-                        noStyle
-                        rules={[
-                          ({ getFieldValue }) => ({
-                            validator(_, value) {
-                              if (getFieldValue("unlimited")) return Promise.resolve();
-                              if (!value || value <= 0)
-                                return Promise.reject("Enter ride limit");
-                              return Promise.resolve();
-                            },
-                          }),
-                        ]}
-                      >
-                        <InputNumber
-                          className="w-[70%]"
-                          min={1}
-                          placeholder="Ride limit"
-                          disabled={form.getFieldValue("unlimited")}
-                        />
-                      </Form.Item>
-                      <Form.Item name="unlimited" valuePropName="checked" noStyle>
-                        <Switch checkedChildren="∞" unCheckedChildren="Limited" />
-                      </Form.Item>
-                    </div>
-                  </Form.Item>
-                </div>
-
-
-                <div className="flex-1 min-w-[200px]">
-                  <Form.Item label="Active Status" name="status" valuePropName="checked">
-                    <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
-                  </Form.Item>
-                </div>
-              </div>
-            </Col>
-          </Row>
+        
           <Form.Item
-            label="Description"
-            name="description"
-            rules={[{ required: true, message: "Brief description of the plan" }]}
+            label={<span className="font-medium text-gray-700">Plan Name</span>}
+            name="name"
+            rules={[{ required: true, message: "Please enter a plan name" }]}
           >
-            <Input.TextArea rows={3} placeholder="Enter description" />
+            <Input 
+              placeholder="e.g., Daily Commuter, Weekly Pass"
+              size="large"
+            />
           </Form.Item>
+
+          {/* Plan Type */}
+          <Form.Item
+            label={<span className="font-medium text-gray-700">Plan Type</span>}
+            name="planType"
+            rules={[{ required: true, message: "Please select at least one plan type" }]}
+          >
+            <Select 
+              mode="multiple" 
+              allowClear
+              placeholder="Select plan types"
+              size="large"
+              maxTagCount={2}
+            >
+              <Select.Option value="ONE-WAY">
+                <div className="flex items-center gap-2">
+                  <span>🚗</span> One Way
+                </div>
+              </Select.Option>
+              <Select.Option value="ROUND-TRIP">
+                <div className="flex items-center gap-2">
+                  <span>🔄</span> Round Trip
+                </div>
+              </Select.Option>
+              <Select.Option value="OUT-STATION">
+                <div className="flex items-center gap-2">
+                  <span>📍</span> Out Station
+                </div>
+              </Select.Option>
+              <Select.Option value="SCHEDULE">
+                <div className="flex items-center gap-2">
+                  <span>📅</span> Schedule
+                </div>
+              </Select.Option>
+            </Select>
+          </Form.Item>
+
+          {/* Validity + Price */}
+          <div className="flex flex-row justify-between sm:flex-row gap-4 w-full">
+            <Form.Item
+              label={<span className="font-medium text-gray-700">Validity (Days)</span>}
+              name="validity"
+              rules={[{ required: true, message: "Please enter validity period" }]}
+            >
+              <InputNumber 
+                className="w-50%" 
+                min={1} 
+                placeholder="30"
+                size="large"
+                addonAfter="days"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label={<span className="font-medium text-gray-700">Price (₹)</span>}
+              name="price"
+              rules={[{ required: true, message: "Please enter price" }]}
+            >
+              <InputNumber 
+                className="w-full" 
+                min={1} 
+                placeholder="299"
+                size="large"
+                formatter={(value) => `₹ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              />
+            </Form.Item>
+          </div>
+
+          {/* Ride Limit Section */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <div className="flex items-center justify-between mb-3 mt-[10px]">
+              <Form.Item name="unlimited" valuePropName="checked" className="mb-0">
+                <Switch 
+                  checkedChildren="Unlimited" 
+                  unCheckedChildren="Limited"
+                  size="small"
+                />
+              </Form.Item>
+            </div>
+            
+            <div className="flex flex-row justify-between sm:flex-row gap-4 w-full">
+              <Form.Item
+                label={<span className="font-medium text-gray-700">Ride Limit</span>}
+                name="rideLimit"
+                className="mb-0"
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (getFieldValue("unlimited")) return Promise.resolve();
+                      if (!value || value <= 0)
+                        return Promise.reject("Please enter ride limit");
+                      return Promise.resolve();
+                    },
+                  }),
+                ]}
+              >
+                <InputNumber
+                  className="w-full"
+                  min={1}
+                  placeholder="10"
+                  size="large"
+                  disabled={form.getFieldValue("unlimited")}
+                  addonAfter="rides"
+                />
+              </Form.Item>
+
+              <Form.Item
+                label={<span className="font-medium text-gray-700 ">Status</span>}
+                name="status"
+                valuePropName="checked"
+                className="mb-0"
+              >
+                <Switch 
+                  checkedChildren="Active" 
+                  unCheckedChildren="Inactive"
+                  size="small"
+                />
+              </Form.Item>
+            </div>
+          </div>
+
+          {/* Description */}
+          <Form.Item
+            label={<span className="font-medium text-gray-700">Description</span>}
+            name="description"
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder="Describe the benefits and features of this plan..."
+              showCount
+              maxLength={200}
+            />
+          </Form.Item>
+
+          {/* Footer */}
+          <div className="flex justify-end items-center pt-4 border-t w-full border-gray-200">
+            
+            <div className="flex gap-3">
+              <Button
+                size="large"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  form.resetFields();
+                  setEditingPlan(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                onClick={handleOk}
+                size="large"
+                className="min-w-[100px]"
+              >
+                {editingPlan ? "Update Plan" : "Create Plan"}
+              </Button>
+            </div>
+          </div>
+
         </Form>
       </Modal>
-
-
-
     </TitleBar>
   );
 };
