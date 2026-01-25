@@ -522,7 +522,7 @@ const router = createBrowserRouter([
         ),
         children: [
           {
-            path: "pricing",
+            path: "pricing/:id?",
             element: (
               <Suspense fallback={<RouteLoadingFallback />}>
                 <DriverPricing />

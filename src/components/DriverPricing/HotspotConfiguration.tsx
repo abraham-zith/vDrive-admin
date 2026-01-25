@@ -1,16 +1,14 @@
-import { useState, useEffect } from "react";
-import { Card, Select, Switch, InputNumber, Tag, Spin, message } from "antd";
+import { useEffect } from "react";
+import { Card, Select, Switch, InputNumber, Tag, Spin } from "antd";
 import { ThunderboltOutlined, LoadingOutlined } from "@ant-design/icons";
-import {
-  mockHotspotApi,
-  type HotspotType,
-} from "../../utilities/mockHotspotApi";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchHotspots } from "../../store/slices/hotspotSlice";
 
 interface HotspotConfigurationProps {
   hotspotEnabled: boolean;
   setHotspotEnabled: (enabled: boolean) => void;
-  hotspotType: string;
-  setHotspotType: (type: string) => void;
+  hotspotId: string;
+  setHotspotId: (id: string) => void;
   multiplier: number;
   setMultiplier: (multiplier: number) => void;
 }
@@ -18,42 +16,28 @@ interface HotspotConfigurationProps {
 const HotspotConfiguration = ({
   hotspotEnabled,
   setHotspotEnabled,
-  hotspotType,
-  setHotspotType,
+  hotspotId,
+  setHotspotId,
   multiplier,
   setMultiplier,
 }: HotspotConfigurationProps) => {
-  const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { hotspots, isLoading } = useAppSelector((state) => state.hotspot);
 
-  // Load hotspot types on component mount
+  // Load hotspots on component mount
   useEffect(() => {
-    loadHotspotTypes();
-  }, []);
+    dispatch(fetchHotspots({ limit: 100 })); // Fetch all hotspots
+  }, [dispatch]);
 
-  const loadHotspotTypes = async () => {
-    try {
-      setLoading(true);
-      const types = await mockHotspotApi.getHotspotTypes();
-      setHotspotTypes(types.filter((type) => type.isActive)); // Only show active types
-    } catch (error) {
-      message.error("Failed to load hotspot types");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Get selected hotspot details
+  const selectedHotspot = hotspots.find((h) => h.id === hotspotId);
 
-  // Get selected hotspot type details
-  const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType,
-  );
-
-  if (loading) {
+  if (isLoading && hotspots.length === 0) {
     return (
       <Card size="small">
         <div className="flex justify-center items-center h-32">
           <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
-          <span className="ml-2">Loading hotspot configuration...</span>
+          <span className="ml-2">Loading hotspots...</span>
         </div>
       </Card>
     );
@@ -90,45 +74,72 @@ const HotspotConfiguration = ({
         {hotspotEnabled && (
           <>
             <div className="w-full flex flex-col">
-              <span>Hotspot Type</span>
+              <span className="text-sm font-medium mb-1">Hotspot</span>
               <Select
-                value={hotspotType}
-                onChange={setHotspotType}
-                placeholder="Select a hotspot type"
-                options={hotspotTypes.map((type) => ({
-                  value: type.name.toLowerCase().replace(/\s+/g, "-"),
+                value={hotspotId}
+                onChange={setHotspotId}
+                placeholder="Select a hotspot"
+                loading={isLoading}
+                showSearch
+                allowClear
+                filterOption={(input, option) =>
+                  (option?.searchtext ?? "")
+                    .toLowerCase()
+                    .includes(input.toLowerCase())
+                }
+                options={hotspots.map((hotspot) => ({
+                  value: hotspot.id,
+                  searchtext: hotspot.hotspot_name,
                   label: (
                     <div className="flex items-center gap-2">
                       <ThunderboltOutlined />
-                      <span>{type.name}</span>
+                      <span>{hotspot.hotspot_name}</span>
                       <span className="text-xs text-gray-500">
-                        +₹{type.addition} - {type.multiplier}x
+                        +₹{Number(hotspot.fare).toFixed(0)} -{" "}
+                        {Number(hotspot.multiplier).toFixed(1)}x
                       </span>
                     </div>
                   ),
                 }))}
               />
             </div>
-            {selectedHotspotType && (
-              <div className="w-full flex flex-col sm:flex-row gap-4">
-                <div className="w-full sm:w-1/2 flex flex-col">
-                  <Tag color="blue" className="mb-2">
-                    {selectedHotspotType.name}
-                  </Tag>
+
+            {selectedHotspot && (
+              <div className="w-full flex flex-col sm:flex-row gap-4 sm:justify-between">
+                <div className="flex flex-col">
+                  <div>
+                    <Tag color="blue" className="mb-2">
+                      {selectedHotspot.hotspot_name}
+                    </Tag>
+                  </div>
                   <span className="text-sm text-gray-600">
-                    Addition: +₹{selectedHotspotType.addition}
+                    Fare: ₹{Number(selectedHotspot.fare).toFixed(2)}
                   </span>
                 </div>
-                <div className="w-full sm:w-1/2 flex flex-col">
+                <div className="w-full sm:w-1/2 flex gap-6">
                   <span className="text-sm font-medium mb-1">Multiplier:</span>
-                  <InputNumber
-                    min={0.1}
-                    step={0.1}
-                    value={multiplier}
-                    onChange={(value) => setMultiplier(value || 1)}
-                    addonAfter="x"
-                    className="w-full"
-                  />
+                  <div className="flex items-center flex-col">
+                    <div>
+                      <InputNumber
+                        min={0.1}
+                        step={0.1}
+                        value={multiplier}
+                        onChange={(value) => setMultiplier(value || 1)}
+                        addonAfter="x"
+                        size="small"
+                        className="w-full"
+                        placeholder={Number(selectedHotspot.multiplier).toFixed(
+                          1,
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500 mt-1">
+                        Default: {Number(selectedHotspot.multiplier).toFixed(1)}
+                        x
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

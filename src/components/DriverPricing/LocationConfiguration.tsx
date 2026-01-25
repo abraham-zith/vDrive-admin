@@ -20,6 +20,10 @@ import {
   fetchCities,
   fetchCountries,
   fetchState,
+  fetchCountryById,
+  fetchStateById,
+  fetchCityById,
+  fetchAreaById,
 } from "../../store/slices/locationSlice";
 
 interface LocationConfigurationProps {
@@ -294,11 +298,32 @@ const LocationConfiguration = ({
 
   // Sync Area display
   useEffect(() => {
-    if (area && areas.length > 0) {
+    if (area) {
       const selected = areas.find((a) => a.id === area);
-      if (selected) setAreaSearchValue(selected.place);
+      if (selected) {
+        setAreaSearchValue(selected.place);
+        if (selected.zipcode && (!pincode || pincode === ""))
+          setPincode(selected.zipcode);
+      } else {
+        console.log(`[LocationConfig] Fetching area details for ID: ${area}`);
+        dispatch(fetchAreaById(area))
+          .unwrap()
+          .then((data) => {
+            console.log("[LocationConfig] Fetched area data:", data);
+            const placeName = data.place || data.name || data.area_name;
+            const zip = data.zipcode || data.pincode;
+
+            if (placeName) setAreaSearchValue(placeName);
+
+            if (zip && (!pincode || pincode === "")) {
+              console.log("[LocationConfig] Setting pincode to:", zip);
+              setPincode(zip);
+            }
+          })
+          .catch((err) => console.error("Failed to fetch area details", err));
+      }
     }
-  }, [area, areas]);
+  }, [area, areas, dispatch]); // dependency on pincode removed to avoid loop
 
   // Initial Auto-select Logic
   useEffect(() => {

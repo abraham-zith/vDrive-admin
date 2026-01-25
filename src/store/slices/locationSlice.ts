@@ -278,6 +278,62 @@ export const fetchLocationByZipcode = createAsyncThunk(
   },
 );
 
+export const fetchCountryById = createAsyncThunk(
+  "location/fetchCountryById",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosIns.get(`/api/locations/country/${id}`);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch country",
+      );
+    }
+  },
+);
+
+export const fetchStateById = createAsyncThunk(
+  "location/fetchStateById",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosIns.get(`/api/locations/state/${id}`);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch state",
+      );
+    }
+  },
+);
+
+export const fetchCityById = createAsyncThunk(
+  "location/fetchCityById",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosIns.get(`/api/locations/city/${id}`);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch city",
+      );
+    }
+  },
+);
+
+export const fetchAreaById = createAsyncThunk(
+  "location/fetchAreaById",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosIns.get(`/api/locations/area/${id}`);
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch area",
+      );
+    }
+  },
+);
+
 const locationSlice = createSlice({
   name: "location",
   initialState,

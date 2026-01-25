@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Card, Typography, Tag } from "antd";
 import { MdOutlineLocationOn } from "react-icons/md";
 import { BsClock } from "react-icons/bs";
@@ -8,11 +8,8 @@ import {
   type UserType,
   type TimeSlot,
 } from "./DriverTimeSlotsAndPricing";
-import {
-  mockHotspotApi,
-  type HotspotType,
-} from "../../utilities/mockHotspotApi";
-import { useAppSelector } from "../../store/hooks";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchHotspots } from "../../store/slices/hotspotSlice";
 
 interface PricingPreviewProps {
   country: string;
@@ -22,7 +19,7 @@ interface PricingPreviewProps {
   pincode: string;
   timeSlots: UserTimeSlots;
   hotspotEnabled: boolean;
-  hotspotType: string;
+  hotspotId: string;
   multiplier: number;
 }
 
@@ -34,34 +31,35 @@ const PricingPreview = ({
   pincode,
   timeSlots,
   hotspotEnabled,
-  hotspotType,
+  hotspotId,
   multiplier,
 }: PricingPreviewProps) => {
-  const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
+  console.log({
+    country,
+    state,
+    district,
+    area,
+    pincode,
+    timeSlots,
+    hotspotEnabled,
+    hotspotId,
+    multiplier,
+  });
+  const dispatch = useAppDispatch();
+  const { hotspots } = useAppSelector((state) => state.hotspot);
 
   // Get location data from Redux
   const { countries, states } = useAppSelector((state) => state.location);
 
-  // Load hotspot types on component mount
+  // Load hotspots on component mount
   useEffect(() => {
-    loadHotspotTypes();
-  }, []);
+    dispatch(fetchHotspots({ limit: 100 }));
+  }, [dispatch]);
 
-  const loadHotspotTypes = async () => {
-    try {
-      const types = await mockHotspotApi.getHotspotTypes();
-      setHotspotTypes(types);
-    } catch (error) {
-      console.error("Failed to load hotspot types");
-    }
-  };
+  // Get selected hotspot details
+  const selectedHotspot = hotspots.find((h) => h.id === hotspotId);
 
-  // Get selected hotspot type details
-  const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType,
-  );
-
-  const hotspotAddition = selectedHotspotType?.addition || 40;
+  const hotspotFare = selectedHotspot ? Number(selectedHotspot.fare) : 0;
 
   // Find labels from Redux data
   const countryLabel =
@@ -144,9 +142,7 @@ const PricingPreview = ({
 
                     <span className="text-[12px] text-gray-600">
                       {slot.timeRange
-                        ? `${slot.timeRange[0].format(
-                            "h:mm A",
-                          )} - ${slot.timeRange[1].format("h:mm A")}`
+                        ? `${slot.timeRange[0].format("h:mm A")} - ${slot.timeRange[1].format("h:mm A")}`
                         : "No time set"}
                     </span>
 
@@ -157,7 +153,7 @@ const PricingPreview = ({
                     <span className="font-semibold text-green-600">
                       Final: ₹
                       {hotspotEnabled
-                        ? slot.price * multiplier + hotspotAddition
+                        ? slot.price * multiplier + hotspotFare
                         : slot.price}
                     </span>
                   </div>
@@ -167,15 +163,15 @@ const PricingPreview = ({
           </div>
         </div>
 
-        {hotspotEnabled && (
+        {hotspotEnabled && selectedHotspot && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <ThunderboltOutlined className="text-[18px] text-[#0080FF]" />
               <span className="font-semibold">Hotspot Effect</span>
             </div>
             <div className="p-2 bg-[#F8F9FA] rounded-md">
-              <Tag color="blue">{selectedHotspotType?.name || "Hotspot"}</Tag>
-              <div className="text-sm">Addition: +₹{hotspotAddition}</div>
+              <Tag color="blue">{selectedHotspot.hotspot_name}</Tag>
+              <div className="text-sm">Fare: +₹{hotspotFare.toFixed(2)}</div>
               <div className="text-sm">Multiplier: {multiplier}x</div>
               <div className="text-green-500 text-sm">
                 Base rate increase applied
