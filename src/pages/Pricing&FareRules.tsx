@@ -153,7 +153,7 @@ const apiResponse: ApiItem[] = [
       state: "Tamilnadu",
       district: "Kanchipuram",
       area: "Madippakkam",
-      pincode: "60091",
+      pincode: "",
     },
     hotspotDetails: {
       isHotspot: true,

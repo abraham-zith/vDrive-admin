@@ -19,7 +19,7 @@ const DriverPricing = () => {
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("Kanchipuram");
   const [area, setArea] = useState("Madippakkam");
-  const [pincode, setPincode] = useState("60091");
+  const [pincode, setPincode] = useState("");
   const [globalPrice, setGlobalPrice] = useState(1000);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
