@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Button, Table, Space, Card, Tag, Modal } from "antd";
-import { DownloadOutlined, EyeOutlined, EditOutlined } from "@ant-design/icons";
+import { Button, Table, Space, Card, Tag, Modal, Spin } from "antd";
+import {
+  DownloadOutlined,
+  EyeOutlined,
+  EditOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import { IoAdd } from "react-icons/io5";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
@@ -53,9 +58,19 @@ const PricingAndFareRules: React.FC = () => {
   const { fareRules, isLoading, total, currentPage, pageSize } = useAppSelector(
     (state) => state.pricingFareRules,
   );
+
+  // Debug: Log loading state changes
+  console.log(
+    "Pricing Table - isLoading:",
+    isLoading,
+    "fareRules count:",
+    fareRules.length,
+  );
+
   console.log({ previewRule });
   // Fetch data on mount
   useEffect(() => {
+    console.log("Fetching pricing fare rules...");
     dispatch(
       fetchPricingFareRules({
         page: currentPage,
@@ -106,11 +121,11 @@ const PricingAndFareRules: React.FC = () => {
     },
     {
       title: "District (City)", // Updated label based on schema confusion
-      dataIndex: "city_name", // Displaying City Name for "District" column
-      key: "city_name",
+      dataIndex: "district_name", // Displaying City Name for "District" column
+      key: "district_name",
       width: 150,
       ellipsis: true,
-      render: (text, record) => record.city_name || "All",
+      render: (text, record) => record.district_name || "All",
     },
     {
       title: "Area",
@@ -219,7 +234,11 @@ const PricingAndFareRules: React.FC = () => {
           <Table
             columns={columns}
             dataSource={fareRules}
-            loading={isLoading}
+            loading={{
+              spinning: isLoading,
+              indicator: <LoadingOutlined style={{ fontSize: 48 }} spin />,
+              tip: "Loading pricing rules...",
+            }}
             rowKey="id"
             pagination={{
               current: currentPage,
@@ -250,9 +269,9 @@ const PricingAndFareRules: React.FC = () => {
               <PricingPreview
                 country="India" // Placeholder
                 state="Tamil Nadu" // Placeholder
-                district={previewRule.city_name || "-"} // Mapping City -> District label
+                district={previewRule.district_name || "-"} // Mapping City -> District label
                 area={previewRule.area_name || "-"} // Mapping Area -> Area label
-                pincode="-"
+                pincode={previewRule.pincode || "-"}
                 globalPrice={Number(previewRule.global_price)}
                 hotspotEnabled={previewRule.is_hotspot}
                 hotspotId={previewRule.hotspot_name || ""}

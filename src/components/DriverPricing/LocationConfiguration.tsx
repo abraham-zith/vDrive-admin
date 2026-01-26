@@ -61,7 +61,7 @@ const LocationConfiguration = ({
     isLoadingCountries,
     states,
     isLoadingStates,
-    cities,
+    districts,
     isLoadingCities,
     areas,
     isLoadingAreas,
@@ -115,7 +115,7 @@ const LocationConfiguration = ({
         fetchAreas({
           countryId: country,
           stateId: state,
-          cityId: district,
+          districtId: district,
           search: searchValue,
           limit: 20,
         }),
@@ -218,8 +218,8 @@ const LocationConfiguration = ({
   const countryOptions = useMemo(
     () =>
       countries.map((c) => ({
-        label: `${c.country_flag} ${c.country_name}`,
-        value: `${c.country_flag} ${c.country_name}`, // AutoComplete value is text
+        label: `${c.flag} ${c.name}`,
+        value: `${c.flag} ${c.name}`, // AutoComplete value is text
         key: c.id, // Store ID in key
       })),
     [countries],
@@ -227,23 +227,23 @@ const LocationConfiguration = ({
   const stateOptions = useMemo(
     () =>
       states.map((s) => ({
-        label: s.state_name,
-        value: s.state_name,
+        label: s.name,
+        value: s.name,
         key: s.id,
       })),
     [states],
   );
   const cityOptions = useMemo(
     () =>
-      cities.map((c) => ({
-        label: c.city_name,
-        value: c.city_name,
+      districts.map((c) => ({
+        label: c.name,
+        value: c.name,
         key: c.id,
       })),
-    [cities],
+    [districts],
   );
   const areaOptions = useMemo(
-    () => areas.map((a) => ({ label: a.place, value: a.place, key: a.id })),
+    () => areas.map((a) => ({ label: a.name, value: a.name, key: a.id })),
     [areas],
   );
 
@@ -256,18 +256,16 @@ const LocationConfiguration = ({
       dispatch(fetchState({ countryId: country, search: "tamil nadu" }));
       // Sync display value
       const selected = countries.find((c) => c.id === country);
-      if (selected)
-        setCountrySearch(`${selected.country_flag} ${selected.country_name}`);
+      if (selected) setCountrySearch(`${selected.flag} ${selected.name}`);
     }
   }, [country, dispatch, countries]);
 
   useEffect(() => {
     if (state && country) {
       const selectedState = states.find((s) => s.id === state);
-      if (selectedState) setStateSearch(selectedState.state_name);
+      if (selectedState) setStateSearch(selectedState.name);
 
-      const isTamilNadu =
-        selectedState?.state_name.toLowerCase() === "tamil nadu";
+      const isTamilNadu = selectedState?.name.toLowerCase() === "tamil nadu";
 
       dispatch(
         fetchCities({
@@ -282,28 +280,28 @@ const LocationConfiguration = ({
 
   useEffect(() => {
     if (district && state && country) {
-      const selectedCity = cities.find((c) => c.id === district);
-      if (selectedCity) setDistrictSearch(selectedCity.city_name);
+      const selectedCity = districts.find((c) => c.id === district);
+      if (selectedCity) setDistrictSearch(selectedCity.name);
 
       dispatch(
         fetchAreas({
           countryId: country,
           stateId: state,
-          cityId: district,
+          districtId: district,
           limit: 20,
         }),
       );
     }
-  }, [district, state, country, dispatch, cities]);
+  }, [district, state, country, dispatch, districts]);
 
   // Sync Area display
   useEffect(() => {
     if (area) {
       const selected = areas.find((a) => a.id === area);
       if (selected) {
-        setAreaSearchValue(selected.place);
-        if (selected.zipcode && (!pincode || pincode === ""))
-          setPincode(selected.zipcode);
+        setAreaSearchValue(selected.name);
+        if (selected.pincode && (!pincode || pincode === ""))
+          setPincode(selected.pincode);
       } else {
         console.log(`[LocationConfig] Fetching area details for ID: ${area}`);
         dispatch(fetchAreaById(area))
@@ -329,8 +327,7 @@ const LocationConfiguration = ({
   useEffect(() => {
     if (countries.length > 0 && !country) {
       const india = countries.find(
-        (c) =>
-          c.country_code === "IN" || c.country_name.toLowerCase() === "india",
+        (c) => c.code === "IN" || c.code.toLowerCase() === "india",
       );
       if (india) {
         setCountry(india.id);
@@ -343,9 +340,7 @@ const LocationConfiguration = ({
 
   useEffect(() => {
     if (states.length > 0 && !state && country) {
-      const tn = states.find(
-        (s) => s.state_name.toLowerCase() === "tamil nadu",
-      );
+      const tn = states.find((s) => s.name.toLowerCase() === "tamil nadu");
       if (tn) {
         setState(tn.id);
         setDistrict("");
@@ -355,13 +350,13 @@ const LocationConfiguration = ({
   }, [states, state, country, setState, setDistrict, setArea]);
 
   useEffect(() => {
-    if (cities.length > 0 && !district && state) {
-      const chennai = cities.find((c) =>
-        c.city_name.toLowerCase().includes("chennai"),
+    if (districts.length > 0 && !district && state) {
+      const chennai = districts.find((c) =>
+        c.name.toLowerCase().includes("chennai"),
       );
       if (chennai) setDistrict(chennai.id);
     }
-  }, [cities, district, state, setDistrict]);
+  }, [districts, district, state, setDistrict]);
 
   useEffect(() => {
     return () => {
@@ -456,7 +451,7 @@ const LocationConfiguration = ({
               options={cityOptions}
               placeholder="Search and select district"
               notFoundContent={
-                isLoadingCities ? "Loading..." : "No cities found"
+                isLoadingCities ? "Loading..." : "No districts found"
               }
             />
           </div>

@@ -6,6 +6,7 @@ import {
   createPricingRuleWithSlots,
   fetchPricingFareRuleById,
   updatePricingRuleWithSlots,
+  fetchPricingFareRules,
 } from "../store/slices/pricingFareRulesSlice";
 import dayjs from "dayjs";
 import LocationConfiguration from "../components/DriverPricing/LocationConfiguration";
@@ -121,6 +122,45 @@ const DriverPricing = () => {
     }
   }, [id, dispatch, navigate]);
 
+  // Reset form to initial state
+  const resetFormState = () => {
+    setCountry("");
+    setState("");
+    setDistrict("");
+    setArea("");
+    setPincode("");
+    setGlobalPrice(1000);
+    setHotspotEnabled(true);
+    setHotspotId("");
+    setMultiplier(1);
+    setTimeSlots({
+      "normal-driver": [
+        {
+          id: 1,
+          day: "monday",
+          timeRange: [dayjs("9:00 AM", "h:mm A"), dayjs("11:00 AM", "h:mm A")],
+          price: 300,
+        },
+      ],
+      "premium-driver": [
+        {
+          id: 1,
+          day: "monday",
+          timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")],
+          price: 400,
+        },
+      ],
+      "elite-driver": [
+        {
+          id: 1,
+          day: "monday",
+          timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")],
+          price: 500,
+        },
+      ],
+    });
+  };
+
   // Transform and save pricing rule with time slots
   const handleSave = async () => {
     // Debug log to see what we're sending
@@ -137,10 +177,91 @@ const DriverPricing = () => {
       return;
     }
 
-    if (!area || area === "") {
-      message.error("Please select an area");
+    // Area is now optional - no validation needed
+
+    if (hotspotEnabled && !hotspotId) {
+      message.error("Please select a hotspot when hotspot is enabled");
       return;
     }
+
+    // Validate that we have at least one time slot
+    const totalSlots = Object.values(timeSlots).reduce(
+      (sum, slots) => sum + slots.length,
+      0,
+    );
+    if (totalSlots === 0) {
+      message.error("Please add at least one time slot");
+      return;
+    }
+
+    try {
+      // Transform time slots from object to array
+      const timeSlotsArray = Object.entries(timeSlots).flatMap(
+        ([driverType, slots]) =>
+          slots.map((slot) => {
+            if (!slot.timeRange) {
+              throw new Error(`Time range is required for all slots`);
+            }
+
+            return {
+              driver_types: driverType,
+              day: slot.day.toLowerCase(),
+              from_time: slot.timeRange[0].format("HH:mm:ss"),
+              to_time: slot.timeRange[1].format("HH:mm:ss"),
+              price: slot.price,
+            };
+          }),
+      );
+
+      const payload = {
+        area_id: area || null,
+        district_id: district,
+        global_price: globalPrice,
+        is_hotspot: hotspotEnabled,
+        hotspot_id: hotspotEnabled ? hotspotId : null,
+        multiplier: hotspotEnabled ? multiplier : null,
+        time_slots: timeSlotsArray,
+      };
+
+      console.log("Sending payload (corrected mapping):", payload);
+
+      if (id) {
+        // Update existing rule
+        await dispatch(
+          updatePricingRuleWithSlots({ id, data: payload }),
+        ).unwrap();
+        message.success("Pricing rule updated successfully!");
+      } else {
+        // Create new rule
+        await dispatch(createPricingRuleWithSlots(payload)).unwrap();
+        message.success("Pricing rule created successfully!");
+      }
+
+      // Refresh the pricing fare rules list
+      dispatch(
+        fetchPricingFareRules({
+          page: 1,
+          limit: 10,
+          include_time_slots: true,
+        }),
+      );
+
+      navigate("/PricingAndFareRules");
+    } catch (error: any) {
+      console.error("Save error:", error);
+      message.error(error || "Failed to save pricing rule");
+    }
+  };
+
+  // Save and add another pricing rule
+  const handleSaveAndAddAnother = async () => {
+    // Validation
+    if (!district || district === "") {
+      message.error("Please select a district (City)");
+      return;
+    }
+
+    // Area is now optional - no validation needed
 
     if (hotspotEnabled && !hotspotId) {
       message.error("Please select a hotspot when hotspot is enabled");
@@ -177,15 +298,9 @@ const DriverPricing = () => {
       );
 
       // Build the payload
-      // Note: Database schema naming is confusing:
-      // - district_id column references 'areas' table
-      // - city_id column references 'cities' table
-      // Frontend state:
-      // - 'district' state holds City ID (from City dropdown)
-      // - 'area' state holds Area ID (from Area dropdown)
       const payload = {
-        district_id: area, // Maps to 'areas' table
-        city_id: district, // Maps to 'cities' table
+        area_id: area || null, // Maps to 'areas' table - optional, empty string if not selected
+        district_id: district, // Maps to 'districts' table - required
         global_price: globalPrice,
         is_hotspot: hotspotEnabled,
         hotspot_id: hotspotEnabled ? hotspotId : null,
@@ -193,21 +308,32 @@ const DriverPricing = () => {
         time_slots: timeSlotsArray,
       };
 
-      console.log("Sending payload (corrected mapping):", payload);
-
       if (id) {
         // Update existing rule
         await dispatch(
           updatePricingRuleWithSlots({ id, data: payload }),
         ).unwrap();
         message.success("Pricing rule updated successfully!");
+
+        // Navigate to add mode (remove the ID from URL)
+        navigate("/PricingAndFareRules/pricing");
       } else {
         // Create new rule
         await dispatch(createPricingRuleWithSlots(payload)).unwrap();
         message.success("Pricing rule created successfully!");
       }
 
-      navigate("/PricingAndFareRules");
+      // Refresh the pricing fare rules list
+      dispatch(
+        fetchPricingFareRules({
+          page: 1,
+          limit: 10,
+          include_time_slots: true,
+        }),
+      );
+
+      // Reset form to initial state
+      resetFormState();
     } catch (error: any) {
       console.error("Save error:", error);
       message.error(error || "Failed to save pricing rule");
@@ -319,6 +445,8 @@ const DriverPricing = () => {
                     type="primary"
                     className="w-full sm:w-auto"
                     style={{ background: "#4CAF50" }}
+                    onClick={handleSaveAndAddAnother}
+                    loading={isLoading}
                   >
                     Save & Add Another
                   </Button>

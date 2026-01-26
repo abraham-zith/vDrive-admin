@@ -5,30 +5,30 @@ import axios from "axios";
 
 export interface Country {
   id: string;
-  country_code: string;
-  country_name: string;
-  country_flag: string;
+  code: string;
+  name: string;
+  flag: string;
 }
 export interface State {
   id: string;
-  state_code: string;
-  state_name: string;
+  code: string;
+  name: string;
   country_id: string;
 }
 export interface City {
   id: string;
-  city_name: string;
+  name: string;
   state_id: string;
   country_id: string;
 }
 
 export interface Area {
   id: string;
-  place: string;
+  name: string;
   city_id: string;
   state_id: string;
   country_id: string;
-  zipcode: string;
+  pincode: string;
 }
 
 interface LocationState {
@@ -40,7 +40,7 @@ interface LocationState {
   isLoadingStates: boolean;
   stateError: string | null;
   totalStates: number;
-  cities: City[];
+  districts: City[];
   isLoadingCities: boolean;
   cityError: string | null;
   totalCities: number;
@@ -59,7 +59,7 @@ const initialState: LocationState = {
   isLoadingStates: false,
   stateError: null,
   totalStates: 0,
-  cities: [],
+  districts: [],
   isLoadingCities: false,
   cityError: null,
   totalCities: 0,
@@ -174,6 +174,7 @@ export const fetchCities = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
+      console.log({ countryId, stateId, search, limit });
       if (cityCancelTokenSource) {
         cityCancelTokenSource.cancel("Operation canceled due to new request.");
       }
@@ -182,10 +183,10 @@ export const fetchCities = createAsyncThunk(
       const params = new URLSearchParams();
       params.append("limit", limit.toString());
       if (search) params.append("search", search);
-      if (stateId) params.append("state_id", stateId);
+      // if (countryId) params.append("country_id", countryId);
 
       const response = await axiosIns.get(
-        `/api/locations/cities/${countryId}?${params.toString()}`,
+        `/api/locations/districts/${stateId}?${params.toString()}`,
         { cancelToken: cityCancelTokenSource.token },
       );
       return response.data.data;
@@ -202,13 +203,13 @@ export const fetchAreas = createAsyncThunk(
     {
       countryId,
       stateId = null,
-      cityId = null,
+      districtId = null,
       search = "",
       limit = 20,
     }: {
       countryId: string;
       stateId?: string | null;
-      cityId?: string | null;
+      districtId?: string | null;
       search?: string;
       limit?: number;
     },
@@ -223,11 +224,11 @@ export const fetchAreas = createAsyncThunk(
       const params = new URLSearchParams();
       params.append("limit", limit.toString());
       if (search) params.append("search", search);
-      if (stateId) params.append("state_id", stateId);
-      if (cityId) params.append("city_id", cityId);
+      // if (stateId) params.append("state_id", stateId);
+      // if (districtId) params.append("city_id", districtId);
 
       const response = await axiosIns.get(
-        `/api/locations/areas/${countryId}?${params.toString()}`,
+        `/api/locations/areas/${districtId}?${params.toString()}`,
         { cancelToken: areaCancelTokenSource.token },
       );
       return response.data.data;
@@ -353,7 +354,7 @@ const locationSlice = createSlice({
       state.stateError = null;
     },
     clearCities: (state) => {
-      state.cities = [];
+      state.districts = [];
       state.totalCities = 0;
     },
     clearCityError: (state) => {
@@ -420,14 +421,14 @@ const locationSlice = createSlice({
         fetchCities.fulfilled,
         (state, action: PayloadAction<{ data: City[]; total: number }>) => {
           state.isLoadingCities = false;
-          state.cities = action.payload.data;
+          state.districts = action.payload.data;
           state.totalCities = action.payload.total;
         },
       )
       .addCase(fetchCities.rejected, (state, action) => {
         if (action.payload !== "cancelled") {
           state.isLoadingCities = false;
-          state.cityError = action.error.message || "Failed to fetch cities";
+          state.cityError = action.error.message || "Failed to fetch districts";
         }
       })
       .addCase(fetchAreas.pending, (state) => {

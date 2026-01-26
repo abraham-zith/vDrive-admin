@@ -21,6 +21,7 @@ interface PricingPreviewProps {
   hotspotEnabled: boolean;
   hotspotId: string;
   multiplier: number;
+  globalPrice: number;
 }
 
 const PricingPreview = ({
@@ -33,6 +34,7 @@ const PricingPreview = ({
   hotspotEnabled,
   hotspotId,
   multiplier,
+  globalPrice,
 }: PricingPreviewProps) => {
   console.log({
     country,
@@ -44,6 +46,7 @@ const PricingPreview = ({
     hotspotEnabled,
     hotspotId,
     multiplier,
+    globalPrice,
   });
   const dispatch = useAppDispatch();
   const { hotspots } = useAppSelector((state) => state.hotspot);
@@ -62,9 +65,8 @@ const PricingPreview = ({
   const hotspotFare = selectedHotspot ? Number(selectedHotspot.fare) : 0;
 
   // Find labels from Redux data
-  const countryLabel =
-    countries.find((c) => c.id === country)?.country_name || country;
-  const stateLabel = states.find((s) => s.id === state)?.state_name || state;
+  const countryLabel = countries.find((c) => c.id === country)?.name || country;
+  const stateLabel = states.find((s) => s.id === state)?.name || state;
   const districtLabel = district || "N/A";
   const areaLabel = area || "N/A";
   const pincodeLabel = pincode || "N/A";
