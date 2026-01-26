@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Table, Space, Card, Tag, Modal, Spin } from "antd";
+import { Button, Table, Space, Card, Tag, Modal } from "antd";
 import {
   DownloadOutlined,
   EyeOutlined,
@@ -12,7 +12,6 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
   fetchPricingFareRules,
-  clearFareRules,
   setPage,
   setPageSize,
 } from "../store/slices/pricingFareRulesSlice";
@@ -117,15 +116,15 @@ const PricingAndFareRules: React.FC = () => {
       dataIndex: "state_id", // Should probably resolve name
       key: "state_name",
       width: 120,
-      render: () => "Tamil Nadu", // Placeholder
+      render: (_, record) => record.state_name, // Placeholder
     },
     {
-      title: "District (City)", // Updated label based on schema confusion
+      title: "District", // Updated label based on schema confusion
       dataIndex: "district_name", // Displaying City Name for "District" column
       key: "district_name",
       width: 150,
       ellipsis: true,
-      render: (text, record) => record.district_name || "All",
+      render: (_, record) => record.district_name || "All",
     },
     {
       title: "Area",

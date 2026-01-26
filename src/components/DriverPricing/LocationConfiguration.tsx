@@ -7,11 +7,11 @@ import {
   InputNumber,
   Modal,
   Space,
-  message,
 } from "antd";
+import { messageApi as message } from "../../utilities/antdStaticHolder";
 import { MdOutlineLocationOn } from "react-icons/md";
 import { PlusOutlined } from "@ant-design/icons";
-import { useEffect, useCallback, useMemo, useState } from "react";
+import { useEffect, useCallback, useMemo, useState, useRef } from "react";
 import { debounce, startCase } from "lodash";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
@@ -20,9 +20,6 @@ import {
   fetchCities,
   fetchCountries,
   fetchState,
-  fetchCountryById,
-  fetchStateById,
-  fetchCityById,
   fetchAreaById,
 } from "../../store/slices/locationSlice";
 
@@ -66,6 +63,11 @@ const LocationConfiguration = ({
     areas,
     isLoadingAreas,
   } = useAppSelector((state) => state.location);
+
+  // One-time initialization refs to support "Defaults -> Editable" workflow
+  const countryInitialized = useRef(false);
+  const stateInitialized = useRef(false);
+  const districtInitialized = useRef(false);
 
   const [areaSearchValue, setAreaSearchValue] = useState("");
   const [createAreaName, setCreateAreaName] = useState(""); // Snapshot for modal
@@ -149,12 +151,12 @@ const LocationConfiguration = ({
     setPincode(e.target.value);
   };
 
-  const handleAreaSelect = (value: string, option: any) => {
+  const handleAreaSelect = (_value: string, option: any) => {
     setArea(option.key); // option.key stores the ID
     setAreaSearchValue(option.label); // Keep the selected name visible
     const selectedArea = areas.find((a) => a.id === option.key);
-    if (selectedArea && selectedArea.zipcode) {
-      setPincode(selectedArea.zipcode);
+    if (selectedArea && selectedArea.pincode) {
+      setPincode(selectedArea.pincode);
     }
   };
 
@@ -174,7 +176,7 @@ const LocationConfiguration = ({
           place: createAreaName,
           country_id: country,
           state_id: state,
-          city_id: district,
+          district_id: district,
           zipcode: createZipcode,
         }),
       );
@@ -248,12 +250,28 @@ const LocationConfiguration = ({
   );
 
   useEffect(() => {
-    dispatch(fetchCountries({ limit: 20, search: "india" }));
+    // Initial fetch searches for India to ensure it is available for auto-selection
+    dispatch(fetchCountries({ limit: 100, search: "india" }));
   }, [dispatch]);
 
   useEffect(() => {
     if (country) {
-      dispatch(fetchState({ countryId: country, search: "tamil nadu" }));
+      // Search for Tamil Nadu only during initialization if country is India
+      let searchTerm = "";
+      if (!stateInitialized.current) {
+        const selectedCountry = countries.find((c) => c.id === country);
+        if (
+          selectedCountry &&
+          (selectedCountry.code === "IN" ||
+            selectedCountry.code.toLowerCase() === "india")
+        ) {
+          searchTerm = "tamil nadu";
+        }
+      }
+
+      dispatch(
+        fetchState({ countryId: country, search: searchTerm, limit: 100 }),
+      );
       // Sync display value
       const selected = countries.find((c) => c.id === country);
       if (selected) setCountrySearch(`${selected.flag} ${selected.name}`);
@@ -265,13 +283,23 @@ const LocationConfiguration = ({
       const selectedState = states.find((s) => s.id === state);
       if (selectedState) setStateSearch(selectedState.name);
 
-      const isTamilNadu = selectedState?.name.toLowerCase() === "tamil nadu";
+      // Search for Chennai only during initialization if state is Tamil Nadu
+      let searchTerm = "";
+      if (!districtInitialized.current) {
+        const selectedState = states.find((s) => s.id === state);
+        if (
+          selectedState &&
+          selectedState.name.toLowerCase() === "tamil nadu"
+        ) {
+          searchTerm = "chennai";
+        }
+      }
 
       dispatch(
         fetchCities({
           countryId: country,
           stateId: state,
-          search: isTamilNadu ? "chennai" : "",
+          search: searchTerm,
           limit: 100,
         }),
       );
@@ -323,40 +351,88 @@ const LocationConfiguration = ({
     }
   }, [area, areas, dispatch]); // dependency on pincode removed to avoid loop
 
-  // Initial Auto-select Logic
+  // One-time Auto-select Logic for India
+  // Only auto-select if country is empty (create mode)
   useEffect(() => {
-    if (countries.length > 0 && !country) {
+    // If country already has a value, mark as initialized to skip auto-select
+    if (country) {
+      countryInitialized.current = true;
+      return;
+    }
+
+    if (
+      !countryInitialized.current &&
+      countries.length > 0 &&
+      !country &&
+      !isLoadingCountries
+    ) {
       const india = countries.find(
         (c) => c.code === "IN" || c.code.toLowerCase() === "india",
       );
       if (india) {
         setCountry(india.id);
-        setState("");
-        setDistrict("");
-        setArea("");
+        countryInitialized.current = true;
       }
     }
-  }, [countries, country, setCountry, setState, setDistrict, setArea]);
+  }, [countries, country, setCountry, isLoadingCountries]);
 
+  // One-time Auto-select Logic for Tamil Nadu
+  // Only auto-select if state is empty (create mode)
   useEffect(() => {
-    if (states.length > 0 && !state && country) {
-      const tn = states.find((s) => s.name.toLowerCase() === "tamil nadu");
-      if (tn) {
-        setState(tn.id);
-        setDistrict("");
-        setArea("");
+    // If state already has a value, mark as initialized to skip auto-select
+    if (state) {
+      stateInitialized.current = true;
+      return;
+    }
+
+    if (
+      !stateInitialized.current &&
+      states.length > 0 &&
+      !state &&
+      country &&
+      !isLoadingStates
+    ) {
+      // confirm country is India before forcing TN
+      const selectedCountry = countries.find((c) => c.id === country);
+      if (
+        selectedCountry &&
+        (selectedCountry.code === "IN" ||
+          selectedCountry.code.toLowerCase() === "india")
+      ) {
+        const tn = states.find((s) => s.name.toLowerCase() === "tamil nadu");
+        if (tn) {
+          setState(tn.id);
+          stateInitialized.current = true;
+        }
       }
     }
-  }, [states, state, country, setState, setDistrict, setArea]);
+  }, [states, state, country, setState, countries, isLoadingStates]);
 
+  // One-time Auto-select Logic for Chennai
+  // Only auto-select if district is empty (create mode)
   useEffect(() => {
-    if (districts.length > 0 && !district && state) {
+    // If district already has a value, mark as initialized to skip auto-select
+    if (district) {
+      districtInitialized.current = true;
+      return;
+    }
+
+    if (
+      !districtInitialized.current &&
+      districts.length > 0 &&
+      !district &&
+      state &&
+      !isLoadingCities
+    ) {
       const chennai = districts.find((c) =>
         c.name.toLowerCase().includes("chennai"),
       );
-      if (chennai) setDistrict(chennai.id);
+      if (chennai) {
+        setDistrict(chennai.id);
+        districtInitialized.current = true;
+      }
     }
-  }, [districts, district, state, setDistrict]);
+  }, [districts, district, state, setDistrict, isLoadingCities]);
 
   useEffect(() => {
     return () => {
@@ -468,7 +544,7 @@ const LocationConfiguration = ({
               options={areaOptions}
               placeholder="Search or create area"
               notFoundContent={isLoadingAreas ? "Loading..." : "No areas found"}
-              dropdownRender={(menu) => (
+              popupRender={(menu) => (
                 <>
                   {menu}
                   {areaSearchValue &&

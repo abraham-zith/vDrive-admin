@@ -15,7 +15,7 @@ export interface State {
   name: string;
   country_id: string;
 }
-export interface City {
+export interface District {
   id: string;
   name: string;
   state_id: string;
@@ -25,7 +25,7 @@ export interface City {
 export interface Area {
   id: string;
   name: string;
-  city_id: string;
+  district_id: string;
   state_id: string;
   country_id: string;
   pincode: string;
@@ -40,7 +40,7 @@ interface LocationState {
   isLoadingStates: boolean;
   stateError: string | null;
   totalStates: number;
-  districts: City[];
+  districts: District[];
   isLoadingCities: boolean;
   cityError: string | null;
   totalCities: number;
@@ -201,8 +201,8 @@ export const fetchAreas = createAsyncThunk(
   "location/fetchAreas",
   async (
     {
-      countryId,
-      stateId = null,
+      countryId: _countryId,
+      stateId: _stateId = null,
       districtId = null,
       search = "",
       limit = 20,
@@ -246,7 +246,7 @@ export const createArea = createAsyncThunk(
       place: string;
       country_id: string;
       state_id?: string | null;
-      city_id?: string | null;
+      district_id?: string | null;
       zipcode?: string | null;
     },
     { rejectWithValue },
@@ -307,15 +307,15 @@ export const fetchStateById = createAsyncThunk(
   },
 );
 
-export const fetchCityById = createAsyncThunk(
-  "location/fetchCityById",
+export const fetchDistrictById = createAsyncThunk(
+  "location/fetchDistrictById",
   async (id: string, { rejectWithValue }) => {
     try {
-      const response = await axiosIns.get(`/api/locations/city/${id}`);
+      const response = await axiosIns.get(`/api/locations/district/${id}`);
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch city",
+        error.response?.data?.message || "Failed to fetch district",
       );
     }
   },
@@ -419,7 +419,7 @@ const locationSlice = createSlice({
       })
       .addCase(
         fetchCities.fulfilled,
-        (state, action: PayloadAction<{ data: City[]; total: number }>) => {
+        (state, action: PayloadAction<{ data: District[]; total: number }>) => {
           state.isLoadingCities = false;
           state.districts = action.payload.data;
           state.totalCities = action.payload.total;
@@ -455,14 +455,14 @@ const locationSlice = createSlice({
         // However, LocationConfiguration will likely use the returned payload to set the value.
         state.areas.push(action.payload);
       })
-      .addCase(fetchLocationByZipcode.pending, (state) => {
+      .addCase(fetchLocationByZipcode.pending, () => {
         // You might want to track loading state for autofill specifically if needed
       })
-      .addCase(fetchLocationByZipcode.fulfilled, (state, action) => {
+      .addCase(fetchLocationByZipcode.fulfilled, () => {
         // Data handling happens in the component usually for autofill, but we could update state here if needed
         // For now, the component unwraps the result and uses it directly.
       })
-      .addCase(fetchLocationByZipcode.rejected, (state, action) => {
+      .addCase(fetchLocationByZipcode.rejected, () => {
         // Error handling
       });
   },

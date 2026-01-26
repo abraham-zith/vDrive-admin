@@ -8,11 +8,11 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Spin,
   Popconfirm,
   Tag,
 } from "antd";
+import { messageApi as message } from "../../utilities/antdStaticHolder";
 import {
   PlusOutlined,
   EditOutlined,
@@ -241,7 +241,7 @@ const HotspotTypes = () => {
                 min={0}
                 placeholder="40"
                 style={{ width: "100%" }}
-                addonBefore="₹"
+                prefix="₹"
                 step={0.01}
                 precision={2}
               />

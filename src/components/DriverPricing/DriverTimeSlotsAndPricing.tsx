@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Input,
-  List,
   Segmented,
   Select,
   Tag,
@@ -124,7 +123,7 @@ const TimeSlotItem = ({
               updateTimeSlot(index, { price: Number(e.target.value) })
             }
             type="number"
-            addonBefore="₹"
+            prefix="₹"
           />
         </div>
       </div>
@@ -368,19 +367,15 @@ const DriverTimeSlotsAndPricing = ({
           </div>
         </div>
         <div className="max-h-[37vh] overflow-y-auto pr-1">
-          <List
-            size="small"
-            split={false}
-            itemLayout="horizontal"
-            dataSource={timeSlots[userType]}
-            renderItem={(item, index) => {
+          <div className="flex flex-col gap-2">
+            {timeSlots[userType].map((item, index) => {
               const hasCollision = hasTimeCollision(
                 item.day,
                 item.timeRange,
                 index,
               );
               return (
-                <List.Item className="py-0">
+                <div key={index} className="py-0">
                   <TimeSlotItem
                     slot={item}
                     index={index}
@@ -389,10 +384,10 @@ const DriverTimeSlotsAndPricing = ({
                     globalPrice={globalPrice}
                     hasCollision={hasCollision}
                   />
-                </List.Item>
+                </div>
               );
-            }}
-          />
+            })}
+          </div>
         </div>
 
         {hotspotEnabled && selectedHotspot && (

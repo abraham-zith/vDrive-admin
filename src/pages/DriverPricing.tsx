@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Segmented, Button, Card, Drawer, message } from "antd";
+import { Segmented, Button, Card, Drawer } from "antd";
+import { messageApi as message } from "../utilities/antdStaticHolder";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
@@ -24,9 +25,7 @@ const DriverPricing = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const dispatch = useAppDispatch();
-  const { isLoading, fareRules } = useAppSelector(
-    (state) => state.pricingFareRules,
-  );
+  const { isLoading } = useAppSelector((state) => state.pricingFareRules);
   const [country, setCountry] = useState(""); // Default
   const [state, setState] = useState(""); // Default
   const [district, setDistrict] = useState("");
@@ -52,7 +51,9 @@ const DriverPricing = () => {
         .unwrap()
         .then((data) => {
           console.log({ data });
-          setDistrict(data.city_id || "");
+          setCountry(data.country_id || "");
+          setState(data.state_id || "");
+          setDistrict(data.district_id || "");
           setArea(data.area_id || "");
           setPincode(data.pincode || "");
           setGlobalPrice(Number(data.global_price));
@@ -69,8 +70,9 @@ const DriverPricing = () => {
 
           if (data.time_slots) {
             data.time_slots.forEach((slot: any, index: number) => {
-              if (newSlots[slot.driver_types]) {
-                newSlots[slot.driver_types].push({
+              const driverType = slot.driver_types as keyof UserTimeSlots;
+              if (newSlots[driverType]) {
+                newSlots[driverType].push({
                   id: index + 1, // Simple ID generation
                   day: slot.day,
                   timeRange: [
@@ -84,7 +86,7 @@ const DriverPricing = () => {
           }
           setTimeSlots(newSlots);
         })
-        .catch((err) => {
+        .catch(() => {
           message.error("Failed to fetch pricing rule details");
           navigate("/PricingAndFareRules");
         });
@@ -173,7 +175,7 @@ const DriverPricing = () => {
 
     // Validation
     if (!district || district === "") {
-      message.error("Please select a district (City)");
+      message.error("Please select a district");
       return;
     }
 
@@ -198,7 +200,7 @@ const DriverPricing = () => {
       // Transform time slots from object to array
       const timeSlotsArray = Object.entries(timeSlots).flatMap(
         ([driverType, slots]) =>
-          slots.map((slot) => {
+          slots.map((slot: any) => {
             if (!slot.timeRange) {
               throw new Error(`Time range is required for all slots`);
             }
@@ -257,7 +259,7 @@ const DriverPricing = () => {
   const handleSaveAndAddAnother = async () => {
     // Validation
     if (!district || district === "") {
-      message.error("Please select a district (City)");
+      message.error("Please select a district");
       return;
     }
 
@@ -282,7 +284,7 @@ const DriverPricing = () => {
       // Transform time slots from object to array
       const timeSlotsArray = Object.entries(timeSlots).flatMap(
         ([driverType, slots]) =>
-          slots.map((slot) => {
+          slots.map((slot: any) => {
             if (!slot.timeRange) {
               throw new Error(`Time range is required for all slots`);
             }
@@ -473,6 +475,7 @@ const DriverPricing = () => {
             hotspotEnabled={hotspotEnabled}
             hotspotId={hotspotId}
             multiplier={multiplier}
+            globalPrice={globalPrice}
           />
         </div>
       </Drawer>

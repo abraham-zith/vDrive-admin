@@ -221,7 +221,7 @@ const hotspotSlice = createSlice({
       })
       .addCase(
         fetchHotspotById.fulfilled,
-        (state, action: PayloadAction<Hotspot>) => {
+        (state, _action: PayloadAction<Hotspot>) => {
           state.isLoading = false;
         },
       )

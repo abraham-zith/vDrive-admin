@@ -5,8 +5,12 @@ import axios from "axios";
 
 export interface PricingFareRule {
   id: string;
+  country_name: string;
+  country_id: string;
+  state_name: string | null;
+  state_id: string | null;
   district_name: string | null;
-  city_id: string | null;
+  district_id: string | null;
   area_name: string;
   area_id: string;
   global_price: number;
@@ -37,7 +41,7 @@ interface PricingFareRulesState {
   pageSize: number;
   filters: {
     search?: string;
-    city_id?: string;
+    area_id?: string;
     district_id?: string;
     is_hotspot?: boolean;
   };
@@ -65,7 +69,7 @@ export const fetchPricingFareRules = createAsyncThunk(
       page = 1,
       limit = 10,
       search = "",
-      city_id,
+      area_id,
       district_id,
       is_hotspot,
       include_time_slots = false,
@@ -73,7 +77,7 @@ export const fetchPricingFareRules = createAsyncThunk(
       page?: number;
       limit?: number;
       search?: string;
-      city_id?: string;
+      area_id?: string;
       district_id?: string;
       is_hotspot?: boolean;
       include_time_slots?: boolean;
@@ -93,7 +97,7 @@ export const fetchPricingFareRules = createAsyncThunk(
       params.append("page", page.toString());
       params.append("limit", limit.toString());
       if (search) params.append("search", search);
-      if (city_id) params.append("city_id", city_id);
+      if (area_id) params.append("area_id", area_id);
       if (district_id) params.append("district_id", district_id);
       if (is_hotspot !== undefined)
         params.append("is_hotspot", String(is_hotspot));
@@ -142,7 +146,7 @@ export const createPricingRuleWithSlots = createAsyncThunk(
   async (
     data: {
       district_id: string;
-      city_id?: string | null;
+      area_id?: string | null;
       global_price: number;
       is_hotspot: boolean;
       hotspot_id?: string | null;
@@ -183,7 +187,7 @@ export const updatePricingRuleWithSlots = createAsyncThunk(
       id: string;
       data: {
         district_id?: string;
-        city_id?: string | null;
+        area_id?: string | null;
         global_price?: number;
         is_hotspot?: boolean;
         hotspot_id?: string | null;
