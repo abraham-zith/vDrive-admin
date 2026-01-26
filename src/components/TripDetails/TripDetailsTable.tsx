@@ -569,7 +569,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
     </div>
   );
 
-  const handleCancelTrip = async (trip: TripDetail) => {
+  const handleCancelTrip = async (trip: TripDetailsType | null) => {
     if (!trip) return;
 
     // later API:
@@ -593,7 +593,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
     </div>
   );
 
-  const handleTriggerDrivers = async (trip: TripDetail) => {
+  const handleTriggerDrivers = async (trip: TripDetailsType | null) => {
     if (!trip) return;
 
     // later API
@@ -617,10 +617,10 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
         confirmAdjustFare(actionTrip);
         break;
       case "CANCEL_TRIP":
-        confirmCancelTrip(actionTrip);
+        handleCancelTrip(actionTrip);
         break;
       case "TRIGGER_DRIVER":
-        confirmTriggerDrivers(actionTrip);
+        handleTriggerDrivers(actionTrip);
         break;
     }
 
@@ -648,8 +648,8 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
         activeAction={activeAction}
         onAssignDriverClick={() => confirmAssignDriver(trip)}
         onAdjustFareClick={() => confirmAdjustFare(trip)}
-        onCancelTripClick={() => confirmCancelTrip(trip)}
-        onTriggerDriversClick={() => confirmTriggerDrivers(trip)}
+        onCancelTripClick={() => handleCancelTrip(trip)}
+        onTriggerDriversClick={() => handleTriggerDrivers(trip)}
         getAssignDriverPopconfirmProps={getAssignDriverPopconfirmProps}
         isTripCompleted={isTripCompleted}
         isDriverAssigned={isDriverAssigned}

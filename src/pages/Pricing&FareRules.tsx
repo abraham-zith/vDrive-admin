@@ -250,11 +250,11 @@ const PricingAndFareRules: React.FC = () => {
             <div className="max-h-[70vh] overflow-y-auto">
               {/* Reuse existing Preview Component */}
               <PricingPreview
-                country="India" // Placeholder
-                state="Tamil Nadu" // Placeholder
-                district={previewRule.district_name || "-"} // Mapping City -> District label
-                area={previewRule.area_name || "-"} // Mapping Area -> Area label
-                pincode={previewRule.pincode || "-"}
+                country={previewRule.country_name || ""}
+                state={previewRule.state_name || ""}
+                district={previewRule.district_name || ""}
+                area={previewRule.area_name || ""}
+                pincode={previewRule.pincode || ""}
                 globalPrice={Number(previewRule.global_price)}
                 hotspotEnabled={previewRule.is_hotspot}
                 hotspotId={previewRule.hotspot_name || ""}

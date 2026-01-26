@@ -44,6 +44,12 @@ const DriverPricing = () => {
   const [hotspotId, setHotspotId] = useState("");
   const [multiplier, setMultiplier] = useState(1);
 
+  // Store initial names from API response for edit mode
+  const [initialCountryName, setInitialCountryName] = useState<string>();
+  const [initialStateName, setInitialStateName] = useState<string>();
+  const [initialDistrictName, setInitialDistrictName] = useState<string>();
+  const [initialAreaName, setInitialAreaName] = useState<string>();
+
   // Fetch data if editing
   useEffect(() => {
     if (id) {
@@ -59,6 +65,12 @@ const DriverPricing = () => {
           setHotspotEnabled(data.is_hotspot);
           setHotspotId(data.hotspot_id || "");
           setMultiplier(Number(data.multiplier) || 1);
+
+          // Store initial names for display (professional approach)
+          setInitialCountryName(data.country_name);
+          setInitialStateName(data.state_name);
+          setInitialDistrictName(data.district_name);
+          setInitialAreaName(data.area_name);
 
           // Transform time slots
           const newSlots: UserTimeSlots = {
@@ -457,10 +469,10 @@ const DriverPricing = () => {
       >
         <div className="lg:col-span-1">
           <PricingPreview
-            country={country}
-            state={state}
-            district={district}
-            area={area}
+            country={initialCountryName || ""}
+            state={initialStateName || ""}
+            district={initialDistrictName || ""}
+            area={initialAreaName || ""}
             pincode={pincode}
             timeSlots={timeSlots}
             hotspotEnabled={hotspotEnabled}

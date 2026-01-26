@@ -34,7 +34,6 @@ const PricingPreview = ({
   hotspotEnabled,
   hotspotId,
   multiplier,
-  globalPrice,
 }: PricingPreviewProps) => {
   const dispatch = useAppDispatch();
   const { hotspots } = useAppSelector((state) => state.hotspot);
@@ -55,16 +54,15 @@ const PricingPreview = ({
   // Find labels from Redux data
   const countryLabel = countries.find((c) => c.id === country)?.name || country;
   const stateLabel = states.find((s) => s.id === state)?.name || state;
-  const districtLabel = district || "N/A";
-  const areaLabel = area || "N/A";
-  const pincodeLabel = pincode || "N/A";
+  const districtLabel = district || "";
+  const areaLabel = area || "";
+  const pincodeLabel = pincode || "";
 
   const userTypeTags = {
     "normal-driver": <Tag color="default">Normal Driver</Tag>,
     "premium-driver": <Tag color="gold">Premium Driver</Tag>,
     "elite-driver": <Tag color="blue">Elite Driver</Tag>,
   };
-
   return (
     <Card size="small" className="w-full">
       <div className="w-full flex flex-col gap-4">
@@ -82,8 +80,15 @@ const PricingPreview = ({
 
             <div className="p-2 bg-[#F8F9FA] rounded-md">
               <span className="text-sm break-all">
-                {countryLabel} - {stateLabel} - {districtLabel} - {areaLabel} -{" "}
-                {pincodeLabel}
+                {[
+                  countryLabel,
+                  stateLabel,
+                  districtLabel,
+                  areaLabel,
+                  pincodeLabel,
+                ]
+                  .filter((x) => x.trim() !== "" && x.trim() !== "N/A")
+                  .join(" - ")}
               </span>
             </div>
           </div>

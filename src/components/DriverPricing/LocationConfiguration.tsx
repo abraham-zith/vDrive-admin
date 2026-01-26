@@ -21,6 +21,7 @@ import {
   fetchCountries,
   fetchState,
   fetchAreaById,
+  fetchDistrictById,
 } from "../../store/slices/locationSlice";
 
 interface LocationConfigurationProps {
@@ -101,7 +102,6 @@ const LocationConfiguration = ({
     debounce((searchValue: string) => {
       dispatch(
         fetchCities({
-          countryId: country,
           stateId: state,
           search: searchValue,
           limit: 100,
@@ -256,9 +256,14 @@ const LocationConfiguration = ({
 
   useEffect(() => {
     if (country) {
-      // Search for Tamil Nadu only during initialization if country is India
+      // If state is already set (edit mode), mark as initialized to skip search filter
+      if (state) {
+        stateInitialized.current = true;
+      }
+
+      // Search for Tamil Nadu only during initialization if country is India AND state not yet set
       let searchTerm = "";
-      if (!stateInitialized.current) {
+      if (!stateInitialized.current && !state) {
         const selectedCountry = countries.find((c) => c.id === country);
         if (
           selectedCountry &&
@@ -276,16 +281,21 @@ const LocationConfiguration = ({
       const selected = countries.find((c) => c.id === country);
       if (selected) setCountrySearch(`${selected.flag} ${selected.name}`);
     }
-  }, [country, dispatch, countries]);
+  }, [country, dispatch, countries, state]);
 
   useEffect(() => {
     if (state && country) {
       const selectedState = states.find((s) => s.id === state);
       if (selectedState) setStateSearch(selectedState.name);
 
-      // Search for Chennai only during initialization if state is Tamil Nadu
+      // If district is already set (edit mode), mark as initialized to skip search filter
+      if (district) {
+        districtInitialized.current = true;
+      }
+
+      // Search for Chennai only during initialization if state is Tamil Nadu AND district not yet set
       let searchTerm = "";
-      if (!districtInitialized.current) {
+      if (!districtInitialized.current && !district) {
         const selectedState = states.find((s) => s.id === state);
         if (
           selectedState &&
@@ -297,20 +307,37 @@ const LocationConfiguration = ({
 
       dispatch(
         fetchCities({
-          countryId: country,
           stateId: state,
           search: searchTerm,
           limit: 100,
         }),
       );
     }
-  }, [state, country, dispatch, states]);
+  }, [state, country, dispatch, states, district]);
 
+  // Proper solution: Fetch district by ID if we have one and ensure it's in the list
   useEffect(() => {
     if (district && state && country) {
+      // Check if district is already in the list
       const selectedCity = districts.find((c) => c.id === district);
-      if (selectedCity) setDistrictSearch(selectedCity.name);
 
+      if (!selectedCity) {
+        // District not in list - fetch it by ID
+        dispatch(fetchDistrictById(district))
+          .unwrap()
+          .then((fetchedDistrict: { name: string }) => {
+            // Set display value once fetched
+            setDistrictSearch(fetchedDistrict.name);
+          })
+          .catch(() => {
+            // Handle error silently or show notification
+          });
+      } else {
+        // District already in list - just sync display value
+        setDistrictSearch(selectedCity.name);
+      }
+
+      // Fetch areas regardless
       dispatch(
         fetchAreas({
           countryId: country,

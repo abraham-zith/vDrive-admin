@@ -161,12 +161,10 @@ export const fetchCities = createAsyncThunk(
   "location/fetchCities",
   async (
     {
-      countryId,
       stateId = null,
       search = "",
       limit = 20,
     }: {
-      countryId: string;
       stateId?: string | null;
       search?: string;
       limit?: number;
@@ -182,7 +180,6 @@ export const fetchCities = createAsyncThunk(
       const params = new URLSearchParams();
       params.append("limit", limit.toString());
       if (search) params.append("search", search);
-      // if (countryId) params.append("country_id", countryId);
 
       const response = await axiosIns.get(
         `/api/locations/districts/${stateId}?${params.toString()}`,
@@ -306,14 +303,19 @@ export const fetchStateById = createAsyncThunk(
 
 export const fetchDistrictById = createAsyncThunk(
   "location/fetchDistrictById",
-  async (id: string, { rejectWithValue }) => {
+  async (districtId: string, { rejectWithValue }) => {
     try {
-      const response = await axiosIns.get(`/api/locations/district/${id}`);
-      return response.data.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch district",
+      const response = await axiosIns.get(
+        `/api/locations/district/${districtId}`,
       );
+      return response.data.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(
+          error.response?.data?.message || "Failed to fetch district",
+        );
+      }
+      return rejectWithValue("Failed to fetch district");
     }
   },
 );
@@ -461,7 +463,19 @@ const locationSlice = createSlice({
       })
       .addCase(fetchLocationByZipcode.rejected, () => {
         // Error handling
-      });
+      })
+      .addCase(
+        fetchDistrictById.fulfilled,
+        (state, action: PayloadAction<District>) => {
+          // Add the district to the districts array if not already present
+          const exists = state.districts.find(
+            (d) => d.id === action.payload.id,
+          );
+          if (!exists) {
+            state.districts.push(action.payload);
+          }
+        },
+      );
   },
 });
 
