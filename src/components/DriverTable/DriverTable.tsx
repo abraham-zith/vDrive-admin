@@ -7,12 +7,12 @@ import {
   Rate,
   Avatar,
   Tooltip,
-  message,
   Button,
   Input,
   Space,
   Dropdown,
 } from "antd";
+import { messageApi as message } from "../../utilities/antdStaticHolder";
 import type { ColumnsType } from "antd/es/table";
 
 import Highlighter from "react-highlight-words";

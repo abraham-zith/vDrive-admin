@@ -232,19 +232,19 @@ const DeductionTable: React.FC<DeductionTableProps> = ({ data }) => {
       {
         title: "Actions",
         key: "actions",
-        render: (_: any, record: Deduction) => (
+        render: () => (
           <Space>
             <Button
               icon={<EyeOutlined />}
               size="small"
               type="default"
-              onClick={() => console.log("View", record.id)}
+              onClick={() => {}}
             />
             <Button
               icon={<DownloadOutlined />}
               size="small"
               type="primary"
-              onClick={() => console.log("Download", record.id)}
+              onClick={() => {}}
             />
           </Space>
         ),

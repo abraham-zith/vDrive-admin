@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Segmented, Button, Card, Drawer } from "antd";
-import { useNavigate } from "react-router-dom";
+import { messageApi as message } from "../utilities/antdStaticHolder";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  createPricingRuleWithSlots,
+  fetchPricingFareRuleById,
+  updatePricingRuleWithSlots,
+  fetchPricingFareRules,
+} from "../store/slices/pricingFareRulesSlice";
 import dayjs from "dayjs";
 import LocationConfiguration from "../components/DriverPricing/LocationConfiguration";
 import DriverTimeSlotsAndPricing, {
@@ -15,52 +23,334 @@ import { EyeOutlined } from "@ant-design/icons";
 const DriverPricing = () => {
   const [activeTab, setActiveTab] = useState("configuration");
   const navigate = useNavigate();
-  const [country, setCountry] = useState("");
-  const [state, setState] = useState("");
-  const [district, setDistrict] = useState("Kanchipuram");
-  const [area, setArea] = useState("Madippakkam");
-  const [pincode, setPincode] = useState("60091");
+  const { id } = useParams<{ id: string }>();
+  const dispatch = useAppDispatch();
+  const { isLoading } = useAppSelector((state) => state.pricingFareRules);
+  const [country, setCountry] = useState(""); // Default
+  const [state, setState] = useState(""); // Default
+  const [district, setDistrict] = useState("");
+  const [area, setArea] = useState("");
+  const [pincode, setPincode] = useState("");
   const [globalPrice, setGlobalPrice] = useState(1000);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const [timeSlots, setTimeSlots] = useState<UserTimeSlots>({
-    "normal-driver": [
-      {
-        id: 1,
-        day: "monday",
-        timeRange: [dayjs("9:00 AM", "h:mm A"), dayjs("11:00 AM", "h:mm A")],
-        price: 300,
-      },
-    ],
-    "premium-driver": [
-      {
-        id: 1,
-        day: "monday",
-        timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")],
-        price: 400,
-      },
-    ],
-    "elite-driver": [
-      {
-        id: 1,
-        day: "monday",
-        timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")],
-        price: 500,
-      },
-    ],
+    "normal-driver": [],
+    "premium-driver": [],
+    "elite-driver": [],
   });
 
-  const [hotspotEnabled, setHotspotEnabled] = useState(true);
-  const [hotspotType, setHotspotType] = useState("rush-zone");
+  const [hotspotEnabled, setHotspotEnabled] = useState(false);
+  const [hotspotId, setHotspotId] = useState("");
   const [multiplier, setMultiplier] = useState(1);
 
+  // Store initial names from API response for edit mode
+  const [initialCountryName, setInitialCountryName] = useState<string>();
+  const [initialStateName, setInitialStateName] = useState<string>();
+  const [initialDistrictName, setInitialDistrictName] = useState<string>();
+  const [initialAreaName, setInitialAreaName] = useState<string>();
+
+  // Fetch data if editing
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchPricingFareRuleById(id))
+        .unwrap()
+        .then((data) => {
+          setCountry(data.country_id || "");
+          setState(data.state_id || "");
+          setDistrict(data.district_id || "");
+          setArea(data.area_id || "");
+          setPincode(data.pincode || "");
+          setGlobalPrice(Number(data.global_price));
+          setHotspotEnabled(data.is_hotspot);
+          setHotspotId(data.hotspot_id || "");
+          setMultiplier(Number(data.multiplier) || 1);
+
+          // Store initial names for display (professional approach)
+          setInitialCountryName(data.country_name);
+          setInitialStateName(data.state_name);
+          setInitialDistrictName(data.district_name);
+          setInitialAreaName(data.area_name);
+
+          // Transform time slots
+          const newSlots: UserTimeSlots = {
+            "normal-driver": [],
+            "premium-driver": [],
+            "elite-driver": [],
+          };
+
+          if (data.time_slots) {
+            data.time_slots.forEach((slot: any, index: number) => {
+              const driverType = slot.driver_types as keyof UserTimeSlots;
+              if (newSlots[driverType]) {
+                newSlots[driverType].push({
+                  id: index + 1, // Simple ID generation
+                  day: slot.day,
+                  timeRange: [
+                    dayjs(slot.from_time, "HH:mm:ss"),
+                    dayjs(slot.to_time, "HH:mm:ss"),
+                  ],
+                  price: slot.price,
+                });
+              }
+            });
+          }
+          setTimeSlots(newSlots);
+        })
+        .catch(() => {
+          message.error("Failed to fetch pricing rule details");
+          navigate("/PricingAndFareRules");
+        });
+    } else {
+      // Default initialization for Add mode
+      setTimeSlots({
+        "normal-driver": [
+          {
+            id: 1,
+            day: "monday",
+            timeRange: [
+              dayjs("9:00 AM", "h:mm A"),
+              dayjs("11:00 AM", "h:mm A"),
+            ],
+            price: 300,
+          },
+        ],
+        "premium-driver": [
+          {
+            id: 1,
+            day: "monday",
+            timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")],
+            price: 400,
+          },
+        ],
+        "elite-driver": [
+          {
+            id: 1,
+            day: "monday",
+            timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")],
+            price: 500,
+          },
+        ],
+      });
+    }
+  }, [id, dispatch, navigate]);
+
+  // Reset form to initial state
+  const resetFormState = () => {
+    setCountry("");
+    setState("");
+    setDistrict("");
+    setArea("");
+    setPincode("");
+    setGlobalPrice(1000);
+    setHotspotEnabled(false);
+    setHotspotId("");
+    setMultiplier(1);
+    setTimeSlots({
+      "normal-driver": [
+        {
+          id: 1,
+          day: "monday",
+          timeRange: [dayjs("9:00 AM", "h:mm A"), dayjs("11:00 AM", "h:mm A")],
+          price: 300,
+        },
+      ],
+      "premium-driver": [
+        {
+          id: 1,
+          day: "monday",
+          timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")],
+          price: 400,
+        },
+      ],
+      "elite-driver": [
+        {
+          id: 1,
+          day: "monday",
+          timeRange: [dayjs("7:00 AM", "h:mm A"), dayjs("9:00 AM", "h:mm A")],
+          price: 500,
+        },
+      ],
+    });
+  };
+
+  // Transform and save pricing rule with time slots
+  const handleSave = async () => {
+    // Validation
+    if (!district || district === "") {
+      message.error("Please select a district");
+      return;
+    }
+
+    // Area is now optional - no validation needed
+
+    if (hotspotEnabled && !hotspotId) {
+      message.error("Please select a hotspot when hotspot is enabled");
+      return;
+    }
+
+    // Validate that we have at least one time slot
+    const totalSlots = Object.values(timeSlots).reduce(
+      (sum, slots) => sum + slots.length,
+      0,
+    );
+    if (totalSlots === 0) {
+      message.error("Please add at least one time slot");
+      return;
+    }
+
+    try {
+      // Transform time slots from object to array
+      const timeSlotsArray = Object.entries(timeSlots).flatMap(
+        ([driverType, slots]) =>
+          slots.map((slot: any) => {
+            if (!slot.timeRange) {
+              throw new Error(`Time range is required for all slots`);
+            }
+
+            return {
+              driver_types: driverType,
+              day: slot.day.toLowerCase(),
+              from_time: slot.timeRange[0].format("HH:mm:ss"),
+              to_time: slot.timeRange[1].format("HH:mm:ss"),
+              price: slot.price,
+            };
+          }),
+      );
+
+      const payload = {
+        area_id: area || null,
+        district_id: district,
+        global_price: globalPrice,
+        is_hotspot: hotspotEnabled,
+        hotspot_id: hotspotEnabled ? hotspotId : null,
+        multiplier: hotspotEnabled ? multiplier : null,
+        time_slots: timeSlotsArray,
+      };
+
+      console.log("Sending payload (corrected mapping):", payload);
+
+      if (id) {
+        // Update existing rule
+        await dispatch(
+          updatePricingRuleWithSlots({ id, data: payload }),
+        ).unwrap();
+        message.success("Pricing rule updated successfully!");
+      } else {
+        // Create new rule
+        await dispatch(createPricingRuleWithSlots(payload)).unwrap();
+        message.success("Pricing rule created successfully!");
+      }
+
+      // Refresh the pricing fare rules list
+      dispatch(
+        fetchPricingFareRules({
+          page: 1,
+          limit: 10,
+          include_time_slots: true,
+        }),
+      );
+
+      navigate("/PricingAndFareRules");
+    } catch (error: any) {
+      console.error("Save error:", error);
+      message.error(error || "Failed to save pricing rule");
+    }
+  };
+
+  // Save and add another pricing rule
+  const handleSaveAndAddAnother = async () => {
+    // Validation
+    if (!district || district === "") {
+      message.error("Please select a district");
+      return;
+    }
+
+    // Area is now optional - no validation needed
+
+    if (hotspotEnabled && !hotspotId) {
+      message.error("Please select a hotspot when hotspot is enabled");
+      return;
+    }
+
+    // Validate that we have at least one time slot
+    const totalSlots = Object.values(timeSlots).reduce(
+      (sum, slots) => sum + slots.length,
+      0,
+    );
+    if (totalSlots === 0) {
+      message.error("Please add at least one time slot");
+      return;
+    }
+
+    try {
+      // Transform time slots from object to array
+      const timeSlotsArray = Object.entries(timeSlots).flatMap(
+        ([driverType, slots]) =>
+          slots.map((slot: any) => {
+            if (!slot.timeRange) {
+              throw new Error(`Time range is required for all slots`);
+            }
+
+            return {
+              driver_types: driverType,
+              day: slot.day.toLowerCase(),
+              from_time: slot.timeRange[0].format("HH:mm:ss"),
+              to_time: slot.timeRange[1].format("HH:mm:ss"),
+              price: slot.price,
+            };
+          }),
+      );
+
+      // Build the payload
+      const payload = {
+        area_id: area || null, // Maps to 'areas' table - optional, empty string if not selected
+        district_id: district, // Maps to 'districts' table - required
+        global_price: globalPrice,
+        is_hotspot: hotspotEnabled,
+        hotspot_id: hotspotEnabled ? hotspotId : null,
+        multiplier: hotspotEnabled ? multiplier : null,
+        time_slots: timeSlotsArray,
+      };
+
+      if (id) {
+        // Update existing rule
+        await dispatch(
+          updatePricingRuleWithSlots({ id, data: payload }),
+        ).unwrap();
+        message.success("Pricing rule updated successfully!");
+
+        // Navigate to add mode (remove the ID from URL)
+        navigate("/PricingAndFareRules/pricing");
+      } else {
+        // Create new rule
+        await dispatch(createPricingRuleWithSlots(payload)).unwrap();
+        message.success("Pricing rule created successfully!");
+      }
+
+      // Refresh the pricing fare rules list
+      dispatch(
+        fetchPricingFareRules({
+          page: 1,
+          limit: 10,
+          include_time_slots: true,
+        }),
+      );
+
+      // Reset form to initial state
+      resetFormState();
+    } catch (error: any) {
+      console.error("Save error:", error);
+      message.error(error || "Failed to save pricing rule");
+    }
+  };
   return (
     <div className="h-full w-full">
       <div className="h-full flex justify-center px-0">
         <div className="w-full flex flex-col min-h-screen gap-2">
           <TitleBar
             className="w-full h-full "
-            title="Add Pricing"
+            title={id ? "Edit Pricing" : "Add Pricing"}
             description="Configure pricing for different user types and time slots"
             extraContent={
               <div>
@@ -115,8 +405,8 @@ const DriverPricing = () => {
                     <HotspotConfiguration
                       hotspotEnabled={hotspotEnabled}
                       setHotspotEnabled={setHotspotEnabled}
-                      hotspotType={hotspotType}
-                      setHotspotType={setHotspotType}
+                      hotspotId={hotspotId}
+                      setHotspotId={setHotspotId}
                       multiplier={multiplier}
                       setMultiplier={setMultiplier}
                     />
@@ -126,7 +416,7 @@ const DriverPricing = () => {
                       timeSlots={timeSlots}
                       setTimeSlots={setTimeSlots}
                       hotspotEnabled={hotspotEnabled}
-                      hotspotType={hotspotType}
+                      hotspotId={hotspotId}
                       multiplier={multiplier}
                       globalPrice={globalPrice}
                     />
@@ -151,7 +441,8 @@ const DriverPricing = () => {
                   <Button
                     type="primary"
                     className="w-full sm:w-auto"
-                    // onClick={handleSave}
+                    onClick={handleSave}
+                    loading={isLoading}
                   >
                     Save Rule
                   </Button>
@@ -159,6 +450,8 @@ const DriverPricing = () => {
                     type="primary"
                     className="w-full sm:w-auto"
                     style={{ background: "#4CAF50" }}
+                    onClick={handleSaveAndAddAnother}
+                    loading={isLoading}
                   >
                     Save & Add Another
                   </Button>
@@ -176,15 +469,16 @@ const DriverPricing = () => {
       >
         <div className="lg:col-span-1">
           <PricingPreview
-            country={country}
-            state={state}
-            district={district}
-            area={area}
+            country={initialCountryName || ""}
+            state={initialStateName || ""}
+            district={initialDistrictName || ""}
+            area={initialAreaName || ""}
             pincode={pincode}
             timeSlots={timeSlots}
             hotspotEnabled={hotspotEnabled}
-            hotspotType={hotspotType}
+            hotspotId={hotspotId}
             multiplier={multiplier}
+            globalPrice={globalPrice}
           />
         </div>
       </Drawer>

@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Input,
-  List,
   Segmented,
   Select,
   Tag,
@@ -16,10 +15,8 @@ import { FaRegStar } from "react-icons/fa";
 import { FiUsers } from "react-icons/fi";
 import dayjs, { type Dayjs } from "dayjs";
 import { LuZap } from "react-icons/lu";
-import {
-  mockHotspotApi,
-  type HotspotType,
-} from "../../utilities/mockHotspotApi";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchHotspots } from "../../store/slices/hotspotSlice";
 
 export type Day =
   | "monday"
@@ -61,17 +58,30 @@ const TimeSlotItem = ({
   updateTimeSlot,
   removeTimeSlot,
   globalPrice,
+  hasCollision,
 }: {
   slot: TimeSlot;
   index: number;
   updateTimeSlot: (index: number, updatedSlot: Partial<TimeSlot>) => void;
   removeTimeSlot: (id: number) => void;
   globalPrice: number;
+  hasCollision: boolean;
 }) => {
   return (
-    <div className="w-full p-3 sm:p-4 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-start sm:items-center justify-start sm:justify-center bg-[#F8F9FA] rounded-md">
+    <div
+      className={`w-full p-3 sm:p-4 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-start sm:items-center justify-start sm:justify-center rounded-md ${
+        hasCollision
+          ? "bg-red-50 border-2 border-red-300"
+          : "bg-[#F8F9FA] border-2 border-transparent"
+      }`}
+    >
       <div className="flex items-center gap-2 w-full sm:w-auto">
         <span className="font-medium">Slot {index + 1}</span>
+        {hasCollision && (
+          <Tag color="error" className="text-xs">
+            Time Collision!
+          </Tag>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:flex-1">
@@ -82,6 +92,7 @@ const TimeSlotItem = ({
             options={dayOptions}
             className="w-full sm:w-32"
             onChange={(day) => updateTimeSlot(index, { day })}
+            status={hasCollision ? "error" : undefined}
           />
         </div>
 
@@ -97,6 +108,7 @@ const TimeSlotItem = ({
             }
             className="w-full sm:w-48"
             use12Hours
+            status={hasCollision ? "error" : undefined}
           />
         </div>
 
@@ -111,7 +123,7 @@ const TimeSlotItem = ({
               updateTimeSlot(index, { price: Number(e.target.value) })
             }
             type="number"
-            addonBefore="₹"
+            prefix="₹"
           />
         </div>
       </div>
@@ -147,7 +159,7 @@ interface DriverTimeSlotsAndPricingProps {
   timeSlots: UserTimeSlots;
   setTimeSlots: (timeSlots: UserTimeSlots) => void;
   hotspotEnabled: boolean;
-  hotspotType: string;
+  hotspotId: string;
   multiplier: number;
   globalPrice: number;
 }
@@ -156,31 +168,61 @@ const DriverTimeSlotsAndPricing = ({
   timeSlots,
   setTimeSlots,
   hotspotEnabled,
-  hotspotType,
+  hotspotId,
   multiplier,
   globalPrice,
 }: DriverTimeSlotsAndPricingProps) => {
-  const [userType, setUserType] = useState<UserType>("elite-driver");
-  const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
+  const [userType, setUserType] = useState<UserType>("normal-driver");
 
-  // Load hotspot types on component mount
+  const dispatch = useAppDispatch();
+  const { hotspots } = useAppSelector((state) => state.hotspot);
+
+  // Load hotspots on component mount
   useEffect(() => {
-    loadHotspotTypes();
-  }, []);
+    dispatch(fetchHotspots({ limit: 100 }));
+  }, [dispatch]);
 
-  const loadHotspotTypes = async () => {
-    try {
-      const types = await mockHotspotApi.getHotspotTypes();
-      setHotspotTypes(types);
-    } catch (error) {
-      console.error("Failed to load hotspot types");
-    }
+  // Get selected hotspot details
+  const selectedHotspot = hotspots.find((h) => h.id === hotspotId);
+
+  // Check if a time slot overlaps with any existing slots
+  const hasTimeCollision = (
+    day: Day,
+    timeRange: [Dayjs, Dayjs] | null,
+    excludeIndex?: number,
+  ): boolean => {
+    if (!timeRange) return false;
+
+    const [startTime, endTime] = timeRange;
+    const currentSlots = timeSlots[userType];
+
+    return currentSlots.some((slot, index) => {
+      // Skip the slot we're currently editing
+      if (index === excludeIndex) return false;
+
+      // Check if same day
+      if (slot.day !== day) return false;
+
+      // Check if time ranges overlap
+      if (!slot.timeRange) return false;
+
+      const [slotStart, slotEnd] = slot.timeRange;
+
+      // Two ranges overlap if:
+      // - start falls within existing range, OR
+      // - end falls within existing range, OR
+      // - existing range falls completely within new range
+      const overlaps =
+        ((startTime.isAfter(slotStart) || startTime.isSame(slotStart)) &&
+          startTime.isBefore(slotEnd)) ||
+        (endTime.isAfter(slotStart) &&
+          (endTime.isBefore(slotEnd) || endTime.isSame(slotEnd))) ||
+        ((startTime.isBefore(slotStart) || startTime.isSame(slotStart)) &&
+          (endTime.isAfter(slotEnd) || endTime.isSame(slotEnd)));
+
+      return overlaps;
+    });
   };
-
-  // Get selected hotspot type details
-  const selectedHotspotType = hotspotTypes.find(
-    (type) => type.name.toLowerCase().replace(/\s+/g, "-") === hotspotType,
-  );
 
   const userTypeDetails = {
     "normal-driver": {
@@ -228,10 +270,12 @@ const DriverTimeSlotsAndPricing = ({
 
   const updateTimeSlot = (index: number, updatedSlot: Partial<TimeSlot>) => {
     const newTimeSlots = { ...timeSlots };
-    newTimeSlots[userType][index] = {
+    const updatedFullSlot = {
       ...newTimeSlots[userType][index],
       ...updatedSlot,
     };
+
+    newTimeSlots[userType][index] = updatedFullSlot;
     setTimeSlots(newTimeSlots);
   };
 
@@ -323,38 +367,42 @@ const DriverTimeSlotsAndPricing = ({
           </div>
         </div>
         <div className="max-h-[37vh] overflow-y-auto pr-1">
-          <List
-            size="small"
-            split={false}
-            itemLayout="horizontal"
-            dataSource={timeSlots[userType]}
-            renderItem={(item, index) => (
-              <List.Item className="py-0">
-                <TimeSlotItem
-                  slot={item}
-                  index={index}
-                  updateTimeSlot={updateTimeSlot}
-                  removeTimeSlot={removeTimeSlot}
-                  globalPrice={globalPrice}
-                />
-              </List.Item>
-            )}
-          />
+          <div className="flex flex-col gap-2">
+            {timeSlots[userType].map((item, index) => {
+              const hasCollision = hasTimeCollision(
+                item.day,
+                item.timeRange,
+                index,
+              );
+              return (
+                <div key={index} className="py-0">
+                  <TimeSlotItem
+                    slot={item}
+                    index={index}
+                    updateTimeSlot={updateTimeSlot}
+                    removeTimeSlot={removeTimeSlot}
+                    globalPrice={globalPrice}
+                    hasCollision={hasCollision}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {hotspotEnabled && selectedHotspotType && (
+        {hotspotEnabled && selectedHotspot && (
           <div className="w-full p-4 flex flex-col gap-2 bg-[#F8F9FA] rounded-md">
             <div className="flex gap-2 items-center">
               <Tag color="processing">
                 <div className="flex gap-1 items-center">
                   <LuZap />
-                  <span>{selectedHotspotType.name}</span>
+                  <span>{selectedHotspot.hotspot_name}</span>
                 </div>
               </Tag>
               <span className="text-sm">Active Hotspot Configuration</span>
             </div>
             <span className="text-sm">
-              Addition: +₹{selectedHotspotType.addition} • Multiplier:{" "}
+              Fare: ₹{Number(selectedHotspot.fare).toFixed(2)} • Multiplier:{" "}
               {multiplier}x
             </span>
           </div>

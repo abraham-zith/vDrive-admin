@@ -8,12 +8,11 @@ import {
   Form,
   Input,
   InputNumber,
-  Switch,
-  message,
   Spin,
   Popconfirm,
   Tag,
 } from "antd";
+import { messageApi as message } from "../../utilities/antdStaticHolder";
 import {
   PlusOutlined,
   EditOutlined,
@@ -21,34 +20,27 @@ import {
   LoadingOutlined,
 } from "@ant-design/icons";
 import { LuZap } from "react-icons/lu";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
-  mockHotspotApi,
-  type HotspotType,
-} from "../../utilities/mockHotspotApi";
+  fetchHotspots,
+  createHotspot,
+  updateHotspot,
+  deleteHotspot,
+} from "../../store/slices/hotspotSlice";
+import type { Hotspot } from "../../store/slices/hotspotSlice";
 
 const HotspotTypes = () => {
-  const [hotspotTypes, setHotspotTypes] = useState<HotspotType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { hotspots, isLoading } = useAppSelector((state) => state.hotspot);
+
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingType, setEditingType] = useState<HotspotType | null>(null);
+  const [editingType, setEditingType] = useState<Hotspot | null>(null);
   const [form] = Form.useForm();
 
   // Load hotspot types on component mount
   useEffect(() => {
-    loadHotspotTypes();
-  }, []);
-
-  const loadHotspotTypes = async () => {
-    try {
-      setLoading(true);
-      const types = await mockHotspotApi.getHotspotTypes();
-      setHotspotTypes(types);
-    } catch (error) {
-      message.error("Failed to load hotspot types");
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchHotspots({ limit: 50 }));
+  }, [dispatch]);
 
   const handleAdd = () => {
     setEditingType(null);
@@ -56,42 +48,28 @@ const HotspotTypes = () => {
     setModalVisible(true);
   };
 
-  const handleEdit = (type: HotspotType) => {
-    setEditingType(type);
+  const handleEdit = (hotspot: Hotspot) => {
+    setEditingType(hotspot);
     form.setFieldsValue({
-      name: type.name,
-      addition: type.addition,
-      multiplier: type.multiplier,
-      isActive: type.isActive,
+      hotspot_name: hotspot.hotspot_name,
+      fare: Number(hotspot.fare),
+      multiplier: Number(hotspot.multiplier),
     });
     setModalVisible(true);
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
-      const success = await mockHotspotApi.deleteHotspotType(id);
-      if (success) {
-        message.success("Hotspot type deleted successfully");
-        loadHotspotTypes();
+      const resultAction = await dispatch(deleteHotspot(id));
+      if (deleteHotspot.fulfilled.match(resultAction)) {
+        message.success("Hotspot deleted successfully");
       } else {
-        message.error("Failed to delete hotspot type");
-      }
-    } catch (error) {
-      message.error("Failed to delete hotspot type");
-    }
-  };
-
-  const handleToggleActive = async (id: number) => {
-    try {
-      const updatedType = await mockHotspotApi.toggleHotspotType(id);
-      if (updatedType) {
-        message.success(
-          `Hotspot type ${updatedType.isActive ? "activated" : "deactivated"}`,
+        message.error(
+          (resultAction.payload as string) || "Failed to delete hotspot",
         );
-        loadHotspotTypes();
       }
     } catch (error) {
-      message.error("Failed to toggle hotspot type status");
+      message.error("Failed to delete hotspot");
     }
   };
 
@@ -101,25 +79,41 @@ const HotspotTypes = () => {
 
       if (editingType) {
         // Update existing
-        const updatedType = await mockHotspotApi.updateHotspotType(
-          editingType.id,
-          values,
+        const resultAction = await dispatch(
+          updateHotspot({
+            id: editingType.id,
+            data: {
+              hotspot_name: values.hotspot_name,
+              fare: values.fare,
+              multiplier: values.multiplier,
+            },
+          }),
         );
-        if (updatedType) {
-          message.success("Hotspot type updated successfully");
+
+        if (updateHotspot.fulfilled.match(resultAction)) {
+          message.success("Hotspot updated successfully");
+        } else {
+          message.error(
+            (resultAction.payload as string) || "Failed to update hotspot",
+          );
         }
       } else {
         // Create new
-        const newType = await mockHotspotApi.createHotspotType(values);
-        if (newType) {
-          message.success("Hotspot type created successfully");
+        const resultAction = await dispatch(createHotspot(values));
+
+        if (createHotspot.fulfilled.match(resultAction)) {
+          message.success("Hotspot created successfully");
+        } else {
+          message.error(
+            (resultAction.payload as string) || "Failed to create hotspot",
+          );
         }
       }
 
       setModalVisible(false);
-      loadHotspotTypes();
+      form.resetFields();
     } catch (error) {
-      message.error("Failed to save hotspot type");
+      message.error("Failed to save hotspot");
     }
   };
 
@@ -128,12 +122,12 @@ const HotspotTypes = () => {
     form.resetFields();
   };
 
-  if (loading) {
+  if (isLoading && hotspots.length === 0) {
     return (
       <Card size="small">
         <div className="flex justify-center items-center h-32">
           <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
-          <span className="ml-2">Loading hotspot types...</span>
+          <span className="ml-2">Loading hotspots...</span>
         </div>
       </Card>
     );
@@ -152,7 +146,7 @@ const HotspotTypes = () => {
         </div>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <Typography.Title level={5} className="text-lg sm:text-xl">
-            Manage Hotspot Types
+            Manage Hotspots
           </Typography.Title>
           <Button
             type="primary"
@@ -160,51 +154,41 @@ const HotspotTypes = () => {
             onClick={handleAdd}
             className="w-full sm:w-auto"
           >
-            Add Hotspot Type
+            Add Hotspot
           </Button>
         </div>
 
         <List
+          loading={isLoading}
           itemLayout="horizontal"
-          dataSource={hotspotTypes}
+          dataSource={hotspots}
           renderItem={(item) => (
             <List.Item>
               <div className="w-full flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-4 bg-white rounded-md border">
                 <div className="flex items-center gap-3 flex-1">
-                  <LuZap
-                    className={`text-lg ${
-                      item.isActive ? "text-yellow-500" : "text-gray-400"
-                    }`}
-                  />
+                  <LuZap className="text-lg text-yellow-500" />
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                      <span className="font-semibold">{item.name}</span>
-                      <Tag
-                        color={item.isActive ? "green" : "red"}
-                        className="w-fit"
-                      >
-                        {item.isActive ? "Active" : "Inactive"}
+                      <span className="font-semibold">{item.hotspot_name}</span>
+                      <Tag color="blue" className="w-fit">
+                        {item.id}
                       </Tag>
                     </div>
                     <span className="text-xs text-gray-600">
-                      +₹{item.addition} addition • {item.multiplier}x multiplier
+                      ₹{Number(item.fare).toFixed(2)} fare •{" "}
+                      {Number(item.multiplier).toFixed(1)}x multiplier
                     </span>
                   </div>
                 </div>
                 <div className="flex gap-2 items-center justify-end sm:justify-start">
-                  <Switch
-                    checked={item.isActive}
-                    onChange={() => handleToggleActive(item.id)}
-                    size="small"
-                  />
                   <Button
                     icon={<EditOutlined />}
                     onClick={() => handleEdit(item)}
                     size="small"
                   />
                   <Popconfirm
-                    title="Delete hotspot type"
-                    description="Are you sure you want to delete this hotspot type?"
+                    title="Delete hotspot"
+                    description="Are you sure you want to delete this hotspot?"
                     onConfirm={() => handleDelete(item.id)}
                     okText="Yes"
                     cancelText="No"
@@ -218,50 +202,62 @@ const HotspotTypes = () => {
         />
 
         <Modal
-          title={editingType ? "Edit Hotspot Type" : "Add Hotspot Type"}
+          title={editingType ? "Edit Hotspot" : "Add Hotspot"}
           open={modalVisible}
           onOk={handleModalOk}
           onCancel={handleModalCancel}
           okText={editingType ? "Update" : "Create"}
+          confirmLoading={isLoading}
         >
           <Form
             form={form}
             layout="vertical"
             initialValues={{
-              isActive: true,
-              addition: 0,
+              fare: 0,
               multiplier: 1,
             }}
           >
             <Form.Item
-              name="name"
-              label="Hotspot Type Name"
-              rules={[
-                { required: true, message: "Please enter hotspot type name" },
-              ]}
+              name="hotspot_name"
+              label="Hotspot Name"
+              rules={[{ required: true, message: "Please enter hotspot name" }]}
             >
-              <Input placeholder="e.g., Rush Zone" />
+              <Input placeholder="e.g., Rush Zone" maxLength={100} />
             </Form.Item>
 
             <Form.Item
-              name="addition"
-              label="Addition Amount (₹)"
+              name="fare"
+              label="Fare (₹)"
               rules={[
-                { required: true, message: "Please enter addition amount" },
+                { required: true, message: "Please enter fare" },
+                {
+                  type: "number",
+                  min: 0,
+                  message: "Fare must be greater than or equal to 0",
+                },
               ]}
             >
               <InputNumber
                 min={0}
                 placeholder="40"
                 style={{ width: "100%" }}
-                addonBefore="₹"
+                prefix="₹"
+                step={0.01}
+                precision={2}
               />
             </Form.Item>
 
             <Form.Item
               name="multiplier"
               label="Multiplier"
-              rules={[{ required: true, message: "Please enter multiplier" }]}
+              rules={[
+                { required: true, message: "Please enter multiplier" },
+                {
+                  type: "number",
+                  min: 0.1,
+                  message: "Multiplier must be greater than 0",
+                },
+              ]}
             >
               <InputNumber
                 min={0.1}
@@ -269,15 +265,8 @@ const HotspotTypes = () => {
                 placeholder="1.0"
                 style={{ width: "100%" }}
                 addonAfter="x"
+                precision={1}
               />
-            </Form.Item>
-
-            <Form.Item
-              name="isActive"
-              label="Active Status"
-              valuePropName="checked"
-            >
-              <Switch />
             </Form.Item>
           </Form>
         </Modal>

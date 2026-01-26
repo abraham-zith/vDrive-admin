@@ -1,944 +1,175 @@
-import React, { useState, useMemo } from "react";
-import { getHours, getMinutes } from "date-fns";
+import React, { useEffect, useState } from "react";
+import { Button, Table, Space, Card, Tag, Modal } from "antd";
 import {
-  Button,
-  Table,
-  Space,
-  Card,
-  Drawer,
-  Typography,
-  Descriptions,
-  Divider,
-} from "antd";
-import { DownloadOutlined, EyeOutlined, EditOutlined } from "@ant-design/icons";
+  DownloadOutlined,
+  EyeOutlined,
+  EditOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
 import { IoAdd } from "react-icons/io5";
-import { utils, writeFile } from "xlsx"; // ← add this
 import TitleBar from "../components/TitleBarCommon/TitleBar";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchPricingFareRules,
+  setPage,
+  setPageSize,
+} from "../store/slices/pricingFareRulesSlice";
+import type { PricingFareRule } from "../store/slices/pricingFareRulesSlice";
+import type { ColumnsType } from "antd/es/table";
+import PricingPreview from "../components/DriverPricing/PricingPreview";
+import dayjs from "dayjs";
 
-import { CloseOutlined } from "@ant-design/icons";
-import { GrLocation } from "react-icons/gr";
-import { LuDollarSign } from "react-icons/lu";
-import { FaCarAlt } from "react-icons/fa";
-import AdvancedFilters from "../components/AdvancedFilters/AdvanceFilters";
-import type { FilterField } from "../components/AdvancedFilters/AdvanceFilters";
-const { Title, Text } = Typography;
-
-export interface FilterValues {
-  country?: string;
-  state?: string;
-  district?: string;
-  area?: string;
-  pincode?: string;
-  isHotspot?: boolean;
-  hotspotId?: string;
-  hotspotName?: string;
-  baseFareRangeMin?: number;
-  baseFareRangeMax?: number;
-  driverType?: string; // "normal" | "premium" | "elite"
-  cancellationFeeRangeMin?: number;
-  cancellationFeeRangeMax?: number;
-  waitingFeePerMinMin?: number;
-  waitingFeePerMinMax?: number;
-  waitingFeeAmountMin?: number;
-  waitingFeeAmountMax?: number;
-  dayOfWeek?: string;
-  timeFrom?: Date | null;
-  timeTo?: Date | null;
-  rateRangeMin?: number;
-  rateRangeMax?: number;
-}
-
-interface PriceSetting {
-  key: string;
-  country: string;
-  state: string;
-  district: string;
-  area: string;
-  pincode: string;
-  hotspotName: string;
-  hotspotId: string;
-  isHotspot: boolean;
-  baseFare: string;
-  driverType: string;
-  cancellationFee: string;
-  waitingFee: string;
-  day: string;
-  timeRange: string;
-  rateRange: string;
-}
-
-type ApiTiming = {
-  day: string;
-  from: { time: number; type: "AM" | "PM" };
-  to: { time: number; type: "AM" | "PM" };
-  rate: number;
-};
-type ApiRateDetails = {
-  driverType: "normal" | "premium" | "elite" | string;
-  cancellationFee: number;
-  waitingFee: { perMinutes: number; fee: number };
-  timing: ApiTiming[];
-};
-type ApiItem = {
-  location: {
-    country: string;
-    state: string;
-    district: string;
-    area: string;
-    pincode: string;
+// Helper to transform PricingFareRule time_slots to PricingPreview format
+const transformSlotsForPreview = (rule: PricingFareRule) => {
+  const transformed: any = {
+    "normal-driver": [],
+    "premium-driver": [],
+    "elite-driver": [],
   };
-  hotspotDetails: {
-    isHotspot: boolean;
-    hotspotId: string;
-    hotspotName: string;
-    fare: number;
-  };
-  rateDetails: ApiRateDetails[];
-};
 
-const money = (n: number, country: string) => {
-  if (country.toLowerCase() === "india") return `₹${n}`;
-  if (country.toLowerCase() === "usa") return `$${n}`;
-  return `${n}`; // fallback
-};
-
-const pad = (n: number) => String(n).padStart(2, "0");
-const asTime = (h: number, type: "AM" | "PM") => `${pad(h)}:00 ${type}`;
-const cap = (s: string) =>
-  s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
-
-const flattenApiItem = (item: ApiItem, keyPrefix: string): PriceSetting[] => {
-  const { country, state, district, area, pincode } = item.location;
-  const { isHotspot, hotspotId, hotspotName, fare } = item.hotspotDetails;
-
-  const rows: PriceSetting[] = [];
-  let i = 0;
-
-  item.rateDetails.forEach((rd) => {
-    rd.timing.forEach((t) => {
-      rows.push({
-        key: `${keyPrefix}-${i++}`,
-        country,
-        state,
-        district,
-        area,
-        pincode,
-        hotspotName,
-        hotspotId,
-        isHotspot,
-        baseFare: money(fare, country),
-        driverType: rd.driverType,
-        cancellationFee: money(rd.cancellationFee, country),
-        waitingFee: `${money(rd.waitingFee.fee, country)} per ${
-          rd.waitingFee.perMinutes
-        }min`,
-        day: cap(t.day),
-        timeRange: `${asTime(t.from.time, t.from.type)} - ${asTime(
-          t.to.time,
-          t.to.type,
-        )}`,
-        rateRange: String(t.rate),
-      });
+  if (rule.time_slots) {
+    rule.time_slots.forEach((slot, index) => {
+      if (transformed[slot.driver_types]) {
+        transformed[slot.driver_types].push({
+          id: index + 1,
+          day: slot.day,
+          timeRange: [
+            dayjs(slot.from_time, "HH:mm:ss"),
+            dayjs(slot.to_time, "HH:mm:ss"),
+          ],
+          price: slot.price,
+        });
+      }
     });
-  });
-
-  return rows;
+  }
+  return transformed;
 };
-
-const apiResponse: ApiItem[] = [
-  {
-    location: {
-      country: "India",
-      state: "Tamilnadu",
-      district: "Kanchipuram",
-      area: "Madippakkam",
-      pincode: "60091",
-    },
-    hotspotDetails: {
-      isHotspot: true,
-      hotspotId: "HYU1235",
-      hotspotName: "Rush Zone",
-      fare: 40,
-    },
-    rateDetails: [
-      {
-        driverType: "normal",
-        cancellationFee: 5,
-        waitingFee: { perMinutes: 1, fee: 2 },
-        timing: [
-          {
-            day: "monday",
-            from: { time: 5, type: "AM" },
-            to: { time: 7, type: "AM" },
-            rate: 300,
-          },
-          {
-            day: "monday",
-            from: { time: 7, type: "AM" },
-            to: { time: 9, type: "AM" },
-            rate: 340,
-          },
-        ],
-      },
-      {
-        driverType: "premium",
-        cancellationFee: 8,
-        waitingFee: { perMinutes: 1, fee: 3 },
-        timing: [
-          {
-            day: "saturday",
-            from: { time: 4, type: "PM" },
-            to: { time: 8, type: "PM" },
-            rate: 420,
-          },
-        ],
-      },
-      {
-        driverType: "elite",
-        cancellationFee: 12,
-        waitingFee: { perMinutes: 2, fee: 5 },
-        timing: [
-          {
-            day: "friday",
-            from: { time: 7, type: "PM" },
-            to: { time: 11, type: "PM" },
-            rate: 600,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    location: {
-      country: "India",
-      state: "Maharashtra",
-      district: "Mumbai",
-      area: "Andheri",
-      pincode: "400053",
-    },
-    hotspotDetails: {
-      isHotspot: true,
-      hotspotId: "MUM6789",
-      hotspotName: "City Center",
-      fare: 55,
-    },
-    rateDetails: [
-      {
-        driverType: "premium",
-        cancellationFee: 10,
-        waitingFee: { perMinutes: 2, fee: 4 },
-        timing: [
-          {
-            day: "tuesday",
-            from: { time: 8, type: "AM" },
-            to: { time: 11, type: "AM" },
-            rate: 450,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    location: {
-      country: "India",
-      state: "Delhi",
-      district: "South Delhi",
-      area: "Saket",
-      pincode: "110017",
-    },
-    hotspotDetails: {
-      isHotspot: false,
-      hotspotId: "DEL5566",
-      hotspotName: "Metro Point",
-      fare: 35,
-    },
-    rateDetails: [
-      {
-        driverType: "normal",
-        cancellationFee: 6,
-        waitingFee: { perMinutes: 1, fee: 2 },
-        timing: [
-          {
-            day: "wednesday",
-            from: { time: 6, type: "AM" },
-            to: { time: 10, type: "AM" },
-            rate: 320,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    location: {
-      country: "India",
-      state: "Karnataka",
-      district: "Bangalore",
-      area: "Whitefield",
-      pincode: "560066",
-    },
-    hotspotDetails: {
-      isHotspot: true,
-      hotspotId: "BLR2233",
-      hotspotName: "Tech Park",
-      fare: 50,
-    },
-    rateDetails: [
-      {
-        driverType: "elite",
-        cancellationFee: 12,
-        waitingFee: { perMinutes: 2, fee: 5 },
-        timing: [
-          {
-            day: "friday",
-            from: { time: 7, type: "PM" },
-            to: { time: 11, type: "PM" },
-            rate: 600,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    location: {
-      country: "India",
-      state: "Kerala",
-      district: "Kochi",
-      area: "Marine Drive",
-      pincode: "682031",
-    },
-    hotspotDetails: {
-      isHotspot: false,
-      hotspotId: "KOC8899",
-      hotspotName: "Harbour View",
-      fare: 30,
-    },
-    rateDetails: [
-      {
-        driverType: "normal",
-        cancellationFee: 4,
-        waitingFee: { perMinutes: 1, fee: 1 },
-        timing: [
-          {
-            day: "sunday",
-            from: { time: 10, type: "AM" },
-            to: { time: 2, type: "PM" },
-            rate: 280,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    location: {
-      country: "India",
-      state: "Gujarat",
-      district: "Ahmedabad",
-      area: "Navrangpura",
-      pincode: "380009",
-    },
-    hotspotDetails: {
-      isHotspot: true,
-      hotspotId: "AMD7788",
-      hotspotName: "Heritage Circle",
-      fare: 45,
-    },
-    rateDetails: [
-      {
-        driverType: "premium",
-        cancellationFee: 8,
-        waitingFee: { perMinutes: 1, fee: 3 },
-        timing: [
-          {
-            day: "saturday",
-            from: { time: 4, type: "PM" },
-            to: { time: 8, type: "PM" },
-            rate: 420,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    location: {
-      country: "India",
-      state: "Punjab",
-      district: "Amritsar",
-      area: "Golden Temple",
-      pincode: "143006",
-    },
-    hotspotDetails: {
-      isHotspot: true,
-      hotspotId: "AMR4455",
-      hotspotName: "Temple Square",
-      fare: 60,
-    },
-    rateDetails: [
-      {
-        driverType: "normal",
-        cancellationFee: 7,
-        waitingFee: { perMinutes: 1, fee: 2 },
-        timing: [
-          {
-            day: "thursday",
-            from: { time: 5, type: "AM" },
-            to: { time: 9, type: "AM" },
-            rate: 350,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    location: {
-      country: "India",
-      state: "Rajasthan",
-      district: "Jaipur",
-      area: "Pink City",
-      pincode: "302002",
-    },
-    hotspotDetails: {
-      isHotspot: false,
-      hotspotId: "JPR9988",
-      hotspotName: "Hawa Mahal",
-      fare: 38,
-    },
-    rateDetails: [
-      {
-        driverType: "premium",
-        cancellationFee: 9,
-        waitingFee: { perMinutes: 2, fee: 4 },
-        timing: [
-          {
-            day: "wednesday",
-            from: { time: 6, type: "PM" },
-            to: { time: 10, type: "PM" },
-            rate: 480,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    location: {
-      country: "India",
-      state: "Telangana",
-      district: "Hyderabad",
-      area: "Hitech City",
-      pincode: "500081",
-    },
-    hotspotDetails: {
-      isHotspot: true,
-      hotspotId: "HYD6677",
-      hotspotName: "Cyber Towers",
-      fare: 52,
-    },
-    rateDetails: [
-      {
-        driverType: "elite",
-        cancellationFee: 15,
-        waitingFee: { perMinutes: 2, fee: 6 },
-        timing: [
-          {
-            day: "monday",
-            from: { time: 9, type: "AM" },
-            to: { time: 1, type: "PM" },
-            rate: 700,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    location: {
-      country: "India",
-      state: "West Bengal",
-      district: "Kolkata",
-      area: "Park Street",
-      pincode: "700016",
-    },
-    hotspotDetails: {
-      isHotspot: false,
-      hotspotId: "KOL3344",
-      hotspotName: "Music Square",
-      fare: 42,
-    },
-    rateDetails: [
-      {
-        driverType: "normal",
-        cancellationFee: 6,
-        waitingFee: { perMinutes: 1, fee: 2 },
-        timing: [
-          {
-            day: "friday",
-            from: { time: 3, type: "PM" },
-            to: { time: 7, type: "PM" },
-            rate: 310,
-          },
-        ],
-      },
-    ],
-  },
-];
 
 const PricingAndFareRules: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const [previewRule, setPreviewRule] = useState<PricingFareRule | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  // put this near your other helpers
-  const dedupeRows = (rows: PriceSetting[]) => {
-    const num = (s: string) =>
-      parseFloat((s || "").toString().replace(/[^\d.]/g, "")) || 0;
+  // Redux state
+  const { fareRules, isLoading, total, currentPage, pageSize } = useAppSelector(
+    (state) => state.pricingFareRules,
+  );
 
-    const timeToMinutes = (hhmmAmPm: string) => {
-      const m = hhmmAmPm.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (!m) return null;
-      let h = parseInt(m[1], 10);
-      const min = parseInt(m[2], 10);
-      const ampm = m[3].toUpperCase();
-      if (ampm === "PM" && h !== 12) h += 12;
-      if (ampm === "AM" && h === 12) h = 0;
-      return h * 60 + min;
+  // Fetch data on mount
+  useEffect(() => {
+    dispatch(
+      fetchPricingFareRules({
+        page: currentPage,
+        limit: pageSize,
+        include_time_slots: true,
+      }),
+    );
+
+    return () => {
+      // dispatch(clearFareRules());
     };
+  }, [dispatch, currentPage, pageSize]);
 
-    const signature = (r: PriceSetting) => {
-      const [fromStr, toStr] = (r.timeRange || "")
-        .split("-")
-        .map((s) => s.trim());
-      const fromMin = fromStr ? timeToMinutes(fromStr) : "";
-      const toMin = toStr ? timeToMinutes(toStr) : "";
-      return [
-        (r.country || "").toLowerCase().trim(),
-        (r.state || "").toLowerCase().trim(),
-        (r.district || "").toLowerCase().trim(),
-        (r.area || "").toLowerCase().trim(),
-        (r.pincode || "").toLowerCase().trim(),
-        (r.hotspotId || "").toLowerCase().trim(),
-        (r.driverType || "").toLowerCase().trim(),
-        (r.day || "").toLowerCase().trim(),
-        fromMin,
-        toMin,
-        num(r.baseFare),
-        num(r.cancellationFee),
-        num(r.rateRange),
-        (() => {
-          const m = (r.waitingFee || "").match(
-            /(\d+)\s*min\s*\/\s*[^0-9]*([\d.]+)/i,
-          );
-          return m ? `${m[1]}|${m[2]}` : "";
-        })(),
-      ].join("|");
-    };
-
-    const seen = new Set<string>();
-    return rows.filter((r) => {
-      const sig = signature(r);
-      if (seen.has(sig)) return false;
-      seen.add(sig);
-      return true;
-    });
+  // Handle pagination change
+  const handleTableChange = (pagination: any) => {
+    if (pagination.current !== currentPage) {
+      dispatch(setPage(pagination.current));
+    }
+    if (pagination.pageSize !== pageSize) {
+      dispatch(setPageSize(pagination.pageSize));
+    }
   };
 
-  const initialTableData: PriceSetting[] = useMemo(() => {
-    const rows = apiResponse.flatMap((item, idx) =>
-      flattenApiItem(item, `row${idx}`),
-    );
-    return dedupeRows(rows);
-  }, [apiResponse]);
-
-  const [filteredTableData, setFilteredTableData] =
-    useState<PriceSetting[]>(initialTableData);
-
-  const [drawerVisible, setDrawerVisible] = useState(false);
-  const [currentPriceSetting, setCurrentPriceSetting] =
-    useState<PriceSetting | null>(null);
-
-  const applyFilters = (values: FilterValues) => {
-    let tempData = initialTableData;
-
-    if (values.country) {
-      const v = values.country.toLowerCase();
-      tempData = tempData.filter((item) =>
-        item.country.toLowerCase().includes(v),
-      );
-    }
-    if (values.state) {
-      const v = values.state.toLowerCase();
-      tempData = tempData.filter((item) =>
-        item.state.toLowerCase().includes(v),
-      );
-    }
-    if (values.district) {
-      const v = values.district.toLowerCase();
-      tempData = tempData.filter((item) =>
-        item.district.toLowerCase().includes(v),
-      );
-    }
-    if (values.area) {
-      const v = values.area.toLowerCase();
-      tempData = tempData.filter((item) => item.area.toLowerCase().includes(v));
-    }
-    if (values.pincode) {
-      const v = values.pincode.toLowerCase();
-      tempData = tempData.filter((item) =>
-        item.pincode.toLowerCase().includes(v),
-      );
-    }
-    if (values.isHotspot !== undefined) {
-      tempData = tempData.filter((item) => item.isHotspot === values.isHotspot);
-    }
-    if (values.hotspotId) {
-      const v = values.hotspotId.toLowerCase();
-      tempData = tempData.filter((item) =>
-        item.hotspotId.toLowerCase().includes(v),
-      );
-    }
-    if (values.hotspotName) {
-      const v = values.hotspotName.toLowerCase();
-      tempData = tempData.filter((item) =>
-        item.hotspotName.toLowerCase().includes(v),
-      );
-    }
-    if (values.driverType) {
-      const v = values.driverType.toLowerCase();
-      tempData = tempData.filter((item) => item.driverType.toLowerCase() === v);
-    }
-    if (values.dayOfWeek) {
-      const v = values.dayOfWeek.toLowerCase();
-      tempData = tempData.filter((item) => item.day.toLowerCase() === v);
-    }
-    if (
-      values.baseFareRangeMin !== undefined ||
-      values.baseFareRangeMax !== undefined
-    ) {
-      const min = values.baseFareRangeMin ?? Number.NEGATIVE_INFINITY;
-      const max = values.baseFareRangeMax ?? Number.POSITIVE_INFINITY;
-      tempData = tempData.filter((item) => {
-        const num = parseFloat(item.baseFare.replace(/[^\d.]/g, "")) || 0;
-        return num >= min && num <= max;
-      });
-    }
-    if (
-      values.cancellationFeeRangeMin !== undefined ||
-      values.cancellationFeeRangeMax !== undefined
-    ) {
-      const min = values.cancellationFeeRangeMin ?? Number.NEGATIVE_INFINITY;
-      const max = values.cancellationFeeRangeMax ?? Number.POSITIVE_INFINITY;
-      tempData = tempData.filter((item) => {
-        const num =
-          parseFloat(item.cancellationFee.replace(/[^\d.]/g, "")) || 0;
-        return num >= min && num <= max;
-      });
-    }
-    if (
-      values.waitingFeePerMinMin !== undefined ||
-      values.waitingFeePerMinMax !== undefined ||
-      values.waitingFeeAmountMin !== undefined ||
-      values.waitingFeeAmountMax !== undefined
-    ) {
-      const perMinMin = values.waitingFeePerMinMin ?? Number.NEGATIVE_INFINITY;
-      const perMinMax = values.waitingFeePerMinMax ?? Number.POSITIVE_INFINITY;
-      const amtMin = values.waitingFeeAmountMin ?? Number.NEGATIVE_INFINITY;
-      const amtMax = values.waitingFeeAmountMax ?? Number.POSITIVE_INFINITY;
-
-      tempData = tempData.filter((item) => {
-        const raw = item.waitingFee ?? "";
-        const m = raw.match(/(\d+)\s*min\s*\/\s*[^0-9]*([\d.,]+)/i);
-        if (!m) {
-          return false;
-        }
-        const per = parseInt(m[1], 10);
-        const feeStr = m[2].replace(/,/g, "").trim();
-        const fee = parseFloat(feeStr);
-        if (!Number.isFinite(fee)) {
-          return false;
-        }
-        const pass =
-          per >= perMinMin &&
-          per <= perMinMax &&
-          fee >= amtMin &&
-          fee <= amtMax;
-
-        return pass;
-      });
-    }
-
-    if (
-      values.rateRangeMin !== undefined ||
-      values.rateRangeMax !== undefined
-    ) {
-      const min = values.rateRangeMin ?? Number.NEGATIVE_INFINITY;
-      const max = values.rateRangeMax ?? Number.POSITIVE_INFINITY;
-      tempData = tempData.filter((item) => {
-        const num = parseFloat(item.rateRange.replace(/[^\d.]/g, "")) || 0;
-        return num >= min && num <= max;
-      });
-    }
-
-    if (values.timeFrom || values.timeTo) {
-      const dayMinutes = 24 * 60;
-
-      const fromMin = toMinutesFromAny(values.timeFrom) ?? 0;
-      const toMin = toMinutesFromAny(values.timeTo) ?? dayMinutes;
-
-      // single-time behavior (containment) when only one side set
-      tempData = tempData.filter((item) => {
-        const [rStart, rEnd] = parseRowRangeToMinutes(item.timeRange);
-
-        let keep: boolean;
-        if (values.timeFrom && !values.timeTo) {
-          keep = fromMin >= rStart && fromMin < rEnd;
-        } else if (!values.timeFrom && values.timeTo) {
-          keep = toMin > rStart && toMin <= rEnd;
-        } else {
-          const fStart = Math.min(fromMin, toMin);
-          const fEnd = Math.max(fromMin, toMin);
-          keep = Math.max(fStart, rStart) <= Math.min(fEnd, rEnd);
-        }
-        return keep;
-      });
-    }
-
-    setFilteredTableData(tempData);
+  const handleEdit = (record: PricingFareRule) => {
+    navigate(`/PricingAndFareRules/pricing/${record.id}`);
   };
 
-  // "05:00 AM" -> minutes since midnight
-  const clockToMinutes = (s: string): number => {
-    const m = s.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if (!m) return 0;
-    let h = parseInt(m[1], 10);
-    const min = parseInt(m[2], 10);
-    const ap = m[3].toUpperCase();
-    if (ap === "PM" && h !== 12) h += 12;
-    if (ap === "AM" && h === 12) h = 0;
-    return h * 60 + min;
+  const handleView = (record: PricingFareRule) => {
+    setPreviewRule(record);
+    setIsPreviewOpen(true);
   };
 
-  const parseRowRangeToMinutes = (range: string): [number, number] => {
-    const clean = (range || "").replace(/\u00A0/g, " ").trim();
-    const [fromStr, toStr] = clean.split(/\s*-\s*/);
-    const start = clockToMinutes((fromStr || "12:00 AM").trim());
-    const end = clockToMinutes((toStr || "11:59 PM").trim());
-    return [start, end];
-  };
-
-  const toMinutesFromAny = (
-    v: Date | number | string | null | undefined,
-  ): number | null => {
-    if (v == null) return null;
-    if (v instanceof Date) return getHours(v) * 60 + getMinutes(v);
-    if (typeof v === "number") {
-      const d = new Date(v);
-      return Number.isNaN(d.getTime())
-        ? null
-        : getHours(d) * 60 + getMinutes(d);
-    }
-    if (typeof v === "string") {
-      let m = v.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (m) return clockToMinutes(v);
-      m = v.trim().match(/^(\d{1,2}):(\d{2})$/);
-      if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
-      const t = Date.parse(v);
-      if (!Number.isNaN(t)) {
-        const hasZ = /Z$/i.test(v);
-        const d = new Date(t);
-        return hasZ
-          ? d.getUTCHours() * 60 + d.getUTCMinutes()
-          : getHours(d) * 60 + getMinutes(d);
-      }
-    }
-    return null;
-  };
-
-  const showDrawer = (record: PriceSetting) => {
-    setCurrentPriceSetting(record);
-    setDrawerVisible(true);
-  };
-
-  const onCloseDrawer = () => {
-    setDrawerVisible(false);
-    setCurrentPriceSetting(null);
-  };
-
-  // ===== EXPORT HELPERS =====
-  const exportHeaders = [
-    { key: "country", title: "Country" },
-    { key: "state", title: "State" },
-    { key: "district", title: "District" },
-    { key: "area", title: "Area" },
-    { key: "pincode", title: "Pincode" },
-    { key: "hotspotName", title: "Hotspot Name" },
-    { key: "hotspotId", title: "Hotspot ID" },
-    { key: "isHotspot", title: "Is Hotspot" },
-    { key: "baseFare", title: "Base Fare" },
-    { key: "driverType", title: "Driver Type" },
-    { key: "cancellationFee", title: "Cancellation Fee" },
-    { key: "waitingFee", title: "Waiting Fee" },
-    { key: "day", title: "Day" },
-    { key: "timeRange", title: "Time Range" },
-    { key: "rateRange", title: "Rate Range" },
-  ] as const;
-
-  type ExportRow = {
-    [K in (typeof exportHeaders)[number]["key"]]: string | number | boolean;
-  };
-
-  const buildExportRows = (rows: PriceSetting[]): ExportRow[] =>
-    rows.map((r) => ({
-      country: r.country,
-      state: r.state,
-      district: r.district,
-      area: r.area,
-      pincode: r.pincode,
-      hotspotName: r.hotspotName,
-      hotspotId: r.hotspotId,
-      isHotspot: r.isHotspot ? "Yes" : "No",
-      baseFare: r.baseFare,
-      driverType: r.driverType,
-      cancellationFee: r.cancellationFee,
-      waitingFee: r.waitingFee,
-      day: r.day,
-      timeRange: r.timeRange,
-      rateRange: r.rateRange,
-    }));
-
-  const downloadBlob = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadCSV = () => {
-    const rows = buildExportRows(filteredTableData);
-    const headerLine = exportHeaders
-      .map((h) => `"${h.title.replace(/"/g, '""')}"`)
-      .join(",");
-    const bodyLines = rows.map((row) =>
-      exportHeaders
-        .map((h) => {
-          const v = (row as any)[h.key];
-          const s = v == null ? "" : String(v);
-          return `"${s.replace(/"/g, '""')}"`;
-        })
-        .join(","),
-    );
-    const csv = [headerLine, ...bodyLines].join("\r\n");
-    downloadBlob(
-      new Blob([csv], { type: "text/csv;charset=utf-8;" }),
-      `driver_price_settings.csv`,
-    );
-  };
-
-  const handleDownloadExcel = () => {
-    const rows = buildExportRows(filteredTableData);
-    const ws = utils.json_to_sheet(rows, {
-      header: exportHeaders.map((h) => h.key) as any,
-    });
-    // set header titles
-    exportHeaders.forEach((h, idx) => {
-      const cell = utils.encode_cell({ r: 0, c: idx });
-      (ws as any)[cell] = { t: "s", v: h.title };
-    });
-    const wb = utils.book_new();
-    utils.book_append_sheet(wb, ws, "Price Settings");
-    writeFile(wb, "driver_price_settings.xlsx");
-  };
-  // ===== END EXPORT HELPERS =====
-
-  const columns = [
-    { title: "Country", dataIndex: "country", key: "country" },
-    { title: "State", dataIndex: "state", key: "state" },
-    { title: "District", dataIndex: "district", key: "district" },
-    { title: "Area", dataIndex: "area", key: "area" },
-    { title: "Pincode", dataIndex: "pincode", key: "pincode" },
-    { title: "Hotspot Name", dataIndex: "hotspotName", key: "hotspotName" },
-    { title: "Hotspot ID", dataIndex: "hotspotId", key: "hotspotId" },
+  // Column definitions
+  const columns: ColumnsType<PricingFareRule> = [
+    {
+      title: "Country",
+      dataIndex: "country_id", // Should probably resolve name
+      key: "country_name",
+      width: 120,
+      render: () => "India", // Placeholder
+    },
+    {
+      title: "State",
+      dataIndex: "state_id", // Should probably resolve name
+      key: "state_name",
+      width: 120,
+      render: (_, record) => record.state_name, // Placeholder
+    },
+    {
+      title: "District", // Updated label based on schema confusion
+      dataIndex: "district_name", // Displaying City Name for "District" column
+      key: "district_name",
+      width: 150,
+      ellipsis: true,
+      render: (_, record) => record.district_name || "All",
+    },
+    {
+      title: "Area",
+      dataIndex: "area_name", // Displaying Area Name
+      key: "area_name",
+      width: 150,
+      ellipsis: true,
+      render: (text) => text || "All",
+    },
+    {
+      title: "Hotspot Name",
+      dataIndex: "hotspot_name",
+      key: "hotspot_name",
+      width: 150,
+      ellipsis: true,
+      render: (text) => text || "-",
+    },
     {
       title: "Is Hotspot",
-      dataIndex: "isHotspot",
-      key: "isHotspot",
+      dataIndex: "is_hotspot",
+      key: "is_hotspot",
+      width: 120,
+      align: "center",
       render: (value: boolean) => (
-        <span
-          style={{
-            backgroundColor: value ? "#1677ff" : "#d9d9d9",
-            color: value ? "#fff" : "#000",
-            borderRadius: 6,
-            padding: "2px 10px",
-            display: "inline-block",
-            lineHeight: 1.4,
-          }}
-        >
-          {value ? "Yes" : "No"}
-        </span>
+        <Tag color={value ? "blue" : "default"}>{value ? "Yes" : "No"}</Tag>
       ),
     },
-    { title: "Base Fare", dataIndex: "baseFare", key: "baseFare" },
     {
-      title: "Driver Type",
-      dataIndex: "driverType",
-      key: "driverType",
-      render: (type: string) => {
-        const t = type.toLowerCase();
-        let style: React.CSSProperties = {
-          borderRadius: 6,
-          padding: "2px 10px",
-          display: "inline-block",
-          lineHeight: 1.4,
-        };
-
-        if (t === "elite") {
-          style = { ...style, backgroundColor: "#1677ff", color: "#fff" }; // blue
-        } else if (t === "premium") {
-          style = { ...style, backgroundColor: "#d9d9d9", color: "#000" }; // grey
-        } else {
-          // normal
-          style = {
-            ...style,
-            border: "1px solid #d9d9d9",
-            backgroundColor: "transparent",
-            color: "#000",
-          };
-        }
-
-        return <span style={style}>{type}</span>;
-      },
+      title: "Global Price",
+      dataIndex: "global_price",
+      key: "global_price",
+      width: 120,
+      align: "right",
+      render: (value: number | string) => `₹${Number(value).toFixed(2)}`,
     },
-    {
-      title: "Cancellation Fee",
-      dataIndex: "cancellationFee",
-      key: "cancellationFee",
-    },
-    { title: "Waiting Fee", dataIndex: "waitingFee", key: "waitingFee" },
-    { title: "Day", dataIndex: "day", key: "day" },
-    { title: "Time Range", dataIndex: "timeRange", key: "timeRange" },
-    { title: "Rate Range", dataIndex: "rateRange", key: "rateRange" },
     {
       title: "Actions",
       key: "actions",
-      render: (_: any, record: PriceSetting) => (
-        <Space size="middle">
+      width: 150,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
           <Button
             type="text"
+            size="small"
             icon={<EyeOutlined />}
-            onClick={() => showDrawer(record)}
+            onClick={() => handleView(record)}
           >
             View
           </Button>
-        </Space>
-      ),
-    },
-    {
-      title: "Actions",
-      key: "actionsEdit",
-      render: (_: any) => (
-        <Space size="middle">
           <Button
             type="text"
+            size="small"
             icon={<EditOutlined />}
-            // onClick={() => showDrawer(record)}
+            onClick={() => handleEdit(record)}
           >
             Edit
           </Button>
@@ -947,128 +178,16 @@ const PricingAndFareRules: React.FC = () => {
     },
   ];
 
-  if (location.pathname === "/PricingAndFareRules/pricing") {
+  if (location.pathname !== "/PricingAndFareRules") {
     return <Outlet />;
   }
-  const fields: FilterField[] = [
-    {
-      name: "country",
-      label: "Country",
-      type: "select",
-      options: [
-        { value: "india", label: "India" },
-        { value: "usa", label: "USA" },
-      ],
-    },
-    { name: "state", label: "State", type: "input" },
-    { name: "district", label: "District", type: "input" },
-    { name: "area", label: "Area", type: "input" },
-    { name: "pincode", label: "Pincode", type: "input" },
-    {
-      name: "isHotspot",
-      label: "Is Hotspot",
-      type: "radio",
-      options: [
-        { value: true, label: "Yes" },
-        { value: false, label: "No" },
-      ],
-    },
-    { name: "hotspotId", label: "Hotspot ID", type: "input" },
-    { name: "hotspotName", label: "Hotspot Name", type: "input" },
-    {
-      name: "baseFareRange",
-      label: "Base Fare Range",
-      type: "range",
-      minPlaceholder: "0",
-      maxPlaceholder: "1000",
-    },
-    {
-      name: "driverType",
-      label: "Driver Type",
-      type: "select",
-      options: [
-        { value: "normal", label: "Normal" },
-        { value: "premium", label: "Premium" },
-        { value: "elite", label: "Elite" },
-      ],
-    },
-    {
-      name: "cancellationFeeRange",
-      label: "Cancellation Fee Range",
-      type: "range",
-      minPlaceholder: "0",
-      maxPlaceholder: "100",
-    },
-    {
-      name: "waitingFeePerMin",
-      label: "Waiting Fee (Per Min)",
-      type: "range",
-      minPlaceholder: "0",
-      maxPlaceholder: "10",
-    },
-    {
-      name: "waitingFeeAmount",
-      label: "Waiting Fee Amount",
-      type: "range",
-      minPlaceholder: "0",
-      maxPlaceholder: "20",
-    },
-    {
-      name: "dayOfWeek",
-      label: "Day of Week",
-      type: "select",
-      options: [
-        { value: "monday", label: "Monday" },
-        { value: "tuesday", label: "Tuesday" },
-        { value: "wednesday", label: "Wednesday" },
-        { value: "thursday", label: "Thursday" },
-        { value: "friday", label: "Friday" },
-        { value: "saturday", label: "Saturday" },
-        { value: "sunday", label: "Sunday" },
-      ],
-    },
-    { name: "timeFrom", label: "Time From", type: "time" },
-    { name: "timeTo", label: "Time To", type: "time" },
-    {
-      name: "rateRange",
-      label: "Rate Range",
-      type: "range",
-      minPlaceholder: "0",
-      maxPlaceholder: "50",
-    },
-  ];
+
   return (
     <TitleBar
       title="Driver Price Management"
       description="Advanced admin interface for pricing control"
       extraContent={
         <div className="flex items-center gap-2">
-          {/* <div>
-            <Button type="primary">
-              <FiUsers />
-              {filteredTableData.length} Settings
-            </Button>
-          </div>
-          <div>
-            <Button loading={false} type="primary" onClick={() => {}}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="lucide lucide-trending-up h-5 w-5"
-              >
-                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-                <polyline points="16 7 22 7 22 13"></polyline>
-              </svg>
-              Activity
-            </Button>
-          </div> */}
           <div>
             <Button
               type="primary"
@@ -1082,16 +201,14 @@ const PricingAndFareRules: React.FC = () => {
       }
     >
       <div className="w-full h-full overflow-y-auto">
-        <AdvancedFilters filterFields={fields} applyFilters={applyFilters} />
-
         <Card
-          title="Driver Price Settings"
+          title="Pricing & Fare Rules"
           extra={
             <Space>
-              <Button icon={<DownloadOutlined />} onClick={handleDownloadCSV}>
+              <Button icon={<DownloadOutlined />} onClick={() => {}}>
                 CSV
               </Button>
-              <Button icon={<DownloadOutlined />} onClick={handleDownloadExcel}>
+              <Button icon={<DownloadOutlined />} onClick={() => {}}>
                 Excel
               </Button>
             </Space>
@@ -1099,323 +216,54 @@ const PricingAndFareRules: React.FC = () => {
         >
           <Table
             columns={columns}
-            dataSource={filteredTableData}
-            pagination={{ pageSize: 5 }}
-            scroll={{ x: "max-content" }}
-            onRow={(record) => ({
-              onClick: () => showDrawer(record),
-            })}
+            dataSource={fareRules}
+            loading={{
+              spinning: isLoading,
+              indicator: <LoadingOutlined style={{ fontSize: 48 }} spin />,
+              tip: "Loading pricing rules...",
+            }}
+            rowKey="id"
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: total,
+              showSizeChanger: true,
+              showTotal: (total, range) =>
+                `${range[0]}-${range[1]} of ${total} items`,
+              pageSizeOptions: ["10", "20", "50", "100"],
+            }}
+            onChange={handleTableChange}
+            scroll={{ x: 1200 }}
+            size="middle"
           />
         </Card>
 
-        <Drawer
-          width={550}
-          onClose={onCloseDrawer}
-          open={drawerVisible}
-          destroyOnClose
-          closable={false}
-          title={
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Title level={5} style={{ margin: 0 }}>
-                Pricing Details
-              </Title>
-              <CloseOutlined
-                onClick={onCloseDrawer}
-                style={{
-                  fontSize: 16,
-                  color: "#00000073",
-                  cursor: "pointer",
-                }}
+        {/* Preview Modal */}
+        <Modal
+          title="Pricing Rule Preview"
+          open={isPreviewOpen}
+          onCancel={() => setIsPreviewOpen(false)}
+          footer={null}
+          width={800}
+        >
+          {previewRule && (
+            <div className="max-h-[70vh] overflow-y-auto">
+              {/* Reuse existing Preview Component */}
+              <PricingPreview
+                country={previewRule.country_name || ""}
+                state={previewRule.state_name || ""}
+                district={previewRule.district_name || ""}
+                area={previewRule.area_name || ""}
+                pincode={previewRule.pincode || ""}
+                globalPrice={Number(previewRule.global_price)}
+                hotspotEnabled={previewRule.is_hotspot}
+                hotspotId={previewRule.hotspot_name || ""}
+                multiplier={Number(previewRule.multiplier || 1)}
+                timeSlots={transformSlotsForPreview(previewRule)}
               />
             </div>
-          }
-        >
-          {currentPriceSetting ? (
-            <Space direction="vertical" style={{ width: "100%" }} size="middle">
-              {/* Location Information */}
-              <Card
-                size="small"
-                bordered
-                bodyStyle={{ padding: 16, backgroundColor: "#ffffff" }}
-              >
-                <Title
-                  level={5}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    marginBottom: 8,
-                  }}
-                >
-                  <GrLocation />
-                  Location Information
-                </Title>
-                <Descriptions
-                  column={2}
-                  size="small"
-                  colon
-                  layout="vertical"
-                  labelStyle={{ marginBottom: 0 }}
-                  contentStyle={{ marginTop: -4 }}
-                >
-                  <Descriptions.Item label="Country">
-                    {currentPriceSetting.country || "-"}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="State">
-                    {currentPriceSetting.state || "-"}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="District">
-                    {currentPriceSetting.district || "-"}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Area">
-                    {currentPriceSetting.area || "-"}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Pincode">
-                    {currentPriceSetting.pincode || "-"}
-                  </Descriptions.Item>
-                </Descriptions>
-              </Card>
-
-              {/* Hotspot Details */}
-              <Card size="small" bordered bodyStyle={{ padding: 16 }}>
-                <Title
-                  level={5}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    marginBottom: 8,
-                  }}
-                >
-                  <LuDollarSign />
-                  Hotspot Details
-                </Title>
-                <Descriptions
-                  column={2}
-                  size="small"
-                  colon
-                  layout="vertical"
-                  labelStyle={{ marginBottom: 0 }}
-                  contentStyle={{ marginTop: -4 }}
-                >
-                  <Descriptions.Item label="Hotspot ID">
-                    {currentPriceSetting.hotspotId || "-"}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Hotspot Name">
-                    {currentPriceSetting.hotspotName || "-"}
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Is Hotspot">
-                    <span
-                      style={{
-                        backgroundColor: currentPriceSetting.isHotspot
-                          ? "#e6f7ff"
-                          : "#fff1f0",
-                        color: currentPriceSetting.isHotspot
-                          ? "#007BFF"
-                          : "#ff4d4f",
-                        padding: "2px 8px",
-                        borderRadius: "50px",
-                        fontWeight: "bold",
-                        display: "inline-block",
-                      }}
-                    >
-                      {currentPriceSetting.isHotspot ? "Yes" : "No"}
-                    </span>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="Base Fare">
-                    <Text style={{ fontSize: 17, fontWeight: "bold" }}>
-                      {currentPriceSetting.baseFare || "-"}
-                    </Text>
-                  </Descriptions.Item>
-                </Descriptions>
-              </Card>
-
-              {/* Rate Details */}
-              <Title
-                level={5}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 8,
-                }}
-              >
-                <FaCarAlt />
-                Rate Details
-              </Title>
-
-              <Card size="small" bordered>
-                <Space
-                  direction="vertical"
-                  style={{ width: "100%" }}
-                  size="middle"
-                >
-                  {/* Driver Info Section */}
-                  <div>
-                    {/* Driver Type Badge */}
-                    <div
-                      style={{
-                        backgroundColor:
-                          currentPriceSetting.driverType?.toLowerCase() ===
-                          "premium"
-                            ? "#000000"
-                            : currentPriceSetting.driverType?.toLowerCase() ===
-                                "elite"
-                              ? "#007BFF"
-                              : "#ffffff",
-                        color:
-                          currentPriceSetting.driverType?.toLowerCase() ===
-                          "premium"
-                            ? "#ffffff"
-                            : currentPriceSetting.driverType?.toLowerCase() ===
-                                "elite"
-                              ? "#ffffff"
-                              : "#000000",
-                        padding: "4px 14px",
-                        borderRadius: "50px",
-                        fontWeight: "bold",
-                        letterSpacing: 0.5,
-                        display: "inline-block",
-                        border: "1px solid #ccc",
-                        width: "fit-content",
-                        marginBottom: 8,
-                      }}
-                    >
-                      {currentPriceSetting.driverType
-                        ? `${currentPriceSetting.driverType.toUpperCase()} DRIVER`
-                        : "DRIVER"}
-                    </div>
-
-                    <Descriptions
-                      column={2}
-                      size="small"
-                      colon
-                      layout="vertical"
-                      labelStyle={{
-                        marginBottom: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                      contentStyle={{ marginTop: -4 }}
-                    >
-                      <Descriptions.Item
-                        label={
-                          <>
-                            <img
-                              src="https://img.icons8.com/ios/50/fa314a/error--v1.png"
-                              alt="cancel icon"
-                              style={{ width: 16, height: 16 }}
-                            />
-                            <span>Cancellation Fee</span>
-                          </>
-                        }
-                      >
-                        <Text strong style={{ fontSize: 13 }}>
-                          {currentPriceSetting.cancellationFee ?? "-"}
-                        </Text>
-                      </Descriptions.Item>
-
-                      <Descriptions.Item
-                        label={
-                          <>
-                            <img
-                              src="https://img.icons8.com/ios/50/000000/clock--v1.png"
-                              alt="clock icon"
-                              style={{ width: 16, height: 16 }}
-                            />
-                            <span>Waiting Fee</span>
-                          </>
-                        }
-                      >
-                        <Text strong style={{ fontSize: 13 }}>
-                          {currentPriceSetting.waitingFee ?? "-"}
-                        </Text>
-                      </Descriptions.Item>
-                    </Descriptions>
-                  </div>
-
-                  <Divider style={{ margin: "12px 0" }} />
-
-                  {/* Time-based Rates Section */}
-                  <div>
-                    <Text strong>Time-based Rates</Text>
-                    <div style={{ display: "flex", gap: 16 }}>
-                      <div style={{ flex: 3 }}>
-                        <Descriptions
-                          size="small"
-                          colon
-                          layout="vertical"
-                          labelStyle={{
-                            marginBottom: 0,
-                            padding: 0,
-                            display: "flex",
-                            alignItems: "center",
-                          }}
-                          contentStyle={{ marginTop: -4 }}
-                        >
-                          <Descriptions.Item label="Schedule">
-                            <div
-                              style={{
-                                border: "1px solid #d9d9d9",
-                                borderRadius: "50px",
-                                padding: "2px 10px",
-                                margin: " 0 4px 0 0",
-                                fontWeight: 500,
-                                fontSize: 13,
-                                display: "inline-block",
-                                marginBottom: 4,
-                              }}
-                            >
-                              {currentPriceSetting.day || "-"}
-                            </div>
-                            <div>
-                              <Text type="secondary" style={{ fontSize: 13 }}>
-                                {currentPriceSetting.timeRange || "-"}
-                              </Text>
-                            </div>
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </div>
-
-                      <div
-                        style={{
-                          flex: 1,
-                          display: "flex",
-                          alignItems: "flex-start",
-                        }}
-                      >
-                        <Descriptions
-                          size="small"
-                          colon
-                          layout="vertical"
-                          contentStyle={{ marginTop: -4 }}
-                        >
-                          <Descriptions.Item label="Rate">
-                            <Text
-                              strong
-                              style={{ fontSize: 18, color: "#007BFF" }}
-                            >
-                              ₹{currentPriceSetting.rateRange ?? "-"}
-                            </Text>
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </div>
-                    </div>
-                  </div>
-                </Space>
-              </Card>
-            </Space>
-          ) : (
-            <p>No pricing details selected.</p>
           )}
-        </Drawer>
+        </Modal>
       </div>
     </TitleBar>
   );

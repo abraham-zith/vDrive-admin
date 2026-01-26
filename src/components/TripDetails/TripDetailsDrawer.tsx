@@ -151,7 +151,7 @@ const TripDetailsDrawer: React.FC<Props> = ({
         </div>
       }
       placement="right"
-      width="100%"
+      styles={{ wrapper: { width: "100%" } }}
       //width={window.innerWidth < 768 ? "100%" : 620}
 
       closeIcon={<CloseOutlined />}

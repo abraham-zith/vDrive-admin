@@ -48,7 +48,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
       socketRef.current.on("connect", () => {
         const id = socketRef.current?.id || null;
-        console.log("Socket connected:", id);
         setIsConnected(true);
         if (id) {
           setSocketId(id);
@@ -57,7 +56,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       });
 
       socketRef.current.on("disconnect", () => {
-        console.log("Socket disconnected");
         setIsConnected(false);
         setSocketId(null);
         delete axiosIns.defaults.headers.common["x-socket-id"];

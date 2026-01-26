@@ -8,7 +8,6 @@ import {
   InputNumber,
   Segmented,
   Modal,
-  message,
   Switch,
   Card,
   Row,
@@ -23,6 +22,7 @@ import {
 } from "@ant-design/icons";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
 import type { ColumnsType } from "antd/es/table";
+import { messageApi as message } from "../utilities/antdStaticHolder";
 
 const { Option } = Select;
 

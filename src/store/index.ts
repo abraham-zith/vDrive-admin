@@ -2,12 +2,16 @@ import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import locationReducer from "./slices/locationSlice";
 import tripReducer from "./slices/tripSlice";
+import pricingFareRulesReducer from "./slices/pricingFareRulesSlice";
+import hotspotReducer from "./slices/hotspotSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     location: locationReducer,
     trips: tripReducer,
+    pricingFareRules: pricingFareRulesReducer,
+    hotspot: hotspotReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
