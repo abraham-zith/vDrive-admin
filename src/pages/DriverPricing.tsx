@@ -40,7 +40,7 @@ const DriverPricing = () => {
     "elite-driver": [],
   });
 
-  const [hotspotEnabled, setHotspotEnabled] = useState(true);
+  const [hotspotEnabled, setHotspotEnabled] = useState(false);
   const [hotspotId, setHotspotId] = useState("");
   const [multiplier, setMultiplier] = useState(1);
 
@@ -50,7 +50,6 @@ const DriverPricing = () => {
       dispatch(fetchPricingFareRuleById(id))
         .unwrap()
         .then((data) => {
-          console.log({ data });
           setCountry(data.country_id || "");
           setState(data.state_id || "");
           setDistrict(data.district_id || "");
@@ -132,7 +131,7 @@ const DriverPricing = () => {
     setArea("");
     setPincode("");
     setGlobalPrice(1000);
-    setHotspotEnabled(true);
+    setHotspotEnabled(false);
     setHotspotId("");
     setMultiplier(1);
     setTimeSlots({
@@ -165,14 +164,6 @@ const DriverPricing = () => {
 
   // Transform and save pricing rule with time slots
   const handleSave = async () => {
-    // Debug log to see what we're sending
-    console.log("Attempting to save with values:", {
-      district,
-      area,
-      globalPrice,
-      hotspotEnabled,
-    });
-
     // Validation
     if (!district || district === "") {
       message.error("Please select a district");

@@ -174,7 +174,6 @@ export const fetchCities = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      console.log({ countryId, stateId, search, limit });
       if (cityCancelTokenSource) {
         cityCancelTokenSource.cancel("Operation canceled due to new request.");
       }
@@ -224,8 +223,6 @@ export const fetchAreas = createAsyncThunk(
       const params = new URLSearchParams();
       params.append("limit", limit.toString());
       if (search) params.append("search", search);
-      // if (stateId) params.append("state_id", stateId);
-      // if (districtId) params.append("city_id", districtId);
 
       const response = await axiosIns.get(
         `/api/locations/areas/${districtId}?${params.toString()}`,

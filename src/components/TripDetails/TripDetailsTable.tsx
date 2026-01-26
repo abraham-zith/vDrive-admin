@@ -569,10 +569,8 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
     </div>
   );
 
-  const confirmCancelTrip = (trip: TripDetailsType | null) => {
+  const handleCancelTrip = async (trip: TripDetail) => {
     if (!trip) return;
-
-    console.log("Cancel trip:", trip.trip_id);
 
     // later API:
     // api.post(`/trips/${trip.trip_id}/cancel`)
@@ -595,10 +593,8 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
     </div>
   );
 
-  const confirmTriggerDrivers = (trip: TripDetailsType | null) => {
+  const handleTriggerDrivers = async (trip: TripDetail) => {
     if (!trip) return;
-
-    console.log("Trigger drivers for trip:", trip.trip_id);
 
     // later API
     // api.post(`/trips/${trip.trip_id}/trigger-drivers`)

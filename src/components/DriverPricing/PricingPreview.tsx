@@ -36,18 +36,6 @@ const PricingPreview = ({
   multiplier,
   globalPrice,
 }: PricingPreviewProps) => {
-  console.log({
-    country,
-    state,
-    district,
-    area,
-    pincode,
-    timeSlots,
-    hotspotEnabled,
-    hotspotId,
-    multiplier,
-    globalPrice,
-  });
   const dispatch = useAppDispatch();
   const { hotspots } = useAppSelector((state) => state.hotspot);
 

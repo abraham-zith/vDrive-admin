@@ -58,18 +58,8 @@ const PricingAndFareRules: React.FC = () => {
     (state) => state.pricingFareRules,
   );
 
-  // Debug: Log loading state changes
-  console.log(
-    "Pricing Table - isLoading:",
-    isLoading,
-    "fareRules count:",
-    fareRules.length,
-  );
-
-  console.log({ previewRule });
   // Fetch data on mount
   useEffect(() => {
-    console.log("Fetching pricing fare rules...");
     dispatch(
       fetchPricingFareRules({
         page: currentPage,
@@ -215,16 +205,10 @@ const PricingAndFareRules: React.FC = () => {
           title="Pricing & Fare Rules"
           extra={
             <Space>
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={() => console.log("Export CSV")}
-              >
+              <Button icon={<DownloadOutlined />} onClick={() => {}}>
                 CSV
               </Button>
-              <Button
-                icon={<DownloadOutlined />}
-                onClick={() => console.log("Export Excel")}
-              >
+              <Button icon={<DownloadOutlined />} onClick={() => {}}>
                 Excel
               </Button>
             </Space>

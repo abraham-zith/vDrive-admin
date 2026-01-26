@@ -244,9 +244,6 @@ const pricingFareRulesSlice = createSlice({
       .addCase(fetchPricingFareRules.pending, (state) => {
         state.isLoading = true;
         state.error = null;
-        console.log(
-          "Redux: fetchPricingFareRules PENDING - isLoading set to TRUE",
-        );
       })
       .addCase(
         fetchPricingFareRules.fulfilled,
@@ -264,26 +261,17 @@ const pricingFareRulesSlice = createSlice({
           state.total = action.payload.total;
           state.currentPage = action.payload.page;
           state.pageSize = action.payload.limit;
-          console.log(
-            "Redux: fetchPricingFareRules FULFILLED - isLoading set to FALSE",
-          );
         },
       )
       .addCase(fetchPricingFareRules.rejected, (state, action) => {
         // Don't set isLoading to false if request was cancelled
         // because a new request is already in progress
         if (action.payload === "cancelled") {
-          console.log(
-            "Redux: fetchPricingFareRules CANCELLED - keeping isLoading as is",
-          );
           // Don't change isLoading state - let the new pending request handle it
         } else {
           state.isLoading = false;
           state.error =
             action.error.message || "Failed to fetch pricing fare rules";
-          console.log(
-            "Redux: fetchPricingFareRules REJECTED - isLoading set to FALSE",
-          );
         }
       })
       .addCase(fetchPricingFareRuleById.pending, (state) => {

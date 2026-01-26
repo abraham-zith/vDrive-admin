@@ -331,18 +331,15 @@ const LocationConfiguration = ({
         if (selected.pincode && (!pincode || pincode === ""))
           setPincode(selected.pincode);
       } else {
-        console.log(`[LocationConfig] Fetching area details for ID: ${area}`);
         dispatch(fetchAreaById(area))
           .unwrap()
           .then((data) => {
-            console.log("[LocationConfig] Fetched area data:", data);
             const placeName = data.place || data.name || data.area_name;
             const zip = data.zipcode || data.pincode;
 
             if (placeName) setAreaSearchValue(placeName);
 
             if (zip && (!pincode || pincode === "")) {
-              console.log("[LocationConfig] Setting pincode to:", zip);
               setPincode(zip);
             }
           })
