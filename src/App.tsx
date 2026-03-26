@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import {
   TeamOutlined,
   UserOutlined,
@@ -6,6 +6,9 @@ import {
   LogoutOutlined,
   DollarOutlined,
   MenuOutlined,
+  EnvironmentOutlined,
+  ArrowRightOutlined,
+  TableOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import {
@@ -35,8 +38,12 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
 import { AntdStaticHolder } from "./utilities/antdStaticHolder";
+import { notification } from "antd";
+import { useAdminTripAlert } from "./hooks/useAdminTripAlert";
+import { useUserAlert } from "./hooks/useUserAlert";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
 import { MdOutlineAccountBalanceWallet } from "react-icons/md";
+
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -75,6 +82,7 @@ const RouteLoadingFallback = () => (
 
 // Lazy load heavy components for better bundle splitting
 const Users = lazy(() => import("./pages/Users"));
+const Customers = lazy(() => import("./pages/Customers"));
 const Admins = lazy(() => import("./pages/Admins"));
 const InvoiceTemplates = lazy(() => import("./pages/InvoiceTemplates"));
 const TripDetails = lazy(() => import("./pages/TripDetails"));
@@ -83,9 +91,12 @@ const DriverPricing = lazy(() => import("./pages/DriverPricing"));
 const PricingAndFareRules = lazy(() => import("./pages/Pricing&FareRules"));
 const Deductions = lazy(() => import("./pages/Deductions"));
 const RechargePlan = lazy(() => import("./pages/RechargePlan"));
+const TripTransactions = lazy(() => import("./pages/TripTransactions"));
+const Tax = lazy(() => import("./pages/Tax"));
 const SignUp = lazy(() => import("./signup/Signup"));
 const Login = lazy(() => import("./login/Login"));
 const ResetPassword = lazy(() => import("./login/ResetPassword"));
+const PricingCombinations = lazy(() => import("./pages/PricingCombinations"));
 
 // const PlaceholderContent: React.FC<{
 // title: string;
@@ -130,6 +141,137 @@ const RootLayout: React.FC = () => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
+
+
+  const handleNewTrip = useCallback((newTrip: any) => {
+    console.log("New trip received", newTrip);
+
+    const key = `trip-${newTrip.id}`; // unique key per notification
+
+    notification.info({
+      key,
+      message: (
+        <span style={{ fontWeight: 600, fontSize: 14 }}>
+          🚗 New Trip Requested — #{newTrip.id}
+        </span>
+      ),
+      description: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          {/* Pickup */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+            <EnvironmentOutlined style={{ color: '#22c55e', marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>PICKUP</div>
+              <div style={{ fontSize: 13, color: '#000' }}>
+                {newTrip.pickupLocation?.address || newTrip.pickupLocation || 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          {/* Dropoff */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+            <EnvironmentOutlined style={{ color: '#ef4444', marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>DROP-OFF</div>
+              <div style={{ fontSize: 13, color: '#000' }}>
+                {newTrip.dropoffLocation?.address || newTrip.dropoffLocation || 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div
+            onClick={() => {
+              notification.destroy(key);                          // close this notification
+              navigate(`/TripDetails?selected=${newTrip.id}`);         // ✅ redirect with trip selected
+            }}
+            style={{
+              marginTop: 6,
+              cursor: 'pointer',
+              color: '#3b82f6',
+              fontWeight: 600,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            View Trip Details <ArrowRightOutlined />
+          </div>
+        </div>
+      ),
+      placement: 'topRight',
+      duration: 8,       // stays longer so admin can read it
+      style: {
+        background: '#fff',
+        border: '1px solid #ccc',
+        borderRadius: 10,
+      },
+    });
+  }, [navigate]);
+
+  useAdminTripAlert(handleNewTrip);
+
+  const handleNewUser = useCallback((newUser: any) => {
+    console.log("New user registered", newUser);
+
+    const key = `user-${newUser.id || Date.now()}`;
+
+    notification.success({
+      key,
+      message: (
+        <span style={{ fontWeight: 600, fontSize: 14 }}>
+          👤 New User Registered!
+        </span>
+      ),
+      description: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          {/* User Detail */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+            <UserOutlined style={{ color: '#3b82f6', marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 13, color: '#000', fontWeight: 500 }}>
+                {newUser.full_name || newUser.fullName || 'Unknown User'}
+              </div>
+              <div style={{ fontSize: 11, color: '#888' }}>
+                {newUser.phone_number || newUser.phoneNumber || 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div
+            onClick={() => {
+              notification.destroy(key);
+              navigate(`/customers`);
+            }}
+            style={{
+              marginTop: 6,
+              cursor: 'pointer',
+              color: '#3b82f6',
+              fontWeight: 600,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            Manage Users <ArrowRightOutlined />
+          </div>
+        </div>
+      ),
+      placement: 'topRight',
+      duration: 8,
+      style: {
+        background: '#fff',
+        border: '1px solid #ccc',
+        borderRadius: 10,
+      },
+    });
+  }, [navigate]);
+
+  useUserAlert(handleNewUser);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -146,7 +288,9 @@ const RootLayout: React.FC = () => {
     if (!loading && !isAuthenticated && location.pathname !== "/login") {
       navigate("/login");
     }
+
   }, [isAuthenticated, loading, location, navigate]);
+
 
   const onCloseDrawer = () => {
     setDrawerVisible(false);
@@ -178,6 +322,11 @@ const RootLayout: React.FC = () => {
       icon: <TeamOutlined />,
     },
     {
+      label: <Link to="/customers">Customers</Link>,
+      key: "/customers",
+      icon: <UserOutlined />,
+    },
+    {
       label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>,
       key: "/PricingAndFareRules",
       icon: <DollarOutlined />,
@@ -203,6 +352,11 @@ const RootLayout: React.FC = () => {
       icon: <IoCarOutline />,
     },
     {
+      label: <Link to="/trip-transactions">Trip Transactions</Link>,
+      key: "/trip-transactions",
+      icon: <EnvironmentOutlined />,
+    },
+    {
       label: <Link to="/Deductions">Deduction Management</Link>,
       key: "/Deductions",
       icon: <MdOutlineMoneyOff />,
@@ -211,6 +365,16 @@ const RootLayout: React.FC = () => {
       label: <Link to="/RechargePlan">Recharge Plan</Link>,
       key: "/RechargePlan",
       icon: <MdOutlineAccountBalanceWallet />,
+    },
+    {
+      label: <Link to="/taxes">Tax Management</Link>,
+      key: "/taxes",
+      icon: <DollarOutlined />,
+    },
+    {
+      label: <Link to="/pricing-combinations">Pricing Combinations</Link>,
+      key: "/pricing-combinations",
+      icon: <TableOutlined />,
     },
   ];
   return (
@@ -281,19 +445,17 @@ const RootLayout: React.FC = () => {
                   className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
                 >
                   <div
-                    className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
-                      collapsed ? "justify-center" : "gap-3"
-                    }`}
+                    className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${collapsed ? "justify-center" : "gap-3"
+                      }`}
                   >
                     {collapsed ? null : (
                       <Avatar size="large" icon={<UserOutlined />} />
                     )}
                     <div
-                      className={`grid transition-all duration-300 ease-in-out ${
-                        collapsed
-                          ? "grid-rows-[0fr] opacity-0"
-                          : "grid-rows-[1fr] opacity-100"
-                      }`}
+                      className={`grid transition-all duration-300 ease-in-out ${collapsed
+                        ? "grid-rows-[0fr] opacity-0"
+                        : "grid-rows-[1fr] opacity-100"
+                        }`}
                     >
                       <div className="overflow-hidden">
                         <div className="flex flex-col text-black">
@@ -383,11 +545,10 @@ const RootLayout: React.FC = () => {
             )}
             <Content>
               <div
-                className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
-                  isMobile && isAuthenticated && location.pathname !== "/login"
-                    ? "pt-16 h-[100dvh]"
-                    : "h-[100dvh]"
-                }`}
+                className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${isMobile && isAuthenticated && location.pathname !== "/login"
+                  ? "pt-16 h-[100dvh]"
+                  : "h-[100dvh]"
+                  }`}
               >
                 <Outlet />
               </div>
@@ -465,6 +626,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "customers",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Customers />
+          </Suspense>
+        ),
+      },
+      {
         path: "admins",
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
@@ -489,6 +658,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: "trip-transactions",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <TripTransactions />
+          </Suspense>
+        ),
+      },
+      {
         path: "drivers",
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
@@ -509,6 +686,22 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <RechargePlan />
+          </Suspense>
+        ),
+      },
+      {
+        path: "taxes",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Tax />
+          </Suspense>
+        ),
+      },
+      {
+        path: "pricing-combinations",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <PricingCombinations />
           </Suspense>
         ),
       },
