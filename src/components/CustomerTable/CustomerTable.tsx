@@ -138,7 +138,7 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                         </Avatar>
                         <div>
                             <div className="font-semibold">{record.full_name}</div>
-                            <div className="text-xs text-gray-500">{record.user_id}</div>
+                            <div className="text-xs text-gray-500">{record.user_code}</div>
                         </div>
                     </div>
                 ),

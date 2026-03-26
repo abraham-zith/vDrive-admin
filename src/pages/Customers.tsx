@@ -29,7 +29,7 @@ export interface Customer {
     gender?: string;
     role?: string;
     emergency_contacts?: EmergencyContact[];
-    user_id?: string;
+    user_code?: string;
 }
 
 // Remove dummy DATA array
