@@ -69,3 +69,5 @@ export const query = async (text: string, params?: any[]) => {
   }
   return pool.query(text, params);
 };
+
+export { pool };

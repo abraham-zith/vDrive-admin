@@ -23,6 +23,16 @@ router.patch('/disable/:id', UserManagementController.disableUser);
 
 router.patch('/enable/:id', UserManagementController.enableUser);
 
+router.patch(
+    '/suspend/:id',
+    UserManagementController.suspendUser
+);
+
+router.patch(
+    '/unsuspend/:id',
+    UserManagementController.unsuspendUser
+);
+
 router.get('/search', UserManagementController.searchUsers);
 
 router.delete('/:id', UserManagementController.deleteUser);

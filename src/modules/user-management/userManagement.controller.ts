@@ -26,6 +26,13 @@ export const UserManagementController = {
   async unblockUser(req: Request, res: Response, next: NextFunction) {
     return forwardRequest(req, res, next, config.userDriverApiUrl);
   },
+  async suspendUser(req: Request, res: Response, next: NextFunction) {
+    return forwardRequest(req, res, next, config.userDriverApiUrl);
+  },
+
+  async unsuspendUser(req: Request, res: Response, next: NextFunction) {
+    return forwardRequest(req, res, next, config.userDriverApiUrl);
+  },
 
   async disableUser(req: Request, res: Response, next: NextFunction) {
     return forwardRequest(req, res, next, config.userDriverApiUrl);
