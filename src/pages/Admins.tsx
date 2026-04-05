@@ -1,82 +1,135 @@
-import { useState, useRef } from "react";
-import { Button, Modal, Form, Input, Table, Tag, Select } from "antd";
+import { useEffect, useRef } from "react";
+import {
+  Button,
+  Form,
+  Input,
+  Modal,
+  Popconfirm,
+  Select,
+  Table,
+  Tag,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useGetHeight } from "../utilities/customheightWidth";
-import { EditOutlined } from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { IoPersonAddOutline } from "react-icons/io5";
-import { format } from "date-fns";
 import { IoMdRefresh } from "react-icons/io";
+import { format } from "date-fns";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
-type User = {
-  id: number;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  alternativePhone?: string;
-  role: string;
-  status: string;
-  password: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import { useGetHeight } from "../utilities/customheightWidth";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  fetchAdminUsers,
+  createAdminUser,
+  updateAdminUser,
+  deleteAdminUser,
+  type AdminUser,
+} from "../store/slices/adminSlice";
+import { messageApi } from "../utilities/antdStaticHolder";
+import { useState } from "react";
+
+type ModalMode = "create" | "edit";
+
+const passwordRegex =
+  /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{5,18}$/;
+const phoneRegex = /^\+?[0-9]{6,15}$/;
 
 export default function AdminPage() {
+  const dispatch = useAppDispatch();
+  const { admins, loading, submitting } = useAppSelector(
+    (state) => state.admin
+  );
+  const currentRole = useAppSelector((state) => state.auth.role);
+  const isSuperAdmin = currentRole === "super_admin";
+
   const contentRef = useRef<HTMLDivElement>(null);
   const tableHeight = useGetHeight(contentRef);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      fullName: "John Doe",
-      email: "john@example.com",
-      phoneNumber: "1234567890",
-      alternativePhone: "9876543210",
-      role: "Admin",
-      status: "Active",
-      password: "password123",
-      createdAt: "2025-08-22T14:22:33.000Z",
-      updatedAt: "2025-08-22T14:22:33.000Z",
-    },
-  ]);
 
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [modalMode, setModalMode] = useState<ModalMode>("create");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState<AdminUser | null>(null);
   const [form] = Form.useForm();
 
-  const showAddModal = () => {
-    setEditingUser(null);
+  useEffect(() => {
+    dispatch(fetchAdminUsers());
+  }, [dispatch]);
+
+  const openCreateModal = () => {
+    setModalMode("create");
+    setEditingAdmin(null);
     form.resetFields();
     setIsModalOpen(true);
   };
 
-  const showEditModal = (user: User) => {
-    setEditingUser(user);
-    form.setFieldsValue(user);
+  const openEditModal = (admin: AdminUser) => {
+    setModalMode("edit");
+    setEditingAdmin(admin);
+    form.setFieldsValue({
+      name: admin.name,
+      email: admin.email,
+      contact: admin.contact ?? "",
+      role: admin.role,
+    });
     setIsModalOpen(true);
   };
 
-  const handleOk = () => {
-    form.validateFields().then((values) => {
-      const now = new Date().toISOString();
-
-      if (editingUser) {
-        setUsers(
-          users.map((u) =>
-            u.id === editingUser.id ? { ...u, ...values, updatedAt: now } : u,
-          ),
-        );
-      } else {
-        const newUser: User = {
-          id: Date.now(),
-          ...values,
-          createdAt: now,
-          updatedAt: now,
+  const handleModalSubmit = () => {
+    form.validateFields().then(async (values) => {
+      if (modalMode === "create") {
+        const payload: {
+          name: string;
+          email: string;
+          password: string;
+          role: "admin" | "super_admin";
+          contact?: string;
+        } = {
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          role: values.role,
         };
-        setUsers([...users, newUser]);
-      }
+        if (values.contact) payload.contact = values.contact;
 
-      setIsModalOpen(false);
-      form.resetFields();
+        const result = await dispatch(createAdminUser(payload));
+        if (createAdminUser.fulfilled.match(result)) {
+          messageApi?.success("Admin user created successfully");
+          setIsModalOpen(false);
+          form.resetFields();
+        }
+      } else if (editingAdmin) {
+        const payload: {
+          name?: string;
+          email?: string;
+          contact?: string;
+          role?: "admin" | "super_admin";
+        } = {};
+        if (values.name !== editingAdmin.name) payload.name = values.name;
+        if (values.email !== editingAdmin.email) payload.email = values.email;
+        if ((values.contact || null) !== editingAdmin.contact)
+          payload.contact = values.contact || undefined;
+        if (values.role !== editingAdmin.role) payload.role = values.role;
+
+        if (Object.keys(payload).length === 0) {
+          setIsModalOpen(false);
+          return;
+        }
+
+        const result = await dispatch(
+          updateAdminUser({ id: editingAdmin.id, data: payload })
+        );
+        if (updateAdminUser.fulfilled.match(result)) {
+          messageApi?.success("Admin user updated successfully");
+          setIsModalOpen(false);
+          form.resetFields();
+        }
+      }
     });
+  };
+
+  const handleDelete = async (id: string) => {
+    const result = await dispatch(deleteAdminUser(id));
+    if (deleteAdminUser.fulfilled.match(result)) {
+      messageApi?.success("Admin user deleted successfully");
+    }
   };
 
   const handleCancel = () => {
@@ -84,92 +137,99 @@ export default function AdminPage() {
     form.resetFields();
   };
 
-  const columns: ColumnsType<User> = [
+  const roleTagColor: Record<string, string> = {
+    super_admin: "purple",
+    admin: "blue",
+  };
+
+  const roleLabel: Record<string, string> = {
+    super_admin: "Super Admin",
+    admin: "Admin",
+  };
+
+  const columns: ColumnsType<AdminUser> = [
     {
-      title: "ID",
-      dataIndex: "id",
-      key: "id",
-      minWidth: 70,
-      sorter: (a: User, b: User) => a.id - b.id,
-    },
-    {
-      title: "Full Name",
-      dataIndex: "fullName",
-      key: "fullName",
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
       minWidth: 160,
-      sorter: (a: User, b: User) => a.fullName.localeCompare(b.fullName),
+      sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
       title: "Email",
       dataIndex: "email",
       key: "email",
-      minWidth: 160,
-      sorter: (a: User, b: User) => a.email.localeCompare(b.email),
+      minWidth: 200,
+      sorter: (a, b) => a.email.localeCompare(b.email),
     },
     {
-      title: "Phone Number",
-      dataIndex: "phoneNumber",
-      key: "phoneNumber",
-      minWidth: 160,
-      sorter: (a: User, b: User) => a.phoneNumber.localeCompare(b.phoneNumber),
-    },
-    {
-      title: "Alternative Phone",
-      dataIndex: "alternativePhone",
-      key: "alternativePhone",
-      minWidth: 160,
+      title: "Contact",
+      dataIndex: "contact",
+      key: "contact",
+      minWidth: 140,
+      render: (contact: string | null) => contact || "—",
     },
     {
       title: "Role",
       dataIndex: "role",
       key: "role",
-      render: (role: string) => <Tag color="blue">{role}</Tag>,
-      minWidth: 100,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      render: (status: string) => {
-        let color = "green";
-        if (status === "Inactive") color = "orange";
-        if (status === "Suspended") color = "red";
-        return <Tag color={color}>{status}</Tag>;
-      },
-      minWidth: 100,
+      minWidth: 120,
+      render: (role: string) => (
+        <Tag color={roleTagColor[role] ?? "default"}>
+          {roleLabel[role] ?? role}
+        </Tag>
+      ),
     },
     {
       title: "Created At",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      render: (text: string) => format(new Date(text), "MMMM do yyyy, h:mm a"),
-      minWidth: 160,
+      dataIndex: "created_at",
+      key: "created_at",
+      minWidth: 180,
+      render: (text: string) => format(new Date(text), "MMM d, yyyy h:mm a"),
       sorter: (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
       title: "Updated At",
-      dataIndex: "updatedAt",
-      key: "updatedAt",
-      render: (text: string) => format(new Date(text), "MMMM do yyyy, h:mm a"),
+      dataIndex: "updated_at",
+      key: "updated_at",
+      minWidth: 180,
+      render: (text: string) => format(new Date(text), "MMM d, yyyy h:mm a"),
       sorter: (a, b) =>
-        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
-      minWidth: 160,
+        new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
     },
-    {
-      title: "Action",
-      key: "action",
-      width: 160,
-      render: (_, user) => (
-        <Button
-          type="link"
-          icon={<EditOutlined />}
-          onClick={() => showEditModal(user)}
-        >
-          Edit
-        </Button>
-      ),
-    },
+    ...(isSuperAdmin
+      ? [
+          {
+            title: "Action",
+            key: "action",
+            width: 160,
+            render: (_: unknown, admin: AdminUser) => (
+              <div className="flex items-center gap-1">
+                <Button
+                  type="link"
+                  icon={<EditOutlined />}
+                  onClick={() => openEditModal(admin)}
+                >
+                  Edit
+                </Button>
+                <Popconfirm
+                  title="Delete admin user"
+                  description="Are you sure you want to delete this admin user?"
+                  onConfirm={() => handleDelete(admin.id)}
+                  okText="Delete"
+                  okButtonProps={{ danger: true }}
+                  cancelText="Cancel"
+                >
+                  <Button type="link" danger icon={<DeleteOutlined />}>
+                    Delete
+                  </Button>
+                </Popconfirm>
+              </div>
+            ),
+          } as ColumnsType<AdminUser>[number],
+        ]
+      : []),
   ];
 
   return (
@@ -178,113 +238,117 @@ export default function AdminPage() {
       description="Manage your admin users here"
       extraContent={
         <div className="flex items-center gap-2">
-          <div>
+          {isSuperAdmin && (
             <Button
               icon={<IoPersonAddOutline />}
               type="primary"
-              onClick={showAddModal}
+              onClick={openCreateModal}
             >
               Create Admin User
             </Button>
-          </div>
-          <div>
-            <Button
-              icon={<IoMdRefresh />}
-              loading={false}
-              type="primary"
-              onClick={() => {}}
-            >
-              Refresh
-            </Button>
-          </div>
+          )}
+          <Button
+            icon={<IoMdRefresh />}
+            loading={loading}
+            type="primary"
+            onClick={() => dispatch(fetchAdminUsers())}
+          >
+            Refresh
+          </Button>
         </div>
       }
     >
-      {" "}
       <div ref={contentRef} className="h-full w-full">
         <Table
           key={tableHeight}
-          dataSource={users}
+          dataSource={admins}
           columns={columns}
           rowKey="id"
+          loading={loading}
           pagination={false}
           showSorterTooltip={false}
           tableLayout="auto"
           scroll={{ y: Math.floor(tableHeight || 0) }}
         />
+
         <Modal
-          title={editingUser ? "Edit Admin User" : "Create Admin User"}
+          title={
+            modalMode === "create" ? "Create Admin User" : "Edit Admin User"
+          }
           open={isModalOpen}
-          onOk={handleOk}
+          onOk={handleModalSubmit}
           onCancel={handleCancel}
-          okText={editingUser ? "Update" : "Create"}
+          okText={modalMode === "create" ? "Create" : "Update"}
+          confirmLoading={submitting}
+          destroyOnHidden
         >
           <Form form={form} layout="vertical" validateTrigger="onSubmit">
             <Form.Item
-              name="fullName"
-              label="Full Name"
-              rules={[{ required: true, message: "Please enter full name" }]}
+              name="name"
+              label="Name"
+              rules={[
+                { required: true, message: "Name is required" },
+                { min: 2, message: "Name must be at least 2 characters" },
+                { max: 100, message: "Name must not exceed 100 characters" },
+              ]}
             >
-              <Input />
+              <Input placeholder="Enter full name" />
             </Form.Item>
+
             <Form.Item
               name="email"
               label="Email"
               rules={[
-                {
-                  required: true,
-                  type: "email",
-                  message: "Please enter valid email",
-                },
+                { required: true, message: "Email is required" },
+                { type: "email", message: "Enter a valid email address" },
               ]}
             >
-              <Input />
+              <Input placeholder="Enter email address" />
             </Form.Item>
+
             <Form.Item
-              name="phoneNumber"
-              label="Phone Number"
-              rules={[{ required: true, message: "Please enter phone number" }]}
+              name="contact"
+              label="Contact (Phone)"
+              rules={[
+                {
+                  pattern: phoneRegex,
+                  message:
+                    "Enter a valid phone number (6–15 digits, optional +)",
+                },
+                { max: 15, message: "Contact must not exceed 15 characters" },
+              ]}
             >
-              <Input />
+              <Input placeholder="e.g. +911234567890 (optional)" />
             </Form.Item>
-            <Form.Item name="alternativePhone" label="Alternative Phone">
-              <Input />
-            </Form.Item>
+
             <Form.Item
               name="role"
               label="Role"
-              rules={[{ required: true, message: "Please select role" }]}
+              rules={[{ required: true, message: "Role is required" }]}
+              initialValue="admin"
             >
-              <Select>
-                <Select.Option value="Admin">Admin</Select.Option>
-                <Select.Option value="Manager">Manager</Select.Option>
-                <Select.Option value="Developer">Developer</Select.Option>
-                <Select.Option value="Tester">Tester</Select.Option>
-                <Select.Option value="Support">Support</Select.Option>
-                <Select.Option value="Designer">Designer</Select.Option>
-                <Select.Option value="Analyst">Analyst</Select.Option>
+              <Select placeholder="Select role">
+                <Select.Option value="admin">Admin</Select.Option>
+                <Select.Option value="super_admin">Super Admin</Select.Option>
               </Select>
             </Form.Item>
-            <Form.Item
-              name="status"
-              label="Status"
-              rules={[{ required: true, message: "Please select status" }]}
-            >
-              <Select>
-                <Select.Option value="Active">Active</Select.Option>
-                <Select.Option value="Inactive">Inactive</Select.Option>
-                <Select.Option value="Suspended">Suspended</Select.Option>
-              </Select>
-            </Form.Item>
-            {!editingUser && (
+
+            {modalMode === "create" && (
               <>
                 <Form.Item
                   name="password"
                   label="Password"
-                  rules={[{ required: true, message: "Please enter password" }]}
+                  rules={[
+                    { required: true, message: "Password is required" },
+                    {
+                      pattern: passwordRegex,
+                      message:
+                        "Password must be 5–18 characters with at least 1 uppercase, 1 number, and 1 special character",
+                    },
+                  ]}
                   hasFeedback
                 >
-                  <Input.Password />
+                  <Input.Password placeholder="Enter password" />
                 </Form.Item>
 
                 <Form.Item
@@ -300,13 +364,13 @@ export default function AdminPage() {
                           return Promise.resolve();
                         }
                         return Promise.reject(
-                          new Error("Passwords do not match!"),
+                          new Error("Passwords do not match")
                         );
                       },
                     }),
                   ]}
                 >
-                  <Input.Password />
+                  <Input.Password placeholder="Re-enter password" />
                 </Form.Item>
               </>
             )}
