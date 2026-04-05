@@ -16,21 +16,7 @@ export const AuthService = {
   validatePassword(password: string, hashed_password: string): Promise<boolean> {
     return bcrypt.compare(password, hashed_password);
   },
-  checkUserName(user_name: string): string {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    const phoneRegex = /^\d{7,15}$/;
-
-    if (emailRegex.test(user_name)) {
-      return 'Email';
-    } else if (phoneRegex.test(user_name)) {
-      return 'Phone number';
-    } else {
-      return 'Invalid input';
-    }
-  },
-
-  generateTokens(payload: JwtPayload & { id: string }) {
+  generateTokens(payload: JwtPayload & { id: string; role: string }) {
     const accessTokenOptions: SignOptions = { expiresIn: config.jwt.expiresIn };
     const refreshTokenOptions: SignOptions = { expiresIn: config.jwt.refreshExpiresIn };
 
@@ -64,7 +50,10 @@ export const AuthService = {
       }
 
       // Generate new access token
-      const payload: JwtPayload & { id: string } = { id: userData.id };
+      const payload: JwtPayload & { id: string; role: string } = {
+        id: userData.id,
+        role: userData.role,
+      };
       const accessTokenOptions: SignOptions = { expiresIn: config.jwt.expiresIn };
       const newAccessToken = jwt.sign(payload, config.jwt.secret, accessTokenOptions);
 
@@ -86,7 +75,10 @@ export const AuthService = {
     if (!isPasswordValid) {
       throw { statusCode: 401, message: 'Invalid credentials' };
     }
-    const payload: JwtPayload & { id: string } = { id: userData.id };
+    const payload: JwtPayload & { id: string; role: string } = {
+      id: userData.id,
+      role: userData.role,
+    };
 
     const tokens = AuthService.generateTokens(payload);
     return tokens;
@@ -96,36 +88,27 @@ export const AuthService = {
     if (!userData) {
       throw { statusCode: 404, message: 'User not found' };
     }
-    let type = AuthService.checkUserName(data?.user_name);
-    switch (type) {
-      case 'Email':
-        const resetToken = AuthService.generateResetToken();
-        const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour expiry
+    const resetToken = AuthService.generateResetToken();
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour expiry
 
-        // Save reset token to database
-        await AuthRepository.storeResetToken({
-          userId: userData.id,
-          reset_token: resetToken,
-          expires_at: resetTokenExpiry,
-        });
+    await AuthRepository.storeResetToken({
+      userId: userData.id,
+      reset_token: resetToken,
+      expires_at: resetTokenExpiry,
+    });
 
-        // Email configuration
-        const resetUrl = `${config.prodURL}/reset-password?token=${resetToken}`;
-        sendMail({
-          to: [data?.user_name],
-          subject: 'Password Reset Request',
-          body: `
-            <h2>Password Reset</h2>
-            <p>You requested a password reset. Click the link below to reset your password:</p>
-            <a href="${resetUrl}">Reset Password</a>
-            <p>This link will expire in 1 hour.</p>
-            <p>If you didn't request this, please ignore this email.</p>
-          `,
-        });
-        break;
-      default:
-        throw { statusCode: 400, message: 'Invalid userName. Must be a valid email.' };
-    }
+    const resetUrl = `${config.prodURL}/reset-password?token=${resetToken}`;
+    sendMail({
+      to: [data?.user_name],
+      subject: 'Password Reset Request',
+      body: `
+        <h2>Password Reset</h2>
+        <p>You requested a password reset. Click the link below to reset your password:</p>
+        <a href="${resetUrl}">Reset Password</a>
+        <p>This link will expire in 1 hour.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+      `,
+    });
     return true;
   },
   async resetPassword(data: { reset_token: string; new_password: string }): Promise<boolean> {

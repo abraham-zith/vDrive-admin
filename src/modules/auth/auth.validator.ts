@@ -4,15 +4,10 @@ const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{5,18}$/
 
 export const AuthValidation = {
   signInValidation: Joi.object().keys({
-    user_name: Joi.alternatives()
-      .try(
-        Joi.string().email(),
-        Joi.string().pattern(/^[0-9]{6,15}$/) // phone: 6–15 digits
-      )
-      .required()
-      .messages({
-        'alternatives.match': 'Contact must be a valid email or phone number.',
-      }),
+    user_name: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address.',
+      'any.required': 'Email is required.',
+    }),
     password: Joi.string().required().min(5).max(18).pattern(passwordRegex).messages({
       'string.pattern.base':
         'Password must contain at least 1 uppercase letter, 1 number, and 1 special character.',
@@ -20,15 +15,10 @@ export const AuthValidation = {
   }),
 
   forgotPasswordValidation: Joi.object().keys({
-    user_name: Joi.alternatives()
-      .try(
-        Joi.string().email(),
-        Joi.string().pattern(/^[0-9]{6,15}$/) // phone: 6–15 digits
-      )
-      .required()
-      .messages({
-        'alternatives.match': 'Contact must be a valid email or phone number.',
-      }),
+    user_name: Joi.string().email().required().messages({
+      'string.email': 'Please provide a valid email address to reset your password.',
+      'any.required': 'Email is required.',
+    }),
   }),
 
   resetPasswordValidation: Joi.object().keys({

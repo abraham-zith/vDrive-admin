@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { AdminUserRepository } from '../modules/admin-users/adminUser.repository';
-import { AdminUser } from '../modules/admin-users/adminUser.model';
 
 interface AuthRequest extends Request {
-  user?: AdminUser;
+  user?: { id: string; role: string };
 }
 
 const isAuthenticated = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -24,9 +22,10 @@ const isAuthenticated = async (req: AuthRequest, res: Response, next: NextFuncti
     // jwt.verify handles expiry + invalid signature
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload & {
       id: string;
+      role: string;
     };
 
-    if (!decoded?.id) {
+    if (!decoded?.id || !decoded?.role) {
       return res.status(401).json({
         statusCode: 401,
         success: false,
@@ -35,9 +34,7 @@ const isAuthenticated = async (req: AuthRequest, res: Response, next: NextFuncti
       });
     }
 
-    // Optimized: Don't query user from database for every request
-    // User ID is embedded in JWT payload - no DB query needed!
-    req.user = { id: decoded.id } as any;
+    req.user = { id: decoded.id, role: decoded.role };
 
     next();
   } catch (err: any) {
