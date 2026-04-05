@@ -4,13 +4,13 @@ import { AdminUser } from '../admin-users/adminUser.model';
 
 export const AuthRepository = {
   async getUserData(data: { user_name: string }): Promise<AdminUser> {
-    const result = await query('SELECT id, name, password FROM admin_users WHERE contact = $1', [
+    const result = await query('SELECT id, name, password, role FROM admin_users WHERE email = $1', [
       data.user_name,
     ]);
     return result.rows[0];
   },
   async getUserDataById(userId: string): Promise<AdminUser> {
-    const result = await query('SELECT id, name, password FROM admin_users WHERE id = $1', [
+    const result = await query('SELECT id, name, password, role FROM admin_users WHERE id = $1', [
       userId,
     ]);
     return result.rows[0];
@@ -42,7 +42,7 @@ export const AuthRepository = {
 
   async getUserProfileById(userId: string): Promise<AdminUser | null> {
     const result = await query(
-      'SELECT id, name, contact, alternate_contact, role, created_at, updated_at FROM admin_users WHERE id = $1',
+      'SELECT id, name, email, contact, role, created_at, updated_at FROM admin_users WHERE id = $1',
       [userId]
     );
     return result.rows[0] || null;
