@@ -4,6 +4,7 @@ import locationReducer from "./slices/locationSlice";
 import tripReducer from "./slices/tripSlice";
 import pricingFareRulesReducer from "./slices/pricingFareRulesSlice";
 import hotspotReducer from "./slices/hotspotSlice";
+import adminReducer from "./slices/adminSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     trips: tripReducer,
     pricingFareRules: pricingFareRulesReducer,
     hotspot: hotspotReducer,
+    admin: adminReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

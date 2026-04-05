@@ -10,13 +10,17 @@ import {
   loginAsync,
   logoutAsync,
   checkAuthStatus,
+  fetchCurrentUser,
 } from "../store/slices/authSlice";
+import type { CurrentUser } from "../store/slices/authSlice";
 import type { Login } from "../login/Login";
 
 interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
+  role: "admin" | "super_admin" | null;
+  currentUser: CurrentUser | null;
   login: (credentials: Login) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -27,15 +31,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, loading, error } = useAppSelector(
-    (state) => state.auth,
-  );
+  const { isAuthenticated, loading, error, role, currentUser } =
+    useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    // Check auth status on mount
     dispatch(checkAuthStatus());
 
-    // Listen for storage changes to update auth state
     const handleStorageChange = () => {
       dispatch(checkAuthStatus());
     };
@@ -47,11 +48,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, [dispatch]);
 
+  useEffect(() => {
+    if (isAuthenticated && !currentUser) {
+      dispatch(fetchCurrentUser());
+    }
+  }, [isAuthenticated, currentUser, dispatch]);
+
   const login = useCallback(
     async (credentials: Login) => {
       await dispatch(loginAsync(credentials)).unwrap();
     },
-    [dispatch],
+    [dispatch]
   );
 
   const logout = useCallback(async () => {
@@ -63,10 +70,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       isAuthenticated,
       loading,
       error,
+      role,
+      currentUser,
       login,
       logout,
     }),
-    [isAuthenticated, loading, error, login, logout],
+    [isAuthenticated, loading, error, role, currentUser, login, logout]
   );
 
   return (
