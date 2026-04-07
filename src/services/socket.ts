@@ -54,6 +54,33 @@ export const initSocket = (httpServer: HttpServer): Server => {
     }
   });
 
+  // Internal namespace for service-to-service communication (e.g., from vDrive-User-Driver-API)
+  const internalNamespace = io.of('/internal');
+  internalNamespace.use((socket: Socket, next: (err?: any) => void) => {
+    const token = socket.handshake.auth.token;
+    if (token && token === config.internalServiceSecret) {
+      next();
+    } else {
+      logger.warn(`Internal socket connection rejected: Invalid or missing token. ID: ${socket.id}`);
+      next(new Error('Authentication failed: Invalid internal token'));
+    }
+  });
+
+  internalNamespace.on('connection', (socket: Socket) => {
+    logger.info(`🔌 Internal service socket connected: ${socket.id}`);
+
+    // Listen for events from internal services
+    socket.on('driver_event', (data: any) => {
+      logger.info('Received driver event via internal socket:', data);
+      // You can broadcast this to all admin users if needed
+      io?.emit('driver_event', { ...data, timestamp: new Date().toISOString() });
+    });
+
+    socket.on('disconnect', (reason: string) => {
+      logger.info(`❌ Internal service socket disconnected: ${socket.id}. Reason: ${reason}`);
+    });
+  });
+
   io.on('connection', (socket: Socket) => {
     const userName = socket.data.user?.name || 'Unknown';
     const userId = socket.data.user?.id || 'Unknown';

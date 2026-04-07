@@ -5,7 +5,10 @@ export interface RechargePlan {
   description?: string;
   ride_limit: number;
   validity_days: number;
-  price: number;
+  daily_price?: number;
+  weekly_price?: number;
+  monthly_price?: number;
+  features?: any;
   is_active: boolean;
   created_at?: Date;
 }

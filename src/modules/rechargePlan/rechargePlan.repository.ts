@@ -19,7 +19,7 @@ export const RechargePlanRepository = {
     );
 
     return {
-      plans: plans.rows,
+      data: plans.rows,
       total: Number(totalRes.rows[0].total),
     };
   },
@@ -37,15 +37,18 @@ export const RechargePlanRepository = {
   async create(data: any) {
     const res = await query(
       `INSERT INTO recharge_plans 
-       (plan_name, description, ride_limit, validity_days, price, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6)
+       (plan_name, description, ride_limit, validity_days, daily_price, weekly_price, monthly_price, features, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
        RETURNING *`,
       [
         data.planName,
         data.description,
-        data.rideLimit,
+        0, // ride_limit removed
         data.validityDays,
-        data.price,
+        data.dailyPrice ?? 0,
+        data.weeklyPrice ?? 0,
+        data.monthlyPrice ?? 0,
+        JSON.stringify(data.features ?? []),
         data.isActive ?? true,
       ]
     );
@@ -57,19 +60,24 @@ export const RechargePlanRepository = {
     const res = await query(
       `UPDATE recharge_plans
        SET plan_name=$1, description=$2, ride_limit=$3,
-           validity_days=$4, price=$5
-       WHERE id=$6 RETURNING *`,
+           validity_days=$4, daily_price=$5, weekly_price=$6, monthly_price=$7, features=$8, is_active=$9
+       WHERE id=$10 RETURNING *`,
       [
         data.planName,
         data.description,
-        data.rideLimit,
+        0, // ride_limit removed
         data.validityDays,
-        data.price,
+        data.dailyPrice,
+        data.weeklyPrice,
+        data.monthlyPrice,
+        JSON.stringify(data.features ?? []),
+        data.isActive,
         id,
       ]
     );
     return res.rows[0];
   },
+
 
   
   async toggle(id: number, status: boolean) {
