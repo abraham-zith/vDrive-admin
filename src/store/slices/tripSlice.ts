@@ -17,12 +17,12 @@ export interface TripDetailsType {
   service_type: "DRIVER_ONLY" | "CAB+DRIVER";
 
   trip_status:
-    | "LIVE"
-    | "COMPLETED"
-    | "CANCELLED"
-    | "UPCOMING"
-    | "REQUESTED"
-    | "MID-CANCELLED";
+  | "LIVE"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "UPCOMING"
+  | "REQUESTED"
+  | "MID-CANCELLED";
 
   original_scheduled_start_time: string;
   scheduled_start_time: string;
