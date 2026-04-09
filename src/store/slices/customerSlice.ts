@@ -20,12 +20,19 @@ const initialState: CustomerState = {
 };
 
 // ─── Helper: fetch a single customer by id after an action ───────────────────
-// This ensures we always sync the latest data from the server,
-// regardless of what shape the action response returns.
-const refetchCustomer = async (id: string): Promise<Customer> => {
-    const response = await axiosIns.get(`/api/users/${id}`);
-    console.log("refetchCustomer raw response:", response.data); // 👈 add this
-    return response.data?.data
+// This ensures we always sync the latest data from the server.
+// Fallback to null if 404 is encountered (backend might not have GET /:id)
+const refetchCustomer = async (id: string): Promise<Customer | null> => {
+    try {
+        const response = await axiosIns.get(`/api/users/${id}`);
+        return response.data?.data || response.data;
+    } catch (error: any) {
+        if (error.response?.status === 404) {
+            console.warn(`Customer info not found at /api/users/${id}. Backend might not support single fetch.`);
+            return null;
+        }
+        throw error;
+    }
 };
 
 // ─── Thunks ───────────────────────────────────────────────────────────────────
@@ -35,8 +42,21 @@ export const fetchCustomers = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const response = await axiosIns.get("/api/users");
-            console.log("fetchCustomers raw response:", response.data); // 👈 add this
-            return response.data?.data || response.data?.users || response.data;
+            console.log("fetchCustomers raw response:", response.data); 
+            
+            const candidate = response.data?.data || response.data?.users || response.data;
+            
+            if (Array.isArray(candidate)) {
+                return candidate;
+            }
+            
+            // If data is nested one level deeper: response.data.data.users
+            if (response.data?.data && Array.isArray(response.data.data.users)) {
+                return response.data.data.users;
+            }
+
+            console.error("fetchCustomers: expected array but got:", candidate);
+            return []; // Fallback to empty array to avoid .map errors
         } catch (err: any) {
             return rejectWithValue(err.response?.data?.message || err.message || "Failed to fetch customers");
         }
@@ -48,7 +68,7 @@ export const deleteCustomer = createAsyncThunk(
     async (id: string, { rejectWithValue }) => {
         try {
             await axiosIns.delete(`/api/users/${id}`);
-            return id; // just return id — no refetch needed since row is removed
+            return id; 
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message ?? "Failed to delete customer");
         }
@@ -59,8 +79,14 @@ export const blockCustomer = createAsyncThunk(
     "customers/block",
     async ({ id, reason }: { id: string; reason: string }, { rejectWithValue }) => {
         try {
-            await axiosIns.patch(`/api/users/block/${id}`, { reason });
-            return await refetchCustomer(id); // ✅ always returns a full Customer object
+            const response = await axiosIns.patch(`/api/users/block/${id}`, { reason });
+            const updatedFromPatch = response.data?.data || response.data;
+            
+            // If patch returns the full object, use it. Otherwise try re-fetching.
+            if (updatedFromPatch && updatedFromPatch.id) return updatedFromPatch;
+            
+            const refetched = await refetchCustomer(id);
+            return refetched || { id, status: 'blocked' } as any; 
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message ?? "Failed to block customer");
         }
@@ -71,8 +97,13 @@ export const unblockCustomer = createAsyncThunk(
     "customers/unblock",
     async (id: string, { rejectWithValue }) => {
         try {
-            await axiosIns.patch(`/api/users/unblock/${id}`);
-            return await refetchCustomer(id); // ✅
+            const response = await axiosIns.patch(`/api/users/unblock/${id}`);
+            const updatedFromPatch = response.data?.data || response.data;
+            
+            if (updatedFromPatch && updatedFromPatch.id) return updatedFromPatch;
+            
+            const refetched = await refetchCustomer(id);
+            return refetched || { id, status: 'active' } as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message ?? "Failed to unblock customer");
         }
@@ -83,11 +114,13 @@ export const disableCustomer = createAsyncThunk(
     "customers/disable",
     async ({ id, reason }: { id: string; reason: string }, { rejectWithValue }) => {
         try {
-            const patch = await axiosIns.patch(`/api/users/suspend/${id}`, { reason });
-            console.log("disable PATCH response:", patch.data); // 👈 add
-            const customer = await refetchCustomer(id);
-            console.log("disable refetch result:", customer);       // 👈 add
-            return customer;
+            const response = await axiosIns.patch(`/api/users/suspend/${id}`, { reason });
+            const updatedFromPatch = response.data?.data || response.data;
+            
+            if (updatedFromPatch && updatedFromPatch.id) return updatedFromPatch;
+            
+            const refetched = await refetchCustomer(id);
+            return refetched || { id, status: 'suspended' } as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message ?? "Failed to disable customer");
         }
@@ -98,14 +131,15 @@ export const enableCustomer = createAsyncThunk(
     "customers/enable",
     async (id: string, { rejectWithValue }) => {
         try {
-            const patchRes = await axiosIns.patch(`/api/users/enable/${id}`);
-            console.log("enable PATCH response:", patchRes.data); // 👈 add
-            const customer = await refetchCustomer(id);
-            console.log("enable refetch result:", customer);       // 👈 add
-            return customer;
+            const response = await axiosIns.patch(`/api/users/enable/${id}`);
+            const updatedFromPatch = response.data?.data || response.data;
+            
+            if (updatedFromPatch && updatedFromPatch.id) return updatedFromPatch;
+            
+            const refetched = await refetchCustomer(id);
+            return refetched || { id, status: 'active' } as any;
 
         } catch (error: any) {
-            console.log("enable error:", error);
             return rejectWithValue(error.response?.data?.message ?? "Failed to enable customer");
         }
     }
@@ -160,7 +194,9 @@ const customerSlice = createSlice({
             })
             .addCase(deleteCustomer.fulfilled, (state, action) => {
                 state.actionLoading = false;
-                state.customers = state.customers.filter((c) => c.id !== action.payload);
+                if (Array.isArray(state.customers)) {
+                    state.customers = state.customers.filter((c) => c.id !== action.payload);
+                }
                 if (state.selectedCustomer?.id === action.payload) {
                     state.selectedCustomer = null;
                 }
@@ -178,10 +214,14 @@ const customerSlice = createSlice({
             })
             .addCase(blockCustomer.fulfilled, (state, action) => {
                 state.actionLoading = false;
-                state.customers = state.customers.map((c) =>
-                    c.id === action.payload.id ? action.payload : c
-                );
-                // syncCustomer(state, action.payload);
+                if (Array.isArray(state.customers)) {
+                    state.customers = state.customers.map((c) =>
+                        c.id === action.payload.id ? action.payload : c
+                    );
+                }
+                if (state.selectedCustomer?.id === action.payload.id) {
+                    state.selectedCustomer = action.payload;
+                }
             })
             .addCase(blockCustomer.rejected, (state, action) => {
                 state.actionLoading = false;
@@ -196,10 +236,14 @@ const customerSlice = createSlice({
             })
             .addCase(unblockCustomer.fulfilled, (state, action) => {
                 state.actionLoading = false;
-                // syncCustomer(state, action.payload);
-                state.customers = state.customers.map((c) =>
-                    c.id === action.payload.id ? action.payload : c
-                );
+                if (Array.isArray(state.customers)) {
+                    state.customers = state.customers.map((c) =>
+                        c.id === action.payload.id ? action.payload : c
+                    );
+                }
+                if (state.selectedCustomer?.id === action.payload.id) {
+                    state.selectedCustomer = action.payload;
+                }
             })
             .addCase(unblockCustomer.rejected, (state, action) => {
                 state.actionLoading = false;
@@ -214,9 +258,14 @@ const customerSlice = createSlice({
             })
             .addCase(disableCustomer.fulfilled, (state, action) => {
                 state.actionLoading = false;
-                state.customers = state.customers.map((c) =>
-                    c.id === action.payload.id ? action.payload : c
-                );
+                if (Array.isArray(state.customers)) {
+                    state.customers = state.customers.map((c) =>
+                        c.id === action.payload.id ? action.payload : c
+                    );
+                }
+                if (state.selectedCustomer?.id === action.payload.id) {
+                    state.selectedCustomer = action.payload;
+                }
             })
             .addCase(disableCustomer.rejected, (state, action) => {
                 state.actionLoading = false;
@@ -231,9 +280,14 @@ const customerSlice = createSlice({
             })
             .addCase(enableCustomer.fulfilled, (state, action) => {
                 state.actionLoading = false;
-                state.customers = state.customers.map((c) =>
-                    c.id === action.payload.id ? action.payload : c
-                );
+                if (Array.isArray(state.customers)) {
+                    state.customers = state.customers.map((c) =>
+                        c.id === action.payload.id ? action.payload : c
+                    );
+                }
+                if (state.selectedCustomer?.id === action.payload.id) {
+                    state.selectedCustomer = action.payload;
+                }
             })
             .addCase(enableCustomer.rejected, (state, action) => {
                 state.actionLoading = false;
