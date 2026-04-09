@@ -12,6 +12,7 @@ export const forwardRequest = async (req: any, res: any, next: any, url: string)
         'Content-Type': 'application/json',
         'x-api-key': config.internalServiceApiKey,
         'x-admin-id': req.user?.id,
+        'Authorization': req.headers.authorization, // Forward the access token
       },
       data,
     };
@@ -39,8 +40,8 @@ export const forwardRequest = async (req: any, res: any, next: any, url: string)
       return res.status(error?.response?.status || 500).json(error?.response?.data || responseData);
     } else if (error?.request) {
       // The request was made, but no response was received.
-      logger.error('Request Error:', error?.request?.message);
-      return res.status(error?.response?.status || 500).json(error?.request?.message || '');
+      logger.error('Request Error:', error?.message);
+      return res.status(error?.response?.status || 500).json({ message: error?.message || 'Server cannot be reached' });
     } else {
       // Something happened in setting up the request that triggered an error.
       logger.error('Axios Error:', error?.message);
