@@ -215,8 +215,8 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
   const columns: TableColumnsType<TripDetailsType> = [
     {
       title: "Trip ID",
-      dataIndex: "trip_id",
-      sorter: (a, b) => a.trip_id.localeCompare(b.trip_id),
+      dataIndex: "trip_code",
+      sorter: (a, b) => a.trip_code.localeCompare(b.trip_code),
       render: (_, r) => (
         <Tooltip title="Click to Open Slider">
           <span
@@ -227,7 +227,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
               setDrawerOpen(true);
             }}
           >
-            {r.trip_id}
+            {r.trip_code}
           </span>
         </Tooltip>
       ),
@@ -322,7 +322,7 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
     },
     {
       title: "Fare",
-      render: (_, r) => <>₹{r.base_fare.toFixed(2)}</>,
+      render: (_, r) => <>₹{Number(r.base_fare || 0).toFixed(2)}</>,
     },
     {
       title: "Service",

@@ -17,6 +17,7 @@ import utc from "dayjs/plugin/utc";
 
 type TripFilters = {
   status: string;
+  booking_type: string,
   globalSearch: string;
   driverAssigned: string | string[];
   from: Dayjs | null;
@@ -25,6 +26,7 @@ type TripFilters = {
 
 const initialFilters: TripFilters = {
   status: "requested",
+  booking_type: 'live',
   globalSearch: "",
   driverAssigned: "all",
   // from: null,
@@ -84,6 +86,7 @@ const TripDetails = () => {
       temp = temp.filter(
         (t) =>
           t.trip_id?.toLowerCase().includes(s) ||
+          t.trip_code?.toLowerCase().includes(s) ||
           t.user_name?.toLowerCase().includes(s) ||
           t.user_phone?.includes(s) ||
           t.driver_name?.toLowerCase().includes(s) ||
@@ -150,9 +153,16 @@ const TripDetails = () => {
     let temp = getBaseFilteredTrips();
 
     // 🔹 Status (Segmented)
-    if (filters.status !== "all") {
+    if (filters.status === 'scheduled') {
+      // Upcoming: booking_type = scheduled AND trip_status = requested
       temp = temp.filter(
-        (t) => t.trip_status?.toLowerCase() === filters.status,
+        (t) =>
+          t.booking_type?.toLowerCase() === 'scheduled' &&
+          t.trip_status?.toLowerCase() === 'requested'
+      );
+    } else if (filters.status !== 'all') {
+      temp = temp.filter(
+        (t) => t.trip_status?.toLowerCase() === filters.status
       );
     }
 
@@ -187,7 +197,9 @@ const TripDetails = () => {
     const base = getBaseFilteredTrips();
 
     if (status === "all") return base.length;
-
+    if (status === 'scheduled') return base.filter((t) =>
+      t.booking_type?.toLowerCase() === 'scheduled' && t.trip_status?.toLowerCase() === 'requested'
+    ).length;
     return base.filter((t) => t.trip_status?.toLowerCase() === status).length;
   };
 
@@ -264,8 +276,12 @@ const TripDetails = () => {
               value: "requested",
             },
             {
-              label: `Upcoming (${getStatusCount("upcoming")})`,
-              value: "upcoming",
+              label: `Accepted (${getStatusCount("accepted")})`,
+              value: "accepted",
+            },
+            {
+              label: `Upcoming (${getStatusCount("scheduled")})`,
+              value: "scheduled",
             },
             { label: `Live (${getStatusCount("live")})`, value: "live" },
             {

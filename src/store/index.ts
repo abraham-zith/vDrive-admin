@@ -4,6 +4,10 @@ import locationReducer from "./slices/locationSlice";
 import tripReducer from "./slices/tripSlice";
 import pricingFareRulesReducer from "./slices/pricingFareRulesSlice";
 import hotspotReducer from "./slices/hotspotSlice";
+import customerReducer from "./slices/customerSlice";
+import tripTransactionReducer from "./slices/tripTransactionSlice";
+import taxReducer from "./slices/taxSlice";
+import pricingCombinationReducer from "./slices/pricingCombinationSlice";
 import adminReducer from "./slices/adminSlice";
 
 export const store = configureStore({
@@ -13,6 +17,10 @@ export const store = configureStore({
     trips: tripReducer,
     pricingFareRules: pricingFareRulesReducer,
     hotspot: hotspotReducer,
+    customers: customerReducer,
+    tripTransaction: tripTransactionReducer,
+    tax: taxReducer,
+    pricingCombination: pricingCombinationReducer,
     admin: adminReducer,
   },
   middleware: (getDefaultMiddleware) =>

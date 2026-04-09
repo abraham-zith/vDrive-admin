@@ -64,7 +64,7 @@ const RechargePlan: React.FC = () => {
       id: 2,
       name: "Basic Plan",
       planType: "ROUND_TRIP",
-      description: "Perfect for occasional riders",
+      description: "Perfect for occasional customers",
       rideLimit: 5,
       validity: 1,
       price: 399,
