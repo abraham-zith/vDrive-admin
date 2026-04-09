@@ -8,8 +8,8 @@ export interface Signup {
   name: string;
   password: string;
   confirmPassword: string;
+  email: string;
   contact: string;
-  alternateContact: string;
 }
 
 const SignUp = () => {
@@ -18,8 +18,8 @@ const SignUp = () => {
     name: "",
     password: "",
     confirmPassword: "",
+    email: "",
     contact: "",
-    alternateContact: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -67,9 +67,9 @@ const SignUp = () => {
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // Regex pattern
+  // Regex patterns
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phoneRegex = /^[0-9]{10}$/;
+  const contactRegex = /^([^\s@]+@[^\s@]+\.[^\s@]+|[0-9]{6,15})$/;
   const passwordRegex =
     /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[A-Za-z\d!@#$%^&*(),.?":{}|<>]{8,18}$/;
 
@@ -87,13 +87,13 @@ const SignUp = () => {
     if (signupFields?.confirmPassword !== signupFields?.password) {
       newErrors.confirmPassword = "Passwords do not match";
     }
-    if (!signupFields?.contact) {
-      newErrors.contact = "Email or phone is required";
-    } else if (
-      !emailRegex.test(signupFields?.contact) &&
-      !phoneRegex.test(signupFields?.contact)
-    ) {
-      newErrors.contact = "Enter valid email or phone number";
+    if (!signupFields?.email) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(signupFields?.email)) {
+      newErrors.email = "Enter a valid email address";
+    }
+    if (signupFields?.contact && !contactRegex.test(signupFields?.contact)) {
+      newErrors.contact = "Enter a valid email or phone number";
     }
 
     setErrors(newErrors);
@@ -105,8 +105,6 @@ const SignUp = () => {
       navigate("/");
     }
   };
-
-  const isPhone = phoneRegex?.test(signupFields?.contact);
 
   return (
     <div className="max-w-[400px] border border-gray-300 rounded-xl shadow-md bg-white flex flex-col gap-4 p-6 my-10 mx-auto">
@@ -160,11 +158,23 @@ const SignUp = () => {
       </div>
       <div>
         <Text>
-          Email / Mobile Number<Text type="danger">*</Text>
+          Email<Text type="danger">*</Text>
         </Text>
         <Input
+          name="email"
+          placeholder="Enter email address"
+          value={signupFields?.email}
+          onChange={handleChange}
+        />
+        {errors?.email && (
+          <div className="text-red-500 text-xs pt-1.5">{errors?.email}</div>
+        )}
+      </div>
+      <div>
+        <Text>Contact (Email or Phone):</Text>
+        <Input
           name="contact"
-          placeholder="Enter Email or Mobile number"
+          placeholder="Enter email or phone number"
           value={signupFields?.contact}
           onChange={handleChange}
         />
@@ -172,22 +182,6 @@ const SignUp = () => {
           <div className="text-red-500 text-xs pt-1.5">{errors?.contact}</div>
         )}
       </div>
-      {isPhone && (
-        <div>
-          <Text>Alternate Mobile Number:</Text>
-          <Input
-            name="alternateContact"
-            placeholder="Enter alternate number"
-            value={signupFields?.alternateContact}
-            onChange={handleChange}
-          />
-          {errors?.alternateContact && (
-            <div className="text-red-500 text-xs pt-1.5">
-              {errors?.alternateContact}
-            </div>
-          )}
-        </div>
-      )}
       <Button
         type="primary"
         block

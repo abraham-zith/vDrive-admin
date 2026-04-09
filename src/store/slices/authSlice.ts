@@ -3,11 +3,21 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import axiosIns from "../../api/axios";
 import type { Login } from "../../login/Login";
 
+export interface CurrentUser {
+  id: string;
+  name: string;
+  email: string;
+  contact: string | null;
+  role: "admin" | "super_admin";
+}
+
 interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
   accessToken: string | null;
+  role: "admin" | "super_admin" | null;
+  currentUser: CurrentUser | null;
 }
 
 const initialState: AuthState = {
@@ -15,12 +25,13 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   accessToken: localStorage.getItem("accessToken"),
+  role: null,
+  currentUser: null,
 };
 
-// Async thunk for login
 export const loginAsync = createAsyncThunk(
   "auth/login",
-  async (credentials: Login, { rejectWithValue }) => {
+  async (credentials: Login, { dispatch, rejectWithValue }) => {
     try {
       const response = await axiosIns.post("/api/auth/signIn", {
         user_name: credentials.userName,
@@ -34,16 +45,32 @@ export const loginAsync = createAsyncThunk(
       }
 
       localStorage.setItem("accessToken", token);
+
+      await dispatch(fetchCurrentUser());
+
       return { accessToken: token };
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || error.message || "Login failed",
+        error.response?.data?.message || error.message || "Login failed"
       );
     }
-  },
+  }
 );
 
-// Async thunk for logout
+export const fetchCurrentUser = createAsyncThunk(
+  "auth/fetchCurrentUser",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axiosIns.get("/api/auth/me");
+      return response.data.data as CurrentUser;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch user profile"
+      );
+    }
+  }
+);
+
 export const logoutAsync = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
@@ -57,13 +84,12 @@ export const logoutAsync = createAsyncThunk(
 
       throw new Error("Logout failed");
     } catch (error: any) {
-      // Even if logout fails on server, remove local token
       localStorage.removeItem("accessToken");
       return rejectWithValue(
-        error.response?.data?.message || error.message || "Logout failed",
+        error.response?.data?.message || error.message || "Logout failed"
       );
     }
-  },
+  }
 );
 
 const authSlice = createSlice({
@@ -81,6 +107,8 @@ const authSlice = createSlice({
       } else {
         localStorage.removeItem("accessToken");
         state.isAuthenticated = false;
+        state.role = null;
+        state.currentUser = null;
       }
     },
     clearCountryError: (state) => {
@@ -93,7 +121,6 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Login
     builder
       .addCase(loginAsync.pending, (state) => {
         state.loading = true;
@@ -109,10 +136,21 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = false;
         state.accessToken = null;
+        state.role = null;
+        state.currentUser = null;
         state.error = action.payload as string;
       });
 
-    // Logout
+    builder
+      .addCase(fetchCurrentUser.fulfilled, (state, action: PayloadAction<CurrentUser>) => {
+        state.currentUser = action.payload;
+        state.role = action.payload.role;
+      })
+      .addCase(fetchCurrentUser.rejected, (state) => {
+        state.role = null;
+        state.currentUser = null;
+      });
+
     builder
       .addCase(logoutAsync.pending, (state) => {
         state.loading = true;
@@ -122,12 +160,16 @@ const authSlice = createSlice({
         state.loading = false;
         state.isAuthenticated = false;
         state.accessToken = null;
+        state.role = null;
+        state.currentUser = null;
         state.error = null;
       })
       .addCase(logoutAsync.rejected, (state, action) => {
         state.loading = false;
         state.isAuthenticated = false;
         state.accessToken = null;
+        state.role = null;
+        state.currentUser = null;
         state.error = action.payload as string;
       });
   },
