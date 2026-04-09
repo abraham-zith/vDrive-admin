@@ -97,12 +97,8 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
       reasonPlaceholder: "e.g. Fraud, repeated policy violations...",
       onConfirm: async (reason) => {
         try {
-          const resultAction = await dispatch(blockCustomer({ id: customer.id, reason: reason! })).unwrap();
-          if (blockCustomer.fulfilled.match(resultAction)) {
-            message.success("Customer has been blocked.");
-          } else {
-            message.error("Failed to block customer.");
-          }
+          await dispatch(blockCustomer({ id: customer.id, reason: reason! })).unwrap();
+          message.success("Customer has been blocked.");
         } catch (error: any) {
           console.log("block error:", error);
           message.error("Failed to block customer.");
@@ -119,12 +115,8 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
       danger: false,
       onConfirm: async () => {
         try {
-          const resultAction = await dispatch(unblockCustomer(customer.id)).unwrap();
-          if (unblockCustomer.fulfilled.match(resultAction)) {
-            message.success("Customer has been unblocked.");
-          } else {
-            message.error("Failed to unblock customer.");
-          }
+          await dispatch(unblockCustomer(customer.id)).unwrap();
+          message.success("Customer has been unblocked.");
         } catch (error: any) {
           console.log("unblock error:", error);
           message.error("Failed to unblock customer.");
@@ -143,12 +135,8 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
       reasonPlaceholder: "e.g. Suspicious activity, complaint under review...",
       onConfirm: async (reason) => {
         try {
-          const resultAction = await dispatch(disableCustomer({ id: customer.id, reason: reason! })).unwrap();
-          if (disableCustomer.fulfilled.match(resultAction)) {
-            message.success("Customer has been suspended.");
-          } else {
-            message.error("Failed to suspend customer.");
-          }
+          await dispatch(disableCustomer({ id: customer.id, reason: reason! })).unwrap();
+          message.success("Customer has been suspended.");
         } catch (error: any) {
           console.log("disable error:", error);
           message.error("Failed to suspend customer.");
@@ -165,12 +153,8 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
       danger: false,
       onConfirm: async () => {
         try {
-          const resultAction = await dispatch(enableCustomer(customer.id)).unwrap();
-          if (enableCustomer.fulfilled.match(resultAction)) {
-            message.success("Customer has been activated.");
-          } else {
-            message.error("Failed to activate customer.");
-          }
+          await dispatch(enableCustomer(customer.id)).unwrap();
+          message.success("Customer has been activated.");
         } catch (error: any) {
           console.log("enable error:", error);
           message.error("Failed to activate customer.");
@@ -187,13 +171,9 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
       danger: true,
       onConfirm: async () => {
         try {
-          const resultAction = await dispatch(deleteCustomer(customer.id)).unwrap();
-          if (deleteCustomer.fulfilled.match(resultAction)) {
-            message.success("Customer has been deleted.");
-            onClose();
-          } else {
-            message.error("Failed to delete customer.");
-          }
+          await dispatch(deleteCustomer(customer.id)).unwrap();
+          message.success("Customer has been deleted.");
+          onClose();
         } catch (error: any) {
           console.log("delete error:", error);
           message.error("Failed to delete customer.");
