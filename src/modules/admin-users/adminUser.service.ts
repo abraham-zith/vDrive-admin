@@ -1,32 +1,38 @@
-// src/modules/users/user.service.ts
 import { AdminUserRepository } from './adminUser.repository';
+import { PublicAdminUser } from './adminUser.model';
 import * as bcrypt from 'bcrypt';
 
 export const AdminUserService = {
-  async getAdminUsers() {
-    return await AdminUserRepository.findAll();
+  async getAdminUsers(): Promise<PublicAdminUser[]> {
+    return AdminUserRepository.findAll();
   },
 
-  async getAdminUserById(id: string) {
+  async getAdminUserById(id: string): Promise<PublicAdminUser> {
     const adminUser = await AdminUserRepository.findById(id);
     if (!adminUser) {
-      throw { statusCode: 404, message: 'AdminUser not found' };
+      throw { statusCode: 404, message: 'Admin user not found' };
     }
     return adminUser;
   },
 
   async createAdminUser(data: {
     name: string;
+    email: string;
     password: string;
-    contact: string;
-    alternate_contact?: string;
-  }) {
-    // Hash password
+    contact?: string;
+    role?: 'admin' | 'super_admin';
+  }): Promise<PublicAdminUser> {
+    const existing = await AdminUserRepository.findByEmail(data.email);
+    if (existing) {
+      throw { statusCode: 409, message: 'Email already in use' };
+    }
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    return await AdminUserRepository.create({
-      ...data,
+    return AdminUserRepository.create({
+      name: data.name,
+      email: data.email,
       password: hashedPassword,
-      role: 'admin',
+      contact: data.contact || null,
+      role: data.role ?? 'admin',
     });
   },
 
@@ -34,31 +40,32 @@ export const AdminUserService = {
     id: string,
     data: Partial<{
       name: string;
+      email: string;
       contact: string;
-      alternate_contact?: string;
+      role: 'admin' | 'super_admin';
     }>
-  ) {
-    if (data.name) {
-      const existingUser = await AdminUserRepository.findById(id);
-      if (!existingUser) {
-        throw { statusCode: 404, message: 'AdminUser not found' };
+  ): Promise<PublicAdminUser> {
+    const existing = await AdminUserRepository.findById(id);
+    if (!existing) {
+      throw { statusCode: 404, message: 'Admin user not found' };
+    }
+    if (data.email && data.email !== existing.email) {
+      const emailTaken = await AdminUserRepository.findByEmail(data.email);
+      if (emailTaken) {
+        throw { statusCode: 409, message: 'Email already in use' };
       }
-      const newName = data.name || existingUser.name;
-      data.name = newName;
     }
-
-    const adminUser = await AdminUserRepository.update(id, data);
-    if (!adminUser) {
-      throw { statusCode: 404, message: 'AdminUser not found' };
+    const updated = await AdminUserRepository.update(id, data);
+    if (!updated) {
+      throw { statusCode: 404, message: 'Admin user not found' };
     }
-    return adminUser;
+    return updated;
   },
 
-  async deleteAdminUser(id: string) {
+  async deleteAdminUser(id: string): Promise<void> {
     const deleted = await AdminUserRepository.softDelete(id);
     if (!deleted) {
-      throw { statusCode: 404, message: 'AdminUser not found' };
+      throw { statusCode: 404, message: 'Admin user not found' };
     }
-    return { message: 'AdminUser deleted successfully' };
   },
 };

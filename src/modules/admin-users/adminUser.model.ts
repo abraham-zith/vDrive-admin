@@ -1,15 +1,16 @@
-// src/modules/users/user.model.ts// src/modules/users/user.model.ts
 export interface AdminUser {
   id: string;
   name: string;
   password: string;
-  contact: string;
-  alternate_contact?: string;
-  role: 'admin';
+  email: string;
+  contact: string | null;
+  role: 'admin' | 'super_admin';
   reset_token: string | null;
   reset_token_expiry: Date | null;
   created_at: Date;
   updated_at: Date;
-  deleted_at?: Date | null;
+  deleted_at: Date | null;
   is_deleted: boolean;
 }
+
+export type PublicAdminUser = Omit<AdminUser, 'password' | 'reset_token' | 'reset_token_expiry'>;
