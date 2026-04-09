@@ -99,7 +99,7 @@ describe('Authentication Endpoints', () => {
         .post('/api/auth/admin')
         .send({
           name: 'Test Admin',
-          contact: 'admin@test.com',
+          email: 'admin@test.com',
           password: 'Admin123!@#',
         })
         .expect(401);

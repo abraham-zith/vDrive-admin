@@ -9,14 +9,14 @@ export const mockUsers = [
   {
     id: 'auth-user-123',
     name: 'Test User',
-    contact: 'test@example.com',
+    email: 'test@example.com',
     password: TEST_HASHED_PASSWORD,
     role: 'user',
   },
   {
     id: 'auth-admin-456',
     name: 'Test Admin',
-    contact: 'admin@example.com',
+    email: 'admin@example.com',
     password: TEST_HASHED_PASSWORD,
     role: 'admin',
   },
