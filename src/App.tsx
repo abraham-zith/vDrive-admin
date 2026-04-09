@@ -29,7 +29,7 @@ import {
 import { PiSteeringWheel } from "react-icons/pi";
 import { RiAdminLine } from "react-icons/ri";
 import { useAppDispatch, useAppSelector } from "./store/hooks";
-import { logoutAsync } from "./store/slices/authSlice";
+import { logoutAsync, fetchCurrentUser } from "./store/slices/authSlice";
 import FullScreenLoader from "./components/FullScreenLoader";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
@@ -123,8 +123,14 @@ const siderStyle: React.CSSProperties = {
 };
 const RootLayout: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, loading } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, loading, currentUser } = useAppSelector((state) => state.auth);
   const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated && !currentUser) {
+      dispatch(fetchCurrentUser());
+    }
+  }, [isAuthenticated, currentUser, dispatch]);
   const { socket } = useSocket();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(true);
@@ -326,10 +332,10 @@ const RootLayout: React.FC = () => {
                       <div className="overflow-hidden">
                         <div className="flex flex-col text-black">
                           <span className="font-medium whitespace-nowrap">
-                            Admin User
+                            {currentUser?.name || "—"}
                           </span>
                           <span className="text-xs text-gray-500 whitespace-nowrap">
-                            admin@example.com
+                            {currentUser?.email || "—"}
                           </span>
                         </div>
                       </div>
@@ -462,9 +468,9 @@ const RootLayout: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <Avatar size="large" icon={<UserOutlined />} />
                     <div>
-                      <div className="font-medium">Admin User</div>
+                      <div className="font-medium">{currentUser?.name || "—"}</div>
                       <div className="text-xs text-gray-500">
-                        admin@example.com
+                        {currentUser?.email || "—"}
                       </div>
                     </div>
                   </div>
