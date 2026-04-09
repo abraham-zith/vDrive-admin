@@ -31,9 +31,9 @@ export interface TaxBreakdown {
 // The admin marks taxes isActive=true. This hook respects those flags and
 // resolves conflicts automatically using the priority rules below.
 
-const GST_GROUP = ["GST", "CGST", "SGST", "IGST", "UTGST"];
+// const GST_GROUP = ["GST", "CGST", "SGST", "IGST", "UTGST"];
 const ADDONS = ["VAT", "SURCHARGE"]; // stack freely on top of GST
-const DEDUCTION = ["TDS"];              // driver-side, not applied to rider fare here
+// const DEDUCTION = ["TDS"];              // driver-side, not applied to rider fare here
 const COLLECTION = ["TCS"];             // platform-side collection tax
 
 /**
