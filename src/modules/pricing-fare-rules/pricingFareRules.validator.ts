@@ -41,6 +41,24 @@ export const PricingFareRulesValidation = {
       multiplier: Joi.number().precision(1).greater(0).optional().allow(null).messages({
         'number.greater': 'Multiplier must be greater than 0',
       }),
+      extra_km_step: Joi.number().positive().precision(2).optional().default(5).messages({
+        'number.positive': 'Extra KM step must be greater than 0',
+      }),
+      extra_km_price: Joi.number().min(0).precision(2).optional().default(10).messages({
+        'number.min': 'Extra KM price cannot be negative',
+      }),
+      extra_km_start_multiplier: Joi.number().positive().precision(2).optional().default(1).messages({
+        'number.positive': 'Extra KM start multiplier must be greater than 0',
+      }),
+      extra_km_checkpoints: Joi.array().items(
+        Joi.object({
+          multiplier: Joi.number().positive().required().messages({
+            'number.positive': 'Checkpoint multiplier must be greater than 0',
+            'any.required': 'Checkpoint multiplier is required',
+          }),
+          sort_order: Joi.number().integer().min(0).required(),
+        })
+      ).optional().default([]),
     })
     .custom((value, helpers) => {
       // If is_hotspot is true, hotspot_id and multiplier are required
@@ -78,6 +96,21 @@ export const PricingFareRulesValidation = {
       multiplier: Joi.number().precision(1).greater(0).optional().allow(null).messages({
         'number.greater': 'Multiplier must be greater than 0',
       }),
+      extra_km_step: Joi.number().positive().precision(2).optional().messages({
+        'number.positive': 'Extra KM step must be greater than 0',
+      }),
+      extra_km_price: Joi.number().min(0).precision(2).optional().messages({
+        'number.min': 'Extra KM price cannot be negative',
+      }),
+      extra_km_start_multiplier: Joi.number().positive().precision(2).optional().messages({
+        'number.positive': 'Extra KM start multiplier must be greater than 0',
+      }),
+      extra_km_checkpoints: Joi.array().items(
+        Joi.object({
+          multiplier: Joi.number().positive().required(),
+          sort_order: Joi.number().integer().min(0).required(),
+        })
+      ).optional(),
     })
     .min(1)
     .messages({
@@ -121,6 +154,24 @@ export const PricingFareRulesValidation = {
       multiplier: Joi.number().precision(1).greater(0).optional().allow(null).messages({
         'number.greater': 'Multiplier must be greater than 0',
       }),
+      extra_km_step: Joi.number().positive().precision(2).optional().default(5).messages({
+        'number.positive': 'Extra KM step must be greater than 0',
+      }),
+      extra_km_price: Joi.number().min(0).precision(2).optional().default(10).messages({
+        'number.min': 'Extra KM price cannot be negative',
+      }),
+      extra_km_start_multiplier: Joi.number().positive().precision(2).optional().default(1).messages({
+        'number.positive': 'Extra KM start multiplier must be greater than 0',
+      }),
+      extra_km_checkpoints: Joi.array().items(
+        Joi.object({
+          multiplier: Joi.number().positive().required().messages({
+            'number.positive': 'Checkpoint multiplier must be greater than 0',
+            'any.required': 'Checkpoint multiplier is required',
+          }),
+          sort_order: Joi.number().integer().min(0).required(),
+        })
+      ).optional().default([]),
       time_slots: Joi.array()
         .items(
           Joi.object({
@@ -201,6 +252,21 @@ export const PricingFareRulesValidation = {
       multiplier: Joi.number().precision(1).greater(0).optional().allow(null).messages({
         'number.greater': 'Multiplier must be greater than 0',
       }),
+      extra_km_step: Joi.number().positive().precision(2).optional().messages({
+        'number.positive': 'Extra KM step must be greater than 0',
+      }),
+      extra_km_price: Joi.number().min(0).precision(2).optional().messages({
+        'number.min': 'Extra KM price cannot be negative',
+      }),
+      extra_km_start_multiplier: Joi.number().positive().precision(2).optional().messages({
+        'number.positive': 'Extra KM start multiplier must be greater than 0',
+      }),
+      extra_km_checkpoints: Joi.array().items(
+        Joi.object({
+          multiplier: Joi.number().positive().required(),
+          sort_order: Joi.number().integer().min(0).required(),
+        })
+      ).optional(),
       time_slots: Joi.array()
         .items(
           Joi.object({
