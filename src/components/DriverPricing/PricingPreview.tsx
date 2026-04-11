@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { Card, Typography, Tag, Divider } from "antd";
+import { Card, Typography, Tag, Divider, Table } from "antd";
 import { MdOutlineLocationOn } from "react-icons/md";
 import { BsClock } from "react-icons/bs";
-import { ThunderboltOutlined } from "@ant-design/icons";
+import { ThunderboltOutlined, NodeIndexOutlined } from "@ant-design/icons";
 import type { UserTimeSlots, UserType, TimeSlot } from "./DriverTimeSlotsAndPricing";
+import type { UiCheckpoint } from "./ExtraKmConfiguration";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { fetchHotspots } from "../../store/slices/hotspotSlice";
 import { computeTaxBreakdown } from "../../hooks/useTaxedPricing";
@@ -20,6 +21,10 @@ interface PricingPreviewProps {
   hotspotId: string;
   multiplier: number;
   globalPrice: number;
+  extraKmStep: number;
+  extraKmPrice: number;
+  extraKmStartMultiplier: number;
+  extraKmCheckpoints: UiCheckpoint[];
 }
 
 const PricingPreview = ({
@@ -32,6 +37,10 @@ const PricingPreview = ({
   hotspotEnabled,
   hotspotId,
   multiplier,
+  extraKmStep,
+  extraKmPrice,
+  extraKmStartMultiplier,
+  extraKmCheckpoints,
 }: PricingPreviewProps) => {
   const dispatch = useAppDispatch();
   const { hotspots } = useAppSelector((s) => s.hotspot);
@@ -165,6 +174,58 @@ const PricingPreview = ({
             </div>
           </div>
         )}
+
+        {/* Extra KM section */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <NodeIndexOutlined className="text-[18px] text-[#0080FF]" />
+            <span className="font-semibold">Extra KM Configuration</span>
+          </div>
+          <div className="p-2 bg-[#F8F9FA] rounded-md flex flex-col gap-2">
+            <div className="flex gap-4 text-sm">
+              <span>Step: <strong>{extraKmStep} km</strong></span>
+              <span>Base price: <strong>₹{Number(extraKmPrice).toFixed(2)}</strong></span>
+              <span>Start multiplier: <strong>×{Number(extraKmStartMultiplier).toFixed(2)}</strong></span>
+            </div>
+            <Table
+              size="small"
+              pagination={false}
+              dataSource={[
+                {
+                  key: 0,
+                  kmRange: `0–${extraKmStep} km`,
+                  multiplier: `×${Number(extraKmStartMultiplier).toFixed(2)}`,
+                  price: `₹${(extraKmPrice * extraKmStartMultiplier).toFixed(2)}`,
+                },
+                ...extraKmCheckpoints.map((c, i) => ({
+                  key: c.uid,
+                  kmRange: `${extraKmStep * (i + 1)}–${extraKmStep * (i + 2)} km`,
+                  multiplier: `×${Number(c.multiplier).toFixed(2)}`,
+                  price: `₹${(extraKmPrice * c.multiplier).toFixed(2)}`,
+                })),
+              ]}
+              columns={[
+                { title: "KM Range", dataIndex: "kmRange", key: "kmRange" },
+                {
+                  title: "Multiplier",
+                  dataIndex: "multiplier",
+                  key: "multiplier",
+                  render: (v: string) => (
+                    <span className="text-[#0080FF] font-semibold">{v}</span>
+                  ),
+                },
+                {
+                  title: "₹ / Step",
+                  dataIndex: "price",
+                  key: "price",
+                  render: (v: string) => (
+                    <span className="text-green-600 font-semibold">{v}</span>
+                  ),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
     </Card>
   );
