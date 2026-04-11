@@ -1,5 +1,6 @@
 import { query } from '../../shared/database';
 import { PricingFareRule, FareSummary } from './pricingFareRules.model';
+import { ExtraKmCheckpointsRepository } from './extraKmCheckpoints.repository';
 
 export const PricingFareRulesRepository = {
   /**
@@ -78,7 +79,10 @@ export const PricingFareRulesRepository = {
         p.is_hotspot,
         h.id AS hotspot_id,
         h.hotspot_name,
-        p.multiplier
+        p.multiplier,
+        p.extra_km_step,
+        p.extra_km_price,
+        p.extra_km_start_multiplier
         ${
           includeTimeSlots
             ? `, 
@@ -119,7 +123,7 @@ export const PricingFareRulesRepository = {
    */
   async getPricingFareRuleById(id: string): Promise<PricingFareRule | null> {
     const result = await query(
-      'SELECT id, district_id, area_id, global_price, is_hotspot, hotspot_id, multiplier FROM price_and_fare_rules WHERE id = $1',
+      'SELECT id, district_id, area_id, global_price, is_hotspot, hotspot_id, multiplier, extra_km_step, extra_km_price, extra_km_start_multiplier FROM price_and_fare_rules WHERE id = $1',
       [id]
     );
     return result.rows[0] || null;
@@ -145,7 +149,10 @@ export const PricingFareRulesRepository = {
         p.is_hotspot,
         h.id AS hotspot_id,
         h.hotspot_name,
-        p.multiplier
+        p.multiplier,
+        p.extra_km_step,
+        p.extra_km_price,
+        p.extra_km_start_multiplier
       FROM price_and_fare_rules p
       LEFT JOIN areas a ON p.area_id = a.id
       JOIN districts d ON p.district_id = d.id
@@ -155,7 +162,10 @@ export const PricingFareRulesRepository = {
       WHERE p.id = $1
     `;
     const result = await query(queryText, [id]);
-    return result.rows[0] || null;
+    const row: FareSummary | undefined = result.rows[0];
+    if (!row) return null;
+    row.extra_km_checkpoints = await ExtraKmCheckpointsRepository.getByPricingFareRuleId(row.id);
+    return row;
   },
 
   /**
@@ -168,12 +178,15 @@ export const PricingFareRulesRepository = {
     is_hotspot: boolean;
     hotspot_id?: string | null;
     multiplier?: number | null;
+    extra_km_step?: number;
+    extra_km_price?: number;
+    extra_km_start_multiplier?: number;
   }): Promise<PricingFareRule> {
     const result = await query(
-      `INSERT INTO price_and_fare_rules 
-        (district_id, area_id, global_price, is_hotspot, hotspot_id, multiplier) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING id, district_id, area_id, global_price, is_hotspot, hotspot_id, multiplier`,
+      `INSERT INTO price_and_fare_rules
+        (district_id, area_id, global_price, is_hotspot, hotspot_id, multiplier, extra_km_step, extra_km_price, extra_km_start_multiplier)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, district_id, area_id, global_price, is_hotspot, hotspot_id, multiplier, extra_km_step, extra_km_price, extra_km_start_multiplier`,
       [
         data.district_id,
         data.area_id || null,
@@ -181,6 +194,9 @@ export const PricingFareRulesRepository = {
         data.is_hotspot,
         data.hotspot_id || null,
         data.multiplier || null,
+        data.extra_km_step ?? 5,
+        data.extra_km_price ?? 10,
+        data.extra_km_start_multiplier ?? 1,
       ]
     );
     return result.rows[0];
@@ -198,6 +214,9 @@ export const PricingFareRulesRepository = {
       is_hotspot?: boolean;
       hotspot_id?: string | null;
       multiplier?: number | null;
+      extra_km_step?: number;
+      extra_km_price?: number;
+      extra_km_start_multiplier?: number;
     }
   ): Promise<PricingFareRule> {
     const fields: string[] = [];
@@ -234,13 +253,28 @@ export const PricingFareRulesRepository = {
       params.push(data.multiplier);
       paramIndex++;
     }
+    if (data.extra_km_step !== undefined) {
+      fields.push(`extra_km_step = $${paramIndex}`);
+      params.push(data.extra_km_step);
+      paramIndex++;
+    }
+    if (data.extra_km_price !== undefined) {
+      fields.push(`extra_km_price = $${paramIndex}`);
+      params.push(data.extra_km_price);
+      paramIndex++;
+    }
+    if (data.extra_km_start_multiplier !== undefined) {
+      fields.push(`extra_km_start_multiplier = $${paramIndex}`);
+      params.push(data.extra_km_start_multiplier);
+      paramIndex++;
+    }
 
     if (fields.length === 0) {
       throw new Error('No fields to update');
     }
 
     const result = await query(
-      `UPDATE price_and_fare_rules SET ${fields.join(', ')} WHERE id = $1 RETURNING id, district_id, area_id, global_price, is_hotspot, hotspot_id, multiplier`,
+      `UPDATE price_and_fare_rules SET ${fields.join(', ')} WHERE id = $1 RETURNING id, district_id, area_id, global_price, is_hotspot, hotspot_id, multiplier, extra_km_step, extra_km_price, extra_km_start_multiplier`,
       params
     );
     return result.rows[0];

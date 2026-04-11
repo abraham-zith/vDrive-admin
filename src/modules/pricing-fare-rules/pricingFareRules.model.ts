@@ -1,5 +1,12 @@
 import { DriverTimeSlotsPricing } from './driverTimeSlotsPricing.model';
 
+export interface ExtraKmCheckpoint {
+  id: string;
+  pricing_fare_rule_id: string;
+  multiplier: number;
+  sort_order: number;
+}
+
 export interface PricingFareRule {
   id: string;
   district_id: string;
@@ -8,6 +15,9 @@ export interface PricingFareRule {
   is_hotspot: boolean;
   hotspot_id: string | null;
   multiplier: number | null;
+  extra_km_step: number;
+  extra_km_price: number;
+  extra_km_start_multiplier: number;
 }
 
 export interface FareSummary {
@@ -26,5 +36,9 @@ export interface FareSummary {
   hotspot_id: string | null;
   hotspot_name: string | null;
   multiplier: number | null;
+  extra_km_step: number;
+  extra_km_price: number;
+  extra_km_start_multiplier: number;
+  extra_km_checkpoints?: ExtraKmCheckpoint[];
   time_slots?: DriverTimeSlotsPricing[];
 }

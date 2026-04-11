@@ -1,6 +1,7 @@
 import { PricingFareRulesRepository } from './pricingFareRules.repository';
 import { PricingFareRule, FareSummary } from './pricingFareRules.model';
 import { DriverTimeSlotsPricingRepository } from './driverTimeSlotsPricing.repository';
+import { ExtraKmCheckpointsRepository } from './extraKmCheckpoints.repository';
 
 export const PricingFareRulesService = {
   async getPricingFareRules(
@@ -52,6 +53,9 @@ export const PricingFareRulesService = {
     is_hotspot: boolean;
     hotspot_id?: string | null;
     multiplier?: number | null;
+    extra_km_step?: number;
+    extra_km_price?: number;
+    extra_km_start_multiplier?: number;
   }): Promise<PricingFareRule> {
     // Validate hotspot requirements
     if (data.is_hotspot) {
@@ -87,6 +91,17 @@ export const PricingFareRulesService = {
       throw { statusCode: 400, message: 'Multiplier must be greater than 0' };
     }
 
+    // Validate extra KM fields
+    if (data.extra_km_step !== undefined && data.extra_km_step <= 0) {
+      throw { statusCode: 400, message: 'Extra KM step must be greater than 0' };
+    }
+    if (data.extra_km_price !== undefined && data.extra_km_price < 0) {
+      throw { statusCode: 400, message: 'Extra KM price cannot be negative' };
+    }
+    if (data.extra_km_start_multiplier !== undefined && data.extra_km_start_multiplier <= 0) {
+      throw { statusCode: 400, message: 'Extra KM start multiplier must be greater than 0' };
+    }
+
     return await PricingFareRulesRepository.createPricingFareRule(data);
   },
 
@@ -99,6 +114,9 @@ export const PricingFareRulesService = {
       is_hotspot?: boolean;
       hotspot_id?: string | null;
       multiplier?: number | null;
+      extra_km_step?: number;
+      extra_km_price?: number;
+      extra_km_start_multiplier?: number;
     }
   ): Promise<PricingFareRule> {
     // Check if pricing fare rule exists
@@ -149,6 +167,17 @@ export const PricingFareRulesService = {
       throw { statusCode: 400, message: 'Multiplier must be greater than 0' };
     }
 
+    // Validate extra KM fields
+    if (data.extra_km_step !== undefined && data.extra_km_step <= 0) {
+      throw { statusCode: 400, message: 'Extra KM step must be greater than 0' };
+    }
+    if (data.extra_km_price !== undefined && data.extra_km_price < 0) {
+      throw { statusCode: 400, message: 'Extra KM price cannot be negative' };
+    }
+    if (data.extra_km_start_multiplier !== undefined && data.extra_km_start_multiplier <= 0) {
+      throw { statusCode: 400, message: 'Extra KM start multiplier must be greater than 0' };
+    }
+
     return await PricingFareRulesRepository.updatePricingFareRule(id, data);
   },
 
@@ -172,6 +201,10 @@ export const PricingFareRulesService = {
     is_hotspot: boolean;
     hotspot_id?: string | null;
     multiplier?: number | null;
+    extra_km_step?: number;
+    extra_km_price?: number;
+    extra_km_start_multiplier?: number;
+    extra_km_checkpoints?: Array<{ multiplier: number; sort_order: number }>;
     time_slots: Array<{
       driver_types: string;
       day: string;
@@ -212,6 +245,17 @@ export const PricingFareRulesService = {
       throw { statusCode: 400, message: 'Multiplier must be greater than 0' };
     }
 
+    // Validate extra KM fields
+    if (data.extra_km_step !== undefined && data.extra_km_step <= 0) {
+      throw { statusCode: 400, message: 'Extra KM step must be greater than 0' };
+    }
+    if (data.extra_km_price !== undefined && data.extra_km_price < 0) {
+      throw { statusCode: 400, message: 'Extra KM price cannot be negative' };
+    }
+    if (data.extra_km_start_multiplier !== undefined && data.extra_km_start_multiplier <= 0) {
+      throw { statusCode: 400, message: 'Extra KM start multiplier must be greater than 0' };
+    }
+
     // Validate time slots
     if (!data.time_slots || data.time_slots.length === 0) {
       throw { statusCode: 400, message: 'At least one time slot is required' };
@@ -225,6 +269,9 @@ export const PricingFareRulesService = {
       is_hotspot: data.is_hotspot,
       hotspot_id: data.hotspot_id,
       multiplier: data.multiplier,
+      extra_km_step: data.extra_km_step,
+      extra_km_price: data.extra_km_price,
+      extra_km_start_multiplier: data.extra_km_start_multiplier,
     });
 
     // Prepare time slots with the pricing rule ID
@@ -241,6 +288,17 @@ export const PricingFareRulesService = {
     const timeSlots =
       await DriverTimeSlotsPricingRepository.bulkCreateDriverTimeSlotsPricing(slotsWithRuleId);
 
+    // Bulk create extra KM checkpoints if provided
+    if (data.extra_km_checkpoints && data.extra_km_checkpoints.length > 0) {
+      await ExtraKmCheckpointsRepository.bulkCreate(
+        data.extra_km_checkpoints.map((c) => ({
+          pricing_fare_rule_id: pricingRule.id,
+          multiplier: c.multiplier,
+          sort_order: c.sort_order,
+        }))
+      );
+    }
+
     return { pricingRule, timeSlots };
   },
 
@@ -256,6 +314,10 @@ export const PricingFareRulesService = {
       is_hotspot?: boolean;
       hotspot_id?: string | null;
       multiplier?: number | null;
+      extra_km_step?: number;
+      extra_km_price?: number;
+      extra_km_start_multiplier?: number;
+      extra_km_checkpoints?: Array<{ multiplier: number; sort_order: number }>;
       time_slots?: Array<{
         driver_types: string;
         day: string;
@@ -273,6 +335,9 @@ export const PricingFareRulesService = {
       is_hotspot: data.is_hotspot,
       hotspot_id: data.hotspot_id,
       multiplier: data.multiplier,
+      extra_km_step: data.extra_km_step,
+      extra_km_price: data.extra_km_price,
+      extra_km_start_multiplier: data.extra_km_start_multiplier,
     });
 
     // 2. If time_slots are provided, replace them
@@ -297,6 +362,18 @@ export const PricingFareRulesService = {
     } else {
       // If time_slots not provided in update, fetch existing ones to return
       timeSlots = await DriverTimeSlotsPricingRepository.getByPricingFareRuleId(id);
+    }
+
+    // Always replace extra KM checkpoints when updating (delete + re-insert)
+    await ExtraKmCheckpointsRepository.deleteByPricingFareRuleId(id);
+    if (data.extra_km_checkpoints && data.extra_km_checkpoints.length > 0) {
+      await ExtraKmCheckpointsRepository.bulkCreate(
+        data.extra_km_checkpoints.map((c) => ({
+          pricing_fare_rule_id: id,
+          multiplier: c.multiplier,
+          sort_order: c.sort_order,
+        }))
+      );
     }
 
     return { pricingRule, timeSlots };
