@@ -31,14 +31,14 @@ async function apply() {
     await client.query(`
       ALTER TABLE drivers 
       ALTER COLUMN vdrive_id 
-      SET DEFAULT 'VDD-' || LPAD(nextval('driver_vdid_seq')::text, 4, '0')
+      SET DEFAULT 'VDD' || LPAD(nextval('driver_vdid_seq')::text, 4, '0')
     `);
     console.log('Default value set.');
 
     // 4. Populate existing
     const updateRes = await client.query(`
       UPDATE drivers 
-      SET vdrive_id = 'VDD-' || LPAD(nextval('driver_vdid_seq')::text, 4, '0') 
+      SET vdrive_id = 'VDD' || LPAD(nextval('driver_vdid_seq')::text, 4, '0') 
       WHERE vdrive_id IS NULL
     `);
     console.log(`Populated ${updateRes.rowCount} existing drivers.`);
