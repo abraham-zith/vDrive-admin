@@ -8,7 +8,6 @@ const router = Router();
 router.use(isAuthenticated);
 
 router.get('/', DriverManagementController.getDrivers);
-router.get('/dashboard-stats', DriverManagementController.getDashboardStats);
 router.get('/:id', DriverManagementController.getDriverById);
 router.post('/', DriverManagementController.createDriver);
 router.patch('/:id', DriverManagementController.updateDriver);

@@ -57,23 +57,15 @@ export const DriverManagementController = {
   async updateDriver(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { status, ...profileData } = req.body;
+      const { status } = req.body;
       
       if (status) {
         await DriverManagementRepository.updateStatus(id, status);
       }
       
-      let updatedDriver = null;
-      if (Object.keys(profileData).length > 0) {
-        updatedDriver = await DriverManagementRepository.updateProfile(id, profileData);
-      } else if (status) {
-        updatedDriver = await DriverManagementRepository.findById(id);
-      }
-      
       return res.status(200).json({
         success: true,
-        message: 'Driver updated successfully',
-        data: updatedDriver
+        message: 'Driver updated successfully'
       });
     } catch (error) {
       next(error);
@@ -140,18 +132,6 @@ export const DriverManagementController = {
             total: result.total
           }
         }
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
-  
-  async getDashboardStats(req: Request, res: Response, next: NextFunction) {
-    try {
-      const stats = await DriverManagementRepository.getDashboardStats();
-      return res.status(200).json({
-        success: true,
-        data: stats
       });
     } catch (error) {
       next(error);

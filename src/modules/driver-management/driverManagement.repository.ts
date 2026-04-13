@@ -26,7 +26,12 @@ export class DriverManagementRepository {
     const countResult = await query('SELECT COUNT(*) FROM drivers WHERE is_deleted = false');
     
     return {
-      drivers: result.rows,
+      drivers: result.rows.map((row: any) => ({
+        ...row,
+        payments: {
+          total_earnings: parseFloat(row.total_earnings || 0),
+        },
+      })),
       total: parseInt(countResult.rows[0].count),
     };
   }
@@ -73,7 +78,12 @@ export class DriverManagementRepository {
     );
 
     return {
-      drivers: result.rows,
+      drivers: result.rows.map((row: any) => ({
+        ...row,
+        payments: {
+          total_earnings: parseFloat(row.total_earnings || 0),
+        },
+      })),
       total: parseInt(countResult.rows[0].count),
     };
   }
@@ -91,4 +101,98 @@ export class DriverManagementRepository {
       [kycStatus, id]
     );
   }
+
+  static async updateProfile(id: string, data: any) {
+    const fields: string[] = [];
+    const values: any[] = [];
+    let counter = 1;
+
+    const allowedFields = ['first_name', 'last_name', 'email', 'phone_number', 'dob', 'gender', 'role', 'address'];
+
+    for (const key of allowedFields) {
+      if (data[key] !== undefined) {
+        if (key === 'address') {
+          fields.push(`address = $${counter}`);
+          values.push(JSON.stringify(data[key]));
+        } else {
+          fields.push(`${key} = $${counter}`);
+          values.push(data[key]);
+        }
+        counter++;
+      }
+    }
+
+    if (fields.length === 0) return;
+
+    values.push(id);
+    const sql = `UPDATE drivers SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${counter} RETURNING *`;
+    
+    const result = await query(sql, values);
+    return result.rows[0];
+  }
+
+  static async getDashboardStats() {
+    const totalResult = await query(
+      'SELECT COUNT(*) FROM drivers WHERE is_deleted = false'
+    );
+    const activeResult = await query(
+      "SELECT COUNT(*) FROM drivers WHERE is_deleted = false AND status = 'active'"
+    );
+
+    // Today's registrations
+    const todayUsersResult = await query(
+      "SELECT COUNT(*) FROM users WHERE created_at >= CURRENT_DATE"
+    );
+    const todayDriversResult = await query(
+      "SELECT COUNT(*) FROM drivers WHERE created_at >= CURRENT_DATE AND is_deleted = false"
+    );
+    const todaySubscriptionsResult = await query(
+      "SELECT COUNT(*) FROM driver_subscriptions WHERE created_at >= CURRENT_DATE AND status = 'active'"
+    );
+
+    // Dynamic counts: Available (Online & no active trip) vs On Trip (Active trip)
+    const onlineResult = await query(
+      "SELECT COUNT(*) FROM drivers WHERE is_deleted = false AND (availability->>'online' = 'true' OR availability->>'status' = 'ONLINE')"
+    );
+
+    // On trip means ANY ongoing status that assigned a driver
+    const onTripResult = await query(
+      "SELECT COUNT(DISTINCT driver_id) FROM trips WHERE trip_status IN ('ACCEPTED', 'ARRIVING', 'ARRIVED', 'LIVE', 'DESTINATION_REACHED')"
+    );
+
+    // Scheduled Rides
+    const totalScheduledResult = await query(
+      "SELECT COUNT(*) FROM trips WHERE booking_type = 'SCHEDULED' AND trip_status NOT IN ('CANCELLED', 'COMPLETED', 'MID_CANCELLED')"
+    );
+    const acceptedScheduledResult = await query(
+      "SELECT COUNT(*) FROM trips WHERE booking_type = 'SCHEDULED' AND trip_status = 'ACCEPTED'"
+    );
+
+    // Onboarding Pipeline
+    const pendingVerificationsResult = await query(
+      "SELECT COUNT(*) FROM drivers WHERE is_deleted = false AND kyc_status = 'pending' AND (documents_submitted = true OR id IN (SELECT driver_id FROM driver_documents))"
+    );
+    const documentExpiryAlertsResult = await query(
+      "SELECT COUNT(DISTINCT driver_id) FROM driver_documents WHERE expiry_date <= CURRENT_DATE + INTERVAL '7 days' AND expiry_date >= CURRENT_DATE"
+    );
+
+    const activeTripsCount = parseInt(onTripResult.rows[0]?.count || '0');
+    const onlineCount = parseInt(onlineResult.rows[0]?.count || '0');
+
+    return {
+      totalDrivers: parseInt(totalResult.rows[0]?.count || '0'),
+      activeDrivers: parseInt(activeResult.rows[0]?.count || '0'),
+      availableDrivers: Math.max(0, onlineCount - activeTripsCount),
+      onTripDrivers: activeTripsCount,
+      totalScheduledRides: parseInt(totalScheduledResult.rows[0]?.count || '0'),
+      acceptedScheduledRides: parseInt(acceptedScheduledResult.rows[0]?.count || '0'),
+      todayNewUsers: parseInt(todayUsersResult.rows[0]?.count || '0'),
+      todayNewDrivers: parseInt(todayDriversResult.rows[0]?.count || '0'),
+      todaySubscriptions: parseInt(todaySubscriptionsResult.rows[0]?.count || '0'),
+      pendingVerifications: parseInt(pendingVerificationsResult.rows[0]?.count || '0'),
+      documentExpiryAlerts: parseInt(documentExpiryAlertsResult.rows[0]?.count || '0'),
+    };
+  }
+
+
 }

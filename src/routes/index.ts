@@ -14,6 +14,7 @@ import driverReconciliationRoutes from '../modules/driver-reconciliation/driverR
 import rechargePlanRoutes from '../modules/rechargePlan/rechargePlan.routes';
 import pricingFareRulesRoutes from '../modules/pricing-fare-rules/pricingFareRules.routes';
 import driverManagementRoutes from '../modules/driver-management/driverManagement.routes';
+import sosManagementRoutes from '../modules/sos-management/sosManagement.routes';
 import webhookRoutes from '../modules/webhooks/webhook.routes';
 import { isServiceAuthenticated } from '../shared/serviceAuthentication';
 
@@ -41,6 +42,7 @@ router.use('/generate-presigned-url', s3Routes);
 router.use('/driver-reconciliation', driverReconciliationRoutes);
 router.use('/recharge-plans', rechargePlanRoutes);
 router.use('/pricing-fare-rules', pricingFareRulesRoutes);
+router.use('/sos', sosManagementRoutes);
 
 export default router;
 
