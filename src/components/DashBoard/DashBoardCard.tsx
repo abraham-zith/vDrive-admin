@@ -8,21 +8,16 @@ import {
   GlobalOutlined,
   CarOutlined,
   ClockCircleOutlined,
-  FireOutlined,
-  WarningOutlined,
+  IdcardOutlined,
 } from "@ant-design/icons";
 import { FiActivity } from "react-icons/fi";
-import { RiMapPinRangeFill } from "react-icons/ri";
-import { FaSackDollar } from "react-icons/fa6";
-import { FaCircle } from "react-icons/fa";
 
 interface Metric {
   title: string;
   value: string;
   subtitle: string;
   icon: React.ReactNode;
-  iconBgKey: string;
-  subIcon: React.ReactNode;
+  pillColor: string;
 }
 
 const MetricCard: React.FC<Metric> = ({
@@ -30,97 +25,89 @@ const MetricCard: React.FC<Metric> = ({
   value,
   subtitle,
   icon,
-  iconBgKey,
-  subIcon,
+  pillColor
 }) => {
   return (
-    <div className="relative bg-white rounded-xl shadow p-6 overflow-hidden transform transition-transform duration-300 hover:scale-105 hover:shadow-lg">
-      <div
-        className={`absolute -top-6 -right-6 w-20 h-20 rounded-full flex items-center justify-center ${iconBgKey}`}
-        style={{ fontSize: "22px", color: "white" }}
-      >
-        <div className="relative top-2 right-2">{icon}</div>
+    <div className="bg-white border border-gray-100 rounded-2xl p-5 flex flex-col hover:shadow-sm transition-all duration-300">
+      <div className="flex justify-between items-start mb-1">
+        <h3 className="text-[#8c8c8c] text-[13px] font-medium tracking-tight whitespace-nowrap">{title}</h3>
+        <div className="text-gray-300 text-lg opacity-60 font-light">{icon}</div>
       </div>
 
-      <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
-      <p className="text-3xl font-bold text-gray-900">{value}</p>
-      <p className="text-gray-500 text-sm flex items-center mt-2 gap-2">
-        {subIcon} {subtitle}
-      </p>
+      <div className="flex items-center gap-2">
+        <p className="text-[28px] font-bold text-[#262626] leading-none tracking-tighter">
+          {value}
+        </p>
+        <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold ${pillColor} self-center mt-1`}>
+          {subtitle}
+        </span>
+      </div>
     </div>
   );
 };
 
-const DashboardCard: React.FC = () => {
+interface DashboardCardProps {
+  stats: {
+    activeDrivers: number;
+    totalDrivers: number;
+    availableDrivers: number;
+    onTripDrivers: number;
+    totalScheduledRides: number;
+    acceptedScheduledRides: number;
+    totalUsers: number;
+    todayNewDrivers: number;
+    todaySubscriptions: number;
+    totalSubscriptions: number;
+    totalEarnings: number;
+    loading: boolean;
+  };
+}
+
+const DashboardCard: React.FC<DashboardCardProps> = ({ stats }) => {
   const metrics: Metric[] = [
     {
-      title: "Total Users",
-      value: "120,540",
-      subtitle: "riders trust our platform",
-      iconBgKey: "bg-blue-400",
+      title: "Total User",
+      value: stats.loading ? "..." : stats.totalUsers.toLocaleString(),
+      subtitle: "Total Registered",
+      pillColor: "bg-blue-50 text-blue-500",
       icon: <TeamOutlined />,
-      subIcon: <GlobalOutlined />,
     },
     {
       title: "Active / Total Drivers",
-      value: "3,210 / 4,500",
-      subtitle: "drivers online — explore map below",
-      iconBgKey: "bg-green-400",
+      value: stats.loading
+        ? "..."
+        : `${stats.activeDrivers} / ${stats.totalDrivers}`,
+      subtitle: "Verified",
+      pillColor: "bg-green-50 text-green-500",
       icon: <CarOutlined />,
-      subIcon: <CarOutlined />,
     },
     {
-      title: "Ongoing Trips",
-      value: "1,250",
-      subtitle: " rides in progress now",
-      iconBgKey: "bg-orange-400",
-      icon: <EnvironmentOutlined />,
-      subIcon: <RiMapPinRangeFill />,
-    },
-    {
-      title: "Upcoming Trips",
-      value: "320",
-      subtitle: "rides scheduled today",
-      iconBgKey: "bg-indigo-400",
-      icon: <ClockCircleOutlined />,
-      subIcon: <ClockCircleOutlined />,
-    },
-    {
-      title: "Today's Earnings",
-      value: "$12,540",
-      subtitle: "earned so far",
-      iconBgKey: "bg-green-500",
-      icon: <DollarOutlined />,
-      subIcon: <FaSackDollar />,
-    },
-    {
-      title: "Active Zones",
-      value: "12",
-      subtitle: "hotspots buzzing with demand",
-      iconBgKey: "bg-orange-500",
+      title: "Total Subscription",
+      value: stats.loading ? "..." : stats.totalSubscriptions.toLocaleString(),
+      subtitle: "Active Plans",
+      pillColor: "bg-purple-50 text-purple-500",
       icon: <ThunderboltOutlined />,
-      subIcon: <FireOutlined />,
     },
     {
-      title: "Recent Disputes",
-      value: "5",
-      subtitle: " new disputes — under review",
-      iconBgKey: "bg-blue-500",
-      icon: <ExclamationCircleOutlined />,
-      subIcon: <WarningOutlined />,
+      title: "Total Earnings",
+      value: stats.loading
+        ? "..."
+        : `₹${stats.totalEarnings.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+      subtitle: "Lifetime",
+      pillColor: "bg-green-50 text-green-500",
+      icon: <DollarOutlined />,
     },
     {
-      title: "System Status",
+      title: "Platform System Status",
       value: "All Good",
-      subtitle: "all systems operational",
-      iconBgKey: "bg-green-400",
+      subtitle: "Stable",
+      pillColor: "bg-emerald-50 text-emerald-500",
       icon: <FiActivity />,
-      subIcon: <FaCircle />,
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
       {metrics.map((metric, index) => (
         <MetricCard key={index} {...metric} />
       ))}

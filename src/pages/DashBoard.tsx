@@ -1,35 +1,134 @@
 import QuickActions from "../components/DashBoard/QuickActions";
 import { FiActivity } from "react-icons/fi";
 import { Typography } from "antd";
-import DriverMap from "../components/DashBoard/DriverMap";
 import DashboardCard from "../components/DashBoard/DashBoardCard";
+import DriverMetricsColumn from "../components/DashBoard/DriverMetricsColumn";
+import TodayGrowthColumn from "../components/DashBoard/TodayGrowthColumn";
+import OnboardingMetrics from "../components/DashBoard/OnboardingMetrics";
+import ActivityFeed from "../components/DashBoard/ActivityFeed";
+import TripManagement from "../components/DashBoard/TripManagement";
+
+import { useEffect, useState } from "react";
+import axiosIns from "../api/axios";
+import { useSocket } from "../hooks/useSocket";
 
 const Dashboard = () => {
-  const drivers = [
-    { id: "1", lat: 12.975, lng: 77.59 },
-    { id: "2", lat: 12.97, lng: 77.6 },
-  ];
+  const { socket } = useSocket();
+  const [stats, setStats] = useState({
+    activeDrivers: 0,
+    totalDrivers: 0,
+    availableDrivers: 0,
+    onTripDrivers: 0,
+    totalScheduledRides: 0,
+    acceptedScheduledRides: 0,
+    totalUsers: 0,
+    todayNewUsers: 0,
+    todayNewDrivers: 0,
+    todaySubscriptions: 0,
+    totalSubscriptions: 0,
+    todayTrips: 0,
+    todayRevenue: 0,
+    totalEarnings: 0,
+    totalCancellationsToday: 0,
+    pendingVerifications: 0,
+    documentExpiryAlerts: 0,
+    trends: {
+      users: "0%",
+      drivers: "0%",
+      subscriptions: "0%",
+      trips: "0%",
+      revenue: "0%",
+    },
+    loading: true,
+  });
+
+
+  const fetchStats = async () => {
+    try {
+      const response = await axiosIns.get("/api/drivers/dashboard-stats");
+      if (response.data.success) {
+        const data = response.data.data;
+        setStats((prev) => ({
+          ...prev,
+          ...data,
+          todaySubscriptions: data.todaySubscriptions,
+          loading: false,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch dashboard stats:", error);
+      setStats((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleDriverEvent = () => {
+      // Refresh stats when any driver event occurs (online/offline/trip)
+      fetchStats();
+    };
+
+    socket.on("driver_event", handleDriverEvent);
+    return () => {
+      socket.off("driver_event", handleDriverEvent);
+    };
+  }, [socket]);
+
   return (
-    <div className="w-full h-full overflow-y-auto mx-auto px-2 sm:px-4 lg:px-6 xl:px-4 2xl:px-6 space-y-6 py-2 ">
-      <div className="flex items-center space-x-3">
-        <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-xl">
+    <div className="flex flex-col h-full overflow-hidden p-3 gap-3 bg-gray-50/50">
+      <div className="flex items-center space-x-3 shrink-0">
+        <div className="flex items-center justify-center w-10 h-10 bg-blue-500 rounded-xl shadow-lg shadow-blue-500/20">
           <FiActivity className="text-white text-2xl" />
         </div>
         <div>
           <Typography.Title
-            level={2}
-            className="!m-0 text-xl sm:text-2xl font-extrabold text-gray-900"
+            level={4}
+            className="!m-0 text-lg sm:text-xl font-extrabold text-gray-900 tracking-tight"
           >
             Dashboard
           </Typography.Title>
-          <Typography.Text className="block text-md sm:text-base text-gray-500">
+          <Typography.Text className="block text-xs sm:text-sm text-gray-400 font-medium font-outfit uppercase tracking-widest text-[9px]">
             Live operational metrics and insights
           </Typography.Text>
         </div>
       </div>
-      <DashboardCard />
-      <DriverMap driverLocations={drivers} />
-      <QuickActions />
+      
+      <div className="shrink-0">
+        <DashboardCard stats={stats} />
+      </div>
+
+      <div className="flex items-center gap-4 shrink-0 py-1">
+        <Typography.Title level={5} className="!m-0 text-gray-700 font-bold whitespace-nowrap text-sm tracking-tight uppercase">
+          Operations & Live Feed
+        </Typography.Title>
+        <div className="h-px bg-gray-200 flex-1"></div>
+      </div>
+
+      {/* Main Dashboard Layout - 4 Column Top Grid with adjusted widths (3:2:3:2) */}
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-10 gap-4 min-h-0 overflow-hidden text-sm">
+        <div className="lg:col-span-3 flex flex-col min-h-0">
+          <DriverMetricsColumn stats={stats} />
+        </div>
+        <div className="lg:col-span-3 flex flex-col min-h-0">
+          <TripManagement stats={stats} />
+        </div>
+        <div className="lg:col-span-4 flex flex-col min-h-0 gap-4 h-105">
+          <OnboardingMetrics stats={stats} />
+          <ActivityFeed />
+        </div>
+      </div>
+
+      {/* Bottom Horizontal Row - Shared Actions (Left Half Only) */}
+      <div className="shrink-0 h-32 grid grid-cols-1 lg:grid-cols-2 gap-4 mt-1">
+        <QuickActions />
+        <TodayGrowthColumn stats={stats} isHorizontal={true} />
+      </div>
+
     </div>
   );
 };

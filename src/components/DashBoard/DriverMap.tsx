@@ -9,9 +9,15 @@ const center = { lat: 13.0827, lng: 80.2707 };
 
 interface DriverMapProps {
   driverLocations?: { lat: number; lng: number; id: string }[];
+  availableCount: number;
+  onTripCount: number;
 }
 
-const DriverMap: React.FC<DriverMapProps> = ({ driverLocations = [] }) => {
+const DriverMap: React.FC<DriverMapProps> = ({ 
+  driverLocations = [], 
+  availableCount = 0, 
+  onTripCount = 0 
+}) => {
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: import.meta.env.GOOGLE_MAP_API,
   });
@@ -56,16 +62,17 @@ const DriverMap: React.FC<DriverMapProps> = ({ driverLocations = [] }) => {
           </div>
         </div>
         <div className="absolute top-4 right-4 flex flex-col space-y-2">
-          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
-            🟢 4 Available
+          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+            🟢 {availableCount} Available
           </span>
-          <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full">
-            🚗 1 On Trip
+          <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+            🚗 {onTripCount} On Trip
           </span>
         </div>
       </div>
     </>
   );
 };
+
 
 export default DriverMap;

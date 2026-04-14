@@ -315,19 +315,17 @@ const RootLayout: React.FC = () => {
                   className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
                 >
                   <div
-                    className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
-                      collapsed ? "justify-center" : "gap-3"
-                    }`}
+                    className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${collapsed ? "justify-center" : "gap-3"
+                      }`}
                   >
                     {collapsed ? null : (
                       <Avatar size="large" icon={<UserOutlined />} />
                     )}
                     <div
-                      className={`grid transition-all duration-300 ease-in-out ${
-                        collapsed
+                      className={`grid transition-all duration-300 ease-in-out ${collapsed
                           ? "grid-rows-[0fr] opacity-0"
                           : "grid-rows-[1fr] opacity-100"
-                      }`}
+                        }`}
                     >
                       <div className="overflow-hidden">
                         <div className="flex flex-col text-black">
@@ -417,11 +415,10 @@ const RootLayout: React.FC = () => {
             )}
             <Content>
               <div
-                className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${
-                  isMobile && isAuthenticated && location.pathname !== "/login"
+                className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${isMobile && isAuthenticated && location.pathname !== "/login"
                     ? "pt-16 h-[100dvh]"
                     : "h-[100dvh]"
-                }`}
+                  }`}
               >
                 <Outlet />
               </div>
