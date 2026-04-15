@@ -1,14 +1,9 @@
 import React from "react";
 import {
   ThunderboltOutlined,
-  EnvironmentOutlined,
   TeamOutlined,
   DollarOutlined,
-  ExclamationCircleOutlined,
-  GlobalOutlined,
   CarOutlined,
-  ClockCircleOutlined,
-  IdcardOutlined,
 } from "@ant-design/icons";
 import { FiActivity } from "react-icons/fi";
 

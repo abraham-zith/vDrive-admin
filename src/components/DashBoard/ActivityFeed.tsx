@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { List, Avatar, Badge, Typography, Tag, Tooltip, Empty } from "antd";
+import { Avatar, Badge, Typography, Tag, Tooltip, Empty } from "antd";
 import {
   BellOutlined,
   UserAddOutlined,
@@ -110,9 +110,9 @@ const ActivityFeed: React.FC = () => {
   }, [socket]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden">
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <Badge dot status="processing">
             <ThunderboltOutlined className="text-blue-500 text-lg" />

@@ -1,4 +1,3 @@
-import QuickActions from "../components/DashBoard/QuickActions";
 import { FiActivity } from "react-icons/fi";
 import { Typography } from "antd";
 import DashboardCard from "../components/DashBoard/DashBoardCard";
@@ -123,10 +122,15 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Bottom Horizontal Row - Shared Actions (Left Half Only) */}
-      <div className="shrink-0 h-32 grid grid-cols-1 lg:grid-cols-2 gap-4 mt-1">
-        <QuickActions />
-        <TodayGrowthColumn stats={stats} isHorizontal={true} />
+      {/* Bottom Horizontal Row - Today's Overview & Divider */}
+      <div className="shrink-0 h-32 mt-1 flex items-center gap-6">
+        <div className="flex-1 h-full">
+          <TodayGrowthColumn stats={stats} isHorizontal={true} />
+        </div>
+        <div className="flex-1 flex items-center gap-4 pr-4">
+          <div className="h-px bg-gray-200 flex-1"></div>
+          <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest whitespace-nowrap">Dashboard End</span>
+        </div>
       </div>
 
     </div>

@@ -2,16 +2,19 @@ import React, { useState, useEffect } from 'react';
 import {
   Plus,
   Search,
-  CheckCircle,
-  XCircle,
-  Edit2,
   Trash2,
   X,
   Zap,
   Trophy,
   Crown,
+  ChevronDown,
+  ChevronUp,
+  Users,
+  Edit3,
+  Power,
 } from 'lucide-react';
 import axios from '../api/axios';
+import { Drawer, Select, Button, Space, Tag, Modal } from 'antd';
 import { ClockCircleOutlined } from '@ant-design/icons';
 
 /* ================= TYPES ================= */
@@ -20,7 +23,6 @@ interface RechargePlan {
   id: number;
   planName: string;
   description: string;
-  rideLimit: any;
   validityDays: any;
   dailyPrice: number;
   weeklyPrice: number;
@@ -41,6 +43,7 @@ const RechargePlanPage: React.FC = () => {
   const [activeSubscriptions, setActiveSubscriptions] = useState<any[]>([]);
   const [loadingActiveSubs, setLoadingActiveSubs] = useState(false);
   const [expandedPlanId, setExpandedPlanId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -54,12 +57,14 @@ const RechargePlanPage: React.FC = () => {
     isActive: true,
   });
 
+  const [subSearchTerm, setSubSearchTerm] = useState("");
+
   /* ---- Fetch Plans ---- */
   const fetchPlans = async () => {
     try {
       setLoading(true);
       const res = await axios.get('/api/recharge-plans');
-      
+
       // Dev Logging
       if (import.meta.env.DEV) {
         console.group('RECHARGE PLANS API RESPONSE');
@@ -88,7 +93,6 @@ const RechargePlanPage: React.FC = () => {
         id: p.id,
         planName: p.plan_name || p.planName,
         description: p.description,
-        rideLimit: p.ride_limit || p.rideLimit,
         validityDays: p.validity_days || p.validityDays,
         dailyPrice: Number(p.daily_price || p.dailyPrice || 0),
         weeklyPrice: Number(p.weekly_price || p.weeklyPrice || 0),
@@ -125,21 +129,38 @@ const RechargePlanPage: React.FC = () => {
     try {
       setLoadingActiveSubs(true);
       const res = await axios.get("/api/recharge-plans/active-subscriptions");
-      
-      const respData = res.data;
-      let extractedSubs = [];
-      
-      if (Array.isArray(respData)) {
-        extractedSubs = respData;
-      } else if (Array.isArray(respData.data)) {
-        extractedSubs = respData.data;
-      } else if (respData.data?.data && Array.isArray(respData.data.data)) {
-        extractedSubs = respData.data.data;
-      } else if (respData.subscriptions && Array.isArray(respData.subscriptions)) {
-        extractedSubs = respData.subscriptions;
+
+      // Dev Logging
+      if (import.meta.env.DEV) {
+        console.group('ACTIVE SUBSCRIPTIONS API RESPONSE');
+        console.log('Full Response:', res.data);
+        console.groupEnd();
       }
 
-      setActiveSubscriptions(extractedSubs);
+      const respData = res.data;
+      let rawSubs = [];
+
+      if (Array.isArray(respData)) {
+        rawSubs = respData;
+      } else if (Array.isArray(respData.data)) {
+        rawSubs = respData.data;
+      } else if (respData.data?.data && Array.isArray(respData.data.data)) {
+        rawSubs = respData.data.data;
+      } else if (respData.subscriptions && Array.isArray(respData.subscriptions)) {
+        rawSubs = respData.subscriptions;
+      }
+
+      const mappedSubs = rawSubs.map((s: any) => ({
+        id: s.id,
+        driverName: s.driver_name || s.driverName || 'N/A',
+        driverPhone: s.driver_phone || s.driverPhone || 'N/A',
+        planName: s.plan_name || s.planName || 'N/A',
+        billingCycle: s.billing_cycle || s.billingCycle || 'N/A',
+        startDate: s.start_date || s.startDate,
+        expiryDate: s.expiry_date || s.expiryDate,
+      }));
+
+      setActiveSubscriptions(mappedSubs);
     } catch (err) {
       console.error("Failed to fetch active subscriptions:", err);
     } finally {
@@ -150,7 +171,7 @@ const RechargePlanPage: React.FC = () => {
   const formatFeatureLabel = (key: string) => {
     // If it already looks like a sentence, leave it
     if (key.includes(' ')) return key;
-    
+
     // Mapping for common technical keys
     const mapping: Record<string, string> = {
       zero_commission: "Zero Commission",
@@ -186,7 +207,7 @@ const RechargePlanPage: React.FC = () => {
   const handleOpenModal = (plan?: RechargePlan) => {
     if (plan) {
       setEditingId(plan.id);
-      
+
       setFormData({
         planName: plan.planName,
         description: plan.description || '',
@@ -243,16 +264,23 @@ const RechargePlanPage: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this plan?')) {
-      try {
-        await axios.delete(`/api/recharge-plans/delete/${id}`);
-        alert('Plan deleted successfully');
-        fetchPlans();
-      } catch (err) {
-        console.error('Failed to delete plan:', err);
-        alert('Failed to delete plan');
-      }
-    }
+    Modal.confirm({
+      title: 'Delete Plan?',
+      content: 'Are you sure you want to delete this plan? This action cannot be undone.',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await axios.delete(`/api/recharge-plans/delete/${id}`);
+          alert('Plan deleted successfully');
+          fetchPlans();
+        } catch (err) {
+          console.error('Failed to delete plan:', err);
+          alert('Failed to delete plan');
+        }
+      },
+    });
   };
 
   const toggleStatus = async (id: number, currentStatus: boolean) => {
@@ -266,614 +294,534 @@ const RechargePlanPage: React.FC = () => {
     }
   };
 
-  const filteredPlans = plans.filter((p) =>
-    p.planName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPlans = plans.filter((p) => {
+    const matchesSearch = p.planName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" ||
+      (statusFilter === "active" && p.isActive) ||
+      (statusFilter === "inactive" && !p.isActive);
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div className="p-8 bg-[#F8F9FC] min-h-screen">
-      <div className="flex justify-between items-center mb-10">
+    <div className="p-8 bg-[#F5F7FA] min-h-screen font-sans">
+      {/* Header section */}
+      <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-black text-[#1d2a5c] tracking-tight">Recharge Plans</h1>
-          <p className="text-gray-400 font-medium mt-1">Manage driver subscription and recharge tiered plans</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Recharge Plans</h1>
+          <p className="text-slate-500 text-sm mt-1">Manage plans and monitor subscriptions</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 border-2 border-[#1d2a5c] text-[#1d2a5c] px-6 py-2.5 rounded-xl transition-all hover:bg-[#1d2a5c]/5 active:scale-95 font-black uppercase tracking-wider text-xs shadow-sm"
-        >
-          <Plus size={18} />
-          Create New Plan
-        </button>
       </div>
 
-      <div className="flex gap-8 mb-10 border-b border-gray-200/60">
+      {/* Tabs section */}
+      <div className="flex gap-8 mb-8 border-b border-slate-200">
         <button
           onClick={() => setActiveTab("plans")}
-          className={`pb-4 px-2 font-bold transition-all relative ${
-            activeTab === "plans"
-              ? "text-[#1d2a5c]"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
+          className={`pb-4 px-1 text-sm font-semibold transition-all relative ${activeTab === "plans"
+              ? "text-indigo-600"
+              : "text-slate-400 hover:text-slate-600"
+            }`}
         >
-          Manage Plans
+          Manage Plans <span className="ml-1 opacity-60 font-medium">{plans.length}</span>
           {activeTab === "plans" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1d2a5c] rounded-t-full" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
           )}
         </button>
         <button
           onClick={() => setActiveTab("subscriptions")}
-          className={`pb-4 px-2 font-bold transition-all relative ${
-            activeTab === "subscriptions"
-              ? "text-[#1d2a5c]"
-              : "text-gray-400 hover:text-gray-600"
-          }`}
+          className={`pb-4 px-1 text-sm font-semibold transition-all relative ${activeTab === "subscriptions"
+              ? "text-indigo-600"
+              : "text-slate-400 hover:text-slate-600"
+            }`}
         >
-          Active Subscriptions
+          Active Subscriptions <span className="ml-1 opacity-60 font-medium">{activeSubscriptions.length}</span>
           {activeTab === "subscriptions" && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#1d2a5c] rounded-t-full" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
           )}
         </button>
       </div>
 
-  {activeTab === "plans" ? (
-    <>
-        <div className="mb-10 relative max-w-2xl group">
-          <Search
-            className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-300 group-focus-within:text-[#1d2a5c] transition-colors"
-            size={22}
-          />
-          <input
-            type="text"
-            placeholder="Search recharge plans..."
-            className="w-full pl-14 pr-6 py-4.5 bg-white border border-gray-200 shadow-sm rounded-[1.25rem] focus:ring-4 focus:ring-[#1d2a5c]/5 focus:border-[#1d2a5c] outline-none transition-all font-medium text-gray-700 placeholder:text-gray-300"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      {activeTab === "plans" ? (
+        <>
+          {/* Controls Row */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-8 items-center justify-between">
+            <div className="flex flex-1 gap-4 w-full sm:w-auto">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search plans..."
+                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Select
+                defaultValue="all"
+                style={{ width: 140, height: 40 }}
+                onChange={setStatusFilter}
+                className="custom-select"
+                suffixIcon={<ChevronDown size={16} className="text-slate-400" />}
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
+              />
+            </div>
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 text-indigo-600 border border-indigo-600 hover:bg-indigo-50 px-5 py-2.5 rounded-lg transition-all active:scale-95 text-sm font-semibold"
+            >
+              <Plus size={18} />
+              Create Plan
+            </button>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? (
-          [1, 2, 3].map((i: number) => (
-            <div key={i} className="animate-pulse bg-white p-6 rounded-2xl h-64 shadow-sm border border-gray-100" />
-          ))
-        ) : filteredPlans.length > 0 ? (
-          filteredPlans.map((plan) => {
-            const isExpanded = expandedPlanId === plan.id;
-            const config = getPlanConfig(plan.planName);
-            
-            return (
-              <div
-                key={plan.id}
-                onClick={() => setExpandedPlanId(isExpanded ? null : plan.id)}
-                className={`bg-white rounded-2xl p-6 border border-gray-200 transition-all duration-300 cursor-pointer relative overflow-hidden group ${
-                  isExpanded 
-                    ? 'col-span-full shadow-2xl ring-1 ring-[#1d2a5c]/20 border-[#1d2a5c]/10 mt-2 mb-4' 
-                    : 'shadow-sm hover:shadow-lg hover:-translate-y-1'
-                } ${!plan.isActive && !isExpanded ? 'opacity-70 grayscale-[0.5]' : ''}`}
-              >
-                {/* HEADER ROW: CLEAR VISION */}
-                <div className="flex flex-col gap-6 transition-all duration-500">
-                  <div className={`flex items-center justify-between ${isExpanded ? 'border-b border-gray-100 pb-6' : ''}`}>
-                    <div className="flex items-center gap-4">
-                      <div className={`w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center text-[#1d2a5c] transition-all group-hover:bg-[#1d2a5c] group-hover:text-white shadow-sm border border-gray-200`}>
-                        {config.icon}
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xl font-black text-[#1d2a5c] tracking-tight capitalize leading-none">
-                            {plan.planName}
-                          </h3>
-                          {/* Pulsed Status - Integrated to Plan Title */}
-                          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border-2 ${plan.isActive ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-600'}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full ${plan.isActive ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                            <span className="text-[8px] font-black uppercase tracking-widest leading-none">
-                              {plan.isActive ? 'Live' : 'Inactive'}
-                            </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loading ? (
+              [1, 2, 3].map((i: number) => (
+                <div key={i} className="animate-pulse bg-white p-8 rounded-2xl h-80 shadow-sm border border-slate-100" />
+              ))
+            ) : filteredPlans.length > 0 ? (
+              filteredPlans.map((plan) => {
+                const isExpanded = expandedPlanId === plan.id;
+                const activeSubCount = activeSubscriptions.filter(s => s.planName?.toLowerCase() === plan.planName?.toLowerCase()).length;
+
+                return (
+                  <div
+                    key={plan.id}
+                    className={`bg-white rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden ${isExpanded
+                        ? 'shadow-xl border-indigo-200 ring-1 ring-indigo-50/50'
+                        : 'shadow-sm border-slate-200 hover:shadow-md hover:border-slate-300'
+                      }`}
+                  >
+                    {/* Card Header area */}
+                    <div
+                      className="p-6 cursor-pointer flex-1"
+                      onClick={() => setExpandedPlanId(isExpanded ? null : plan.id)}
+                    >
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-slate-900 capitalize">{plan.planName}</h3>
+                            <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${plan.isActive
+                                ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                                : 'bg-slate-100 border-slate-200 text-slate-400'
+                              }`}>
+                              {plan.isActive ? 'Active' : 'Inactive'}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1.5 text-slate-400" title="Active Subscriptions">
+                              <Users size={14} />
+                              <span className="text-xs font-medium">{activeSubCount}</span>
+                            </div>
+
                           </div>
                         </div>
-                        {!isExpanded && (
-                          <div className="flex items-center gap-1.5 mt-1.5 text-[9px] font-black text-gray-500 uppercase tracking-[0.1em]">
-                            <ClockCircleOutlined style={{ fontSize: '12px' }} />
-                            {plan.validityDays || '0'} Days Validity
-                          </div>
-                        )}
+                        <button className="text-slate-400 p-1 hover:bg-slate-50 rounded-md transition-colors">
+                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </button>
                       </div>
+
+                      {/* Pricing Blocks */}
+                      <div className="grid grid-cols-3 gap-2 mb-6">
+                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100/50">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Daily</div>
+                          <div className="text-sm font-bold text-slate-900">₹{plan.dailyPrice}</div>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100/50">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Weekly</div>
+                          <div className="text-sm font-bold text-slate-900">₹{plan.weeklyPrice}</div>
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100/50">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Monthly</div>
+                          <div className="text-sm font-bold text-slate-900">₹{plan.monthlyPrice}</div>
+                        </div>
+                      </div>
+
+                      {/* Feature List */}
+                      <ul className="space-y-2.5">
+                        {plan.features.slice(0, 4).map((feature: string, idx: number) => (
+                          <li key={idx} className="flex items-start gap-2 text-xs text-slate-500 font-medium">
+                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                            <span>{formatFeatureLabel(feature)}</span>
+                          </li>
+                        ))}
+                        {plan.features.length > 4 && (
+                          <li className="text-[11px] font-bold text-indigo-600 mt-2 ml-3.5">
+                            +{plan.features.length - 4} more
+                          </li>
+                        )}
+                      </ul>
                     </div>
 
+                    {/* Expanded Actions area */}
                     {isExpanded && (
-                      <div className="bg-[#1d2a5c] px-5 py-3 rounded-xl flex items-center gap-4 animate-in fade-in zoom-in-95 duration-500 shadow-lg">
-                        <div className="text-3xl font-black text-white">
-                          {activeSubscriptions.filter(s => s.plan_name?.toLowerCase() === plan.planName?.toLowerCase()).length}
-                        </div>
-                        <div className="text-[10px] font-black text-white/90 uppercase tracking-widest leading-tight border-l border-white/20 pl-4">
-                          Active<br/><span className="text-[8px] text-white/60">Drivers</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {isExpanded ? (
-                    <div className="flex flex-col gap-8 animate-in fade-in duration-700 font-bold">
-                      {/* CONTENT SECTION: HIGH CONTRAST COLUMNS */}
-                      <div className="grid grid-cols-2 gap-10">
-                        {/* PRICING */}
-                        <div>
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 mb-4 border-l-2 border-[#1d2a5c] pl-3">Plan Pricing</h4>
-                          <div className="space-y-3">
-                            {[
-                              { label: 'Daily Access', price: plan.dailyPrice, period: 1, color: 'text-[#1d2a5c]' },
-                              { label: 'Weekly Access', price: plan.weeklyPrice, period: 7, color: 'text-indigo-700' },
-                              { label: 'Monthly Access', price: plan.monthlyPrice, period: 30, color: 'text-blue-700' }
-                            ].map((tier: any, i: number) => tier.price > 0 && (
-                              <div key={i} className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex justify-between items-center group/tier hover:bg-white hover:shadow-md hover:border-[#1d2a5c]/20 transition-all">
-                                <span className="text-xs font-black text-gray-600 uppercase tracking-tight">{tier.label}</span>
-                                <div className="text-right">
-                                  <div className={`text-xl font-black ${tier.color}`}>₹{tier.price}</div>
-                                  {tier.period > 1 && (
-                                    <div className="text-[9px] font-black text-green-600 uppercase tracking-tight">₹{Math.floor(tier.price / tier.period)} / Day Value</div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* FEATURES */}
-                        <div>
-                          <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-gray-500 mb-4 border-l-2 border-green-500 pl-3">Plan Benefits</h4>
-                          <ul className="grid grid-cols-1 gap-2.5">
-                            {plan.features.map((feature: string, idx: number) => (
-                              <li key={idx} className="flex items-center gap-3 text-xs text-gray-800 font-black bg-gray-50 p-3 rounded-xl border border-gray-200 hover:border-green-200 transition-all">
-                                <CheckCircle size={12} className="text-green-600" />
-                                <span>{formatFeatureLabel(feature)}</span>
-                              </li>
-                            ))}
-                            <li className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 pt-3 border-t border-gray-100">
-                               <ClockCircleOutlined /> Validity: {plan.validityDays || '0'} Days Total
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-
-                      {/* BOTTOM SECTION: CLEAR ACTIONS */}
-                      <div className="mt-4 pt-6 border-t border-gray-100 flex flex-col items-center gap-4">
-                        <div className="flex items-center gap-4">
+                      <div className="px-6 py-4 bg-white border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                        <div className="flex gap-4">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleOpenModal(plan); }}
-                            className="border-2 border-[#1d2a5c] text-[#1d2a5c] bg-white px-8 py-3 rounded-xl font-black transition-all hover:bg-[#1d2a5c] hover:text-white hover:shadow-xl flex items-center gap-2 active:scale-95 text-xs"
+                            className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 py-2 rounded-lg text-xs font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm"
                           >
-                            <Edit2 size={14} />
-                            MODIFY PLAN
+                            <Edit3 size={14} />
+                            Edit
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleStatus(plan.id, plan.isActive); }}
-                            className={`px-8 py-3 rounded-xl font-black border-2 transition-all flex items-center gap-2 active:scale-95 text-xs ${
-                              plan.isActive 
-                                ? 'border-red-200 text-red-600 bg-white hover:bg-red-600 hover:text-white hover:border-red-600' 
-                                : 'border-green-200 text-green-700 bg-white hover:bg-green-600 hover:text-white hover:border-green-600'
-                            }`}
+                            className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 py-2 rounded-lg text-xs font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm"
                           >
-                            {plan.isActive ? <XCircle size={14} /> : <CheckCircle size={14} />}
-                            {plan.isActive ? 'DEACTIVATE' : 'GO LIVE NOW'}
+                            <Power size={14} className={plan.isActive ? 'text-rose-500' : 'text-emerald-500'} />
+                            {plan.isActive ? 'Deactivate' : 'Activate'}
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDelete(plan.id); }}
-                            className="ml-4 p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all active:scale-90 border border-transparent hover:border-red-100"
+                            className="p-2 bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-100 hover:bg-slate-50 rounded-lg transition-all shadow-sm"
                           >
-                            <Trash2 size={20} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
-                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2 opacity-80">
-                           <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                           PLAN STATUS: {plan.isActive ? 'ACTIVE' : 'OFFLINE'}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    /* COLLAPSED MINI VIEW: ULTRA CLEAN */
-                    <div className="flex flex-col gap-3">
-                      <p className="text-gray-400 text-[11px] font-medium leading-relaxed line-clamp-2 pr-12">
-                        {plan.description}
-                      </p>
-                      <div className="flex justify-between items-center pt-3 border-t border-gray-50">
-                        <div className="flex -space-x-1">
-                          {plan.features.slice(0, 3).map((_: any, i: number) => (
-                            <div key={i} className="w-5 h-5 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center">
-                              <CheckCircle size={8} className="text-green-500 opacity-60" />
-                            </div>
-                          ))}
-                        </div>
-                        <div className="text-[#1d2a5c] text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-all">
-                          Manage Plan <Plus size={10} strokeWidth={3} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <div className="col-span-full py-20 bg-white rounded-2xl text-center border-2 border-dashed border-gray-200">
-            <p className="text-gray-400">No recharge plans found. Create your first one!</p>
-          </div>
-        )}
-      </div>
-    </>
-  ) : (
-    <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-8 border-b border-gray-50 flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-black text-[#1d2a5c] tracking-tight">Live Driver Subscriptions</h2>
-          <p className="text-xs text-gray-400 font-medium mt-1">Real-time status of all active driver recharge plans</p>
-        </div>
-        <button
-          onClick={fetchActiveSubscriptions}
-          className="p-3 hover:bg-gray-50 rounded-2xl text-[#1d2a5c] transition-all active:scale-90"
-          title="Refresh List"
-        >
-          <Zap size={20} />
-        </button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-gray-50/50">
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Driver Identity</th>
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Plan Details</th>
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Billing Cycle</th>
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Timeline</th>
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Expiration</th>
-              <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Live Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loadingActiveSubs ? (
-              [1, 2, 3].map((i: number) => (
-                <tr key={i} className="animate-pulse">
-                  <td colSpan={6} className="px-6 py-8">
-                    <div className="h-10 bg-gray-50 rounded-xl w-full"></div>
-                  </td>
-                </tr>
-              ))
-            ) : activeSubscriptions.length > 0 ? (
-              activeSubscriptions.map((sub: any) => {
-                const daysLeft = Math.ceil((new Date(sub.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                const isExpiring = daysLeft < 3;
-                
-                return (
-                  <tr key={sub.id} className="group hover:bg-gray-50/50 transition-all duration-200">
-                    <td className="px-8 py-6">
-                      <div className="font-black text-[#1d2a5c] tracking-tight text-base">{sub.driver_name}</div>
-                      <div className="text-xs font-bold text-gray-400 mt-0.5">{sub.driver_phone}</div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-[#1d2a5c]">
-                          <Zap size={14} fill="currentColor" />
-                        </div>
-                        <span className="text-sm font-black text-[#1d2a5c] uppercase tracking-wide">
-                          {sub.plan_name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-gray-100 px-3 py-1 rounded-full">
-                        {sub.billing_cycle}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6 text-sm font-bold text-gray-500">
-                      {new Date(sub.start_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black text-[#1d2a5c]">
-                          {new Date(sub.expiry_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </span>
-                        <span className={`text-[10px] font-black uppercase tracking-tight mt-1 ${
-                          isExpiring ? 'text-red-500' : 'text-gray-400'
-                        }`}>
-                          {daysLeft} days remaining
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-2 text-green-600 text-[10px] font-black uppercase tracking-widest bg-green-50/50 px-4 py-2 rounded-full w-fit border border-green-100/50">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                        Live Active
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={6} className="px-6 py-32 text-center">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 bg-gray-50 rounded-full text-gray-300">
-                      <Zap size={40} />
-                    </div>
-                    <p className="text-gray-400 font-bold">No active driver subscriptions found currently.</p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )}
-
-
-      {/* MODAL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-            <div className="px-8 py-6 border-b border-gray-100 bg-white sticky top-0 z-10">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-3xl font-black text-gray-900 tracking-tight">{editingId ? 'Edit Plan' : 'Create New Plan'}</h2>
-                  <p className="text-sm font-medium text-gray-500 mt-1 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                    Configure tiered pricing and dynamic features
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-3 hover:bg-gray-100 rounded-2xl text-gray-400 hover:text-gray-900 transition-all active:scale-90"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 custom-scrollbar px-8 py-6">
-              <div className="space-y-10">
-                {/* SECTION: BASIC INFO */}
-                <section>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-                        <Zap size={20} fill="currentColor" />
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-900">Basic Information</h3>
-                    </div>
-                    {/* PLAN PRESETS */}
-                    {!editingId && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Presets:</span>
-                        {['Basic', 'Elite', 'Premium'].map((type: string) => (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => {
-                              const presets: any = {
-                                Basic: {
-                                  name: 'Basic Plan',
-                                  desc: 'Entry-level plan for drivers who want to operate within their local city with zero commission.',
-                                  features: ["Zero commission on all rides", "Access to local city rides only", "Accept instant ride requests", "Basic customer support", "Scheduled rides not available"]
-                                },
-                                Elite: {
-                                  name: 'Elite Plan',
-                                  desc: 'Advanced plan for drivers who want more ride options and higher earning opportunities.',
-                                  features: ["Zero commission on all rides", "Access to all available ride types", "Scheduled rides enabled (only for weekly and monthly plans)", "Outstation trips enabled", "One-way trips enabled", "Priority ride matching"]
-                                },
-                                Premium: {
-                                  name: 'Premium Plan',
-                                  desc: 'Full-featured plan designed for high-performing drivers with maximum ride access and priority support.',
-                                  features: ["Zero commission on all rides", "Access to all available ride types", "Scheduled rides enabled (only for weekly and monthly plans)", "All ride categories enabled: Local rides, Outstation trips, One-way trips, Round trips", "Priority ride matching", "24/7 priority support"]
-                                }
-                              };
-                              const p = presets[type];
-                              setFormData({
-                                ...formData,
-                                planName: p.name,
-                                description: p.desc,
-                                features: p.features
-                              });
-                            }}
-                            className="text-[10px] font-bold px-3 py-1.5 bg-gray-50 hover:bg-[#1d2a5c] hover:text-white rounded-lg border border-gray-100 transition-all active:scale-95"
-                          >
-                            {type}
-                          </button>
-                        ))}
                       </div>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2.5">Plan Name</label>
-                      <input
-                        type="text"
-                        required
-                        className="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-[#1d2a5c] focus:bg-white rounded-[1.25rem] outline-none transition-all font-bold text-gray-900 placeholder:text-gray-300"
-                        placeholder="e.g. Premium Executive Tier"
-                        value={formData.planName}
-                        onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
-                      />
-                    </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full py-20 bg-white rounded-2xl text-center border border-dashed border-slate-200">
+                <p className="text-slate-400 text-sm">No plans found. Create your first one!</p>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {/* Controls Row for Subscriptions */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search by driver name or phone..."
+                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                value={subSearchTerm}
+                onChange={(e) => setSubSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={fetchActiveSubscriptions}
+                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+              >
+                <Zap size={16} />
+                Refresh
+              </button>
+            </div>
+          </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2.5">Description</label>
-                      <textarea
-                        rows={3}
-                        className="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-[#1d2a5c] focus:bg-white rounded-[1.25rem] outline-none transition-all font-medium text-gray-600 resize-none placeholder:text-gray-300"
-                        placeholder="Briefly describe the target audience or benefits..."
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      />
-                    </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Active Subscriptions</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Real-time status of all active driver plans</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50">
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Driver</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Plan</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Cycle</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Start</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Expiry</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Remaining</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loadingActiveSubs ? (
+                    [1, 2, 3].map((i: number) => (
+                      <tr key={i} className="animate-pulse">
+                        <td colSpan={6} className="px-6 py-6">
+                          <div className="h-8 bg-slate-50 rounded-lg w-full"></div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : activeSubscriptions.filter(s =>
+                    s.driverName?.toLowerCase().includes(subSearchTerm.toLowerCase()) ||
+                    s.driverPhone?.toLowerCase().includes(subSearchTerm.toLowerCase())
+                  ).length > 0 ? (
+                    activeSubscriptions
+                      .filter(s =>
+                        s.driverName?.toLowerCase().includes(subSearchTerm.toLowerCase()) ||
+                        s.driverPhone?.toLowerCase().includes(subSearchTerm.toLowerCase())
+                      )
+                      .map((sub: any) => {
+                        const daysLeft = Math.ceil((new Date(sub.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                        const isExpiring = daysLeft < 3;
 
-
-                    <div className="relative group">
-                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2.5 flex items-center gap-2">
-                        Validity Period
-                        <span className="text-[10px] bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full lowercase font-bold">Days</span>
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        className="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-[#1d2a5c] focus:bg-white rounded-[1.25rem] outline-none transition-all font-black text-gray-900"
-                        value={formData.validityDays}
-                        onChange={(e) => setFormData({ ...formData, validityDays: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <hr className="border-gray-50" />
-
-                {/* SECTION: PRICING TIERS */}
-                <section>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2.5 bg-green-50 text-green-600 rounded-xl">
-                      <Zap size={20} />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900">Pricing Tiers (₹)</h3>
-                      <p className="text-[11px] text-gray-400 font-medium">Define costs for different billing cycles</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-tight text-center">Daily</label>
-                      <input
-                        type="number"
-                        required
-                        className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-[#1d2a5c] focus:bg-white rounded-[1.25rem] outline-none transition-all font-bold text-gray-900 text-center"
-                        placeholder="0"
-                        value={formData.dailyPrice}
-                        onChange={(e) => setFormData({ ...formData, dailyPrice: e.target.value })}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-tight text-center">Weekly</label>
-                      <input
-                        type="number"
-                        required
-                        className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-[#1d2a5c] focus:bg-white rounded-[1.25rem] outline-none transition-all font-bold text-gray-900 text-center"
-                        placeholder="0"
-                        value={formData.weeklyPrice}
-                        onChange={(e) => setFormData({ ...formData, weeklyPrice: e.target.value })}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-tight text-center">Monthly</label>
-                      <input
-                        type="number"
-                        required
-                        className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-[#1d2a5c] focus:bg-white rounded-[1.25rem] outline-none transition-all font-bold text-gray-900 text-center"
-                        placeholder="0"
-                        value={formData.monthlyPrice}
-                        onChange={(e) => setFormData({ ...formData, monthlyPrice: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <hr className="border-gray-50" />
-
-                {/* SECTION: FEATURES */}
-                <section className="pb-4">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">Included Features</h3>
-                      <p className="text-[11px] text-gray-400 font-medium italic">Define what drivers receive with this plan</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const suggestions = [
-                          "Zero commission on all rides",
-                          "Access to local city rides only",
-                          "Access to all available ride types",
-                          "Accept instant ride requests",
-                          "Scheduled rides enabled (Weekly/Monthly)",
-                          "Outstation trips enabled",
-                          "One-way trips enabled",
-                          "Round trips enabled",
-                          "Priority ride matching",
-                          "24/7 priority support",
-                          "Basic customer support"
-                        ];
-                        const newFeatures = [...formData.features];
-                        suggestions.forEach(s => {
-                          if (!newFeatures.includes(s)) newFeatures.push(s);
-                        });
-                        setFormData({ ...formData, features: newFeatures });
-                      }}
-                      className="text-[10px] font-black uppercase tracking-widest text-[#1d2a5c] hover:text-white hover:bg-[#1d2a5c] bg-[#1d2a5c]/5 px-4 py-2.5 rounded-xl transition-all active:scale-95"
-                    >
-                      + Quick Add Suggestions
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {formData.features.map((feature: string, index: number) => (
-                      <div key={index} className="flex gap-3 group transform transition-all animate-in slide-in-from-left-4 duration-300">
-                        <div className="flex-1 relative">
-                          <CheckCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-green-500" size={18} />
-                          <input
-                            type="text"
-                            className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-transparent focus:border-[#1d2a5c] focus:bg-white rounded-[1.25rem] outline-none transition-all text-sm font-bold text-gray-700"
-                            value={feature}
-                            onChange={(e) => {
-                              const newFeatures = [...formData.features];
-                              newFeatures[index] = e.target.value;
-                              setFormData({ ...formData, features: newFeatures });
-                            }}
-                            placeholder="e.g. 24/7 Executive Priority Support"
-                          />
+                        return (
+                          <tr key={sub.id} className="group hover:bg-slate-50/30 transition-colors">
+                            <td className="px-6 py-5">
+                              <div className="font-bold text-slate-900 text-sm">{sub.driverName}</div>
+                              <div className="text-[11px] font-medium text-slate-400 mt-0.5">{sub.driverPhone}</div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100/50">
+                                {sub.planName}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-md">
+                                {sub.billingCycle}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 text-xs font-semibold text-slate-500">
+                              {sub.startDate ? new Date(sub.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="text-xs font-bold text-slate-700">
+                                {sub.expiryDate ? new Date(sub.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className={`flex items-center gap-1.5 text-xs font-bold ${isExpiring ? 'text-rose-600' : 'text-emerald-600'
+                                }`}>
+                                {isNaN(daysLeft) ? 'N/A' : `${daysLeft}d`}
+                                {isExpiring && !isNaN(daysLeft) && (
+                                  <span className="text-[9px] bg-rose-50 text-rose-500 px-1.5 py-0.5 rounded uppercase tracking-tighter">Soon</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="p-3 bg-slate-50 rounded-full text-slate-200">
+                            <Zap size={32} />
+                          </div>
+                          <p className="text-slate-400 text-xs font-medium">No active subscriptions found.</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newFeatures = formData.features.filter((_, i) => i !== index);
-                            setFormData({ ...formData, features: newFeatures });
-                          }}
-                          className="p-3.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-[1.25rem] transition-all active:scale-90"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    ))}
-                    
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, features: [...formData.features, ''] })}
-                      className="w-full py-5 border-2 border-dashed border-gray-100 rounded-[1.5rem] text-gray-400 hover:text-[#1d2a5c] hover:border-[#1d2a5c]/30 hover:bg-[#1d2a5c]/5 transition-all font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 active:scale-[0.98]"
-                    >
-                      <Plus size={18} />
-                      Add Custom Feature
-                    </button>
-                  </div>
-                </section>
-              </div>
-            </form>
-
-            {/* FIXED FOOTER */}
-            <div className="p-8 border-t border-gray-50 bg-white sticky bottom-0 z-10">
-              <div className="flex justify-end items-center gap-6">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-3 text-sm font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-xs shadow-2xl shadow-blue-200 transition-all active:scale-95 hover:-translate-y-1"
-                >
-                  {editingId ? 'Save Changes' : 'Create Plan'}
-                </button>
-              </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       )}
+
+
+      <Drawer
+        title={
+          <div className="flex flex-col">
+            <div className="flex justify-between items-center mr-8">
+              <span className="text-xl font-bold text-slate-900">{editingId ? 'Edit Plan' : 'Create Plan'}</span>
+              {!editingId && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        planName: 'Basic Plan',
+                        description: 'Entry-level plan for local operation.',
+                        features: ["Zero commission on local rides", "Instant requests", "Basic support"]
+                      });
+                    }}
+                    className="text-[10px] font-bold px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 transition-colors"
+                  >
+                    Basic
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        planName: 'Elite Plan',
+                        description: 'Advanced plan for higher earnings.',
+                        features: ["Zero commission on all rides", "Outstation trips", "Priority matching"]
+                      });
+                    }}
+                    className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 rounded text-indigo-600 transition-colors"
+                  >
+                    Elite
+                  </button>
+                </div>
+              )}
+            </div>
+            <span className="text-xs text-slate-500 font-normal mt-0.5">Configure pricing, validity, and features</span>
+          </div>
+        }
+        placement="right"
+        width={520}
+        onClose={() => setIsModalOpen(false)}
+        open={isModalOpen}
+        closeIcon={<X size={20} className="text-slate-400" />}
+        styles={{
+          header: { borderBottom: '1px solid #f1f5f9', padding: '24px' },
+          body: { padding: '24px' },
+          footer: { borderTop: '1px solid #f1f5f9', padding: '24px' }
+        }}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              onClick={() => setIsModalOpen(false)}
+              className="px-6 h-10 rounded-lg border-slate-200 text-slate-600 font-semibold"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              className="px-8 h-10 rounded-lg text-indigo-600 border-indigo-600 hover:bg-indigo-50 font-semibold"
+            >
+              {editingId ? 'Save Changes' : 'Create Plan'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          {/* Plan Name & Status */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2 space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Plan Name</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-900 shadow-sm"
+                placeholder="e.g. Starter"
+                value={formData.planName}
+                onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
+              <Select
+                className="w-full h-[42px]"
+                value={formData.isActive ? 'active' : 'inactive'}
+                onChange={(val) => setFormData({ ...formData, isActive: val === 'active' })}
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Description</label>
+            <textarea
+              className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-600 shadow-sm min-h-[80px]"
+              placeholder="Briefly describe the plan benefits..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+
+          {/* Validity */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Validity (Days)</label>
+            <input
+              type="number"
+              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold text-slate-900 shadow-sm"
+              value={formData.validityDays}
+              onChange={(e) => setFormData({ ...formData, validityDays: e.target.value })}
+            />
+          </div>
+
+          {/* Pricing Row */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pricing (₹)</label>
+            <div className="grid grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 block ml-1 uppercase">Daily</span>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
+                  value={formData.dailyPrice}
+                  onChange={(e) => setFormData({ ...formData, dailyPrice: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 block ml-1 uppercase">Weekly</span>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
+                  value={formData.weeklyPrice}
+                  onChange={(e) => setFormData({ ...formData, weeklyPrice: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 block ml-1 uppercase">Monthly</span>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
+                  value={formData.monthlyPrice}
+                  onChange={(e) => setFormData({ ...formData, monthlyPrice: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Plan Features</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const suggestions = ["Zero commission", "Outstation trips", "Scheduled rides", "Priority support"];
+                    const current = [...formData.features];
+                    suggestions.forEach(s => { if (!current.includes(s)) current.push(s); });
+                    setFormData({ ...formData, features: current });
+                  }}
+                  className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100"
+                >
+                  Suggestions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, features: [...formData.features, ''] })}
+                  className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 flex items-center gap-1"
+                >
+                  <Plus size={10} /> Add
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+              {formData.features.map((feature: string, idx: number) => (
+                <div key={idx} className="flex gap-2 group animate-in slide-in-from-right-2 duration-200">
+                  <input
+                    type="text"
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm"
+                    placeholder="e.g. Priority Support"
+                    value={feature}
+                    onChange={(e) => {
+                      const newFeatures = [...formData.features];
+                      newFeatures[idx] = e.target.value;
+                      setFormData({ ...formData, features: newFeatures });
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const newFeatures = formData.features.filter((_, i) => i !== idx);
+                      setFormData({ ...formData, features: newFeatures });
+                    }}
+                    className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+              {formData.features.length === 0 && (
+                <p className="text-[11px] text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">No features added yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 };
