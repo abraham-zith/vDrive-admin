@@ -18,6 +18,9 @@ import { sendToSocket } from '../services/socket';
 import tripTransactionManagementRoutes from '../modules/trip-transaction-management/trip-transaction.routes';
 import taxRoutes from '../modules/tax-management/tax.routes';
 import pricingCombinationRoutes from '../modules/pricing-combinations/pricing-combinations.routes';
+import webhookRoutes from '../modules/webhooks/webhook.routes';
+import { openCouponRoutes, adminCouponRoutes } from '../modules/coupon-management/coupon.routes';
+import referralManagementRoutes from '../modules/referral-management/referral.routes';
 
 const router = Router();
 
@@ -28,6 +31,8 @@ router.use('/auth', authRoutes);
 
 // Open endpoint for user-driver backend to fetch all type pricing
 router.use('/pricing', pricingCalculatorRoutes);
+router.use('/webhooks', webhookRoutes);
+router.use('/coupons', openCouponRoutes);
 
 router.use(isAuthenticated);
 
@@ -45,6 +50,8 @@ router.use('/pricing-fare-rules', pricingFareRulesRoutes);
 router.use('/triptransactions', tripTransactionManagementRoutes);
 router.use('/taxes', taxRoutes);
 router.use('/pricing-combinations', pricingCombinationRoutes);
+router.use('/coupons', adminCouponRoutes);
+router.use('/referrals', referralManagementRoutes);
 
 router.get('/internal/trip-alert', (req, res) => {
   const { trip, secret } = req.body;
@@ -54,17 +61,9 @@ router.get('/internal/trip-alert', (req, res) => {
     return res.status(401).send('Unauthorized');
   }
 
-  // Emit to the "admin" socket room
-  // io.to('admin-room').emit('new-trip-created', {
-  //   id: trip.id,
-  //   userName: trip.userName,
-  //   status: trip.status,
-  //   timestamp: new Date()
-  // });
   sendToSocket('admin', 'ADMIN_NEW_TRIP_ALERT', trip);
 
   res.status(200).json({ success: true });
-})
-
+});
 
 export default router;
