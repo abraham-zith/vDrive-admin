@@ -320,14 +320,14 @@ const TaxPage: React.FC = () => {
       }
     >
       <div className="w-full flex flex-col gap-6">
-        <div className="flex justify-between items-center mb-2 px-4">
+        <div className="flex justify-between items-center mb-2 px-4 pt-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
               <HistoryOutlined className="text-indigo-600 text-lg" />
             </div>
-            <div>
+            <div className="mt-2">
               <h3 className="text-lg font-black text-gray-800 tracking-tight leading-none mb-1">Tax Ledger</h3>
-              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Historical & active tax slabs</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Historical & active taxes</p>
             </div>
           </div>
           <Button
