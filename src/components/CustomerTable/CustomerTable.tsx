@@ -1,8 +1,13 @@
-import { SearchOutlined, EyeOutlined, StopOutlined, ClockCircleOutlined, EllipsisOutlined, UserOutlined } from "@ant-design/icons";
+import { SearchOutlined, EyeOutlined, StopOutlined, ClockCircleOutlined, EllipsisOutlined, UserOutlined, CopyOutlined } from "@ant-design/icons";
 import type { InputRef, TableColumnsType, TableColumnType } from "antd";
-import { Button, Input, Space, Table, Tag, Dropdown, Avatar, Popover } from "antd";
+import {
+    Button, Input, Space, Table, Tag, Dropdown, Avatar, Popover, Typography, Tooltip,
+    // Divider, 
+    message
+} from "antd";
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import Highlighter from "react-highlight-words";
+const { Text } = Typography;
 import { useMemo, useRef, useState } from "react";
 import { format } from "date-fns-tz";
 import { useGetHeight } from "../../utilities/customheightWidth";
@@ -11,11 +16,12 @@ import CustomerDetails from "../CustomerDetails/CustomerDetails";
 
 interface CustomerTableProps {
     data: Customer[];
+    isSuperAdmin?: boolean;
 }
 
 type DataIndex = keyof Customer;
 
-const CustomerTable = ({ data }: CustomerTableProps) => {
+const CustomerTable = ({ data, isSuperAdmin = false }: CustomerTableProps) => {
     const contentRef = useRef<HTMLDivElement>(null);
     const tableHeight = useGetHeight(contentRef);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -133,12 +139,38 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                 ...getColumnSearchProps("full_name"),
                 render: (_, record) => (
                     <div className="flex items-center gap-3">
-                        <Avatar icon={<UserOutlined />} size={40} style={{ backgroundColor: "#1890ff" }}>
+                        <Avatar
+                            icon={<UserOutlined />}
+                            size={42}
+                            style={{
+                                background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                                boxShadow: "0 4px 12px rgba(99, 102, 241, 0.2)"
+                            }}
+                            className="border-2 border-white flex-shrink-0"
+                        >
                             {record.full_name?.charAt(0)}
                         </Avatar>
-                        <div>
-                            <div className="font-semibold">{record.full_name}</div>
-                            <div className="text-xs text-gray-500">{record.user_code}</div>
+                        <div className="flex flex-col justify-center gap-0.5">
+                            <Text className="font-extrabold text-slate-800 tracking-tight text-sm leading-none">{record.full_name}</Text>
+                            <div className="flex items-center gap-1.5 group/copy">
+                                <Text style={{ color: '#6b7280' }} className="text-[10px] font-black uppercase tracking-tight font-mono leading-none">
+                                    {record.user_code || "VDU-NEW"}
+                                </Text>
+                                <Tooltip title="Copy ID">
+                                    <CopyOutlined
+                                        className="text-[10px] text-slate-300 hover:text-indigo-500 cursor-pointer transition-colors opacity-0 group-hover/copy:opacity-100"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigator.clipboard.writeText(record.user_code || "");
+                                            message.success({
+                                                content: 'Customer ID copied',
+                                                className: 'premium-message',
+                                                icon: <CopyOutlined className="text-indigo-500" />
+                                            });
+                                        }}
+                                    />
+                                </Tooltip>
+                            </div>
                         </div>
                     </div>
                 ),
@@ -148,9 +180,10 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                 key: "contact",
                 minWidth: 160,
                 render: (_, record) => (
-                    <div>
-                        <div className="text-sm">{record.phone_number}</div>
-                        <div className="text-xs text-gray-500">{record.email}</div>
+                    <div className="flex items-center gap-2">
+                        <Text className="text-xs font-semibold text-slate-600">{record.phone_number}</Text>
+                        <div className="h-3 w-[1.5px] bg-indigo-200/60 rounded-full mx-1" />
+                        <Text className="text-[11px] font-medium text-slate-400">{record.email}</Text>
                     </div>
                 ),
             },
@@ -161,7 +194,7 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                 render: (_, record) => {
                     const contacts = record.emergency_contacts || [];
                     if (contacts.length === 0) {
-                        return <span className="text-gray-400 text-xs italic">No contacts registered</span>;
+                        return <span className="text-gray-400 text-[11px] italic font-medium">No contacts registered</span>;
                     }
 
                     const firstContact = contacts[0];
@@ -171,8 +204,8 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                         <div className="flex flex-col gap-3 p-1">
                             {contacts.map((contact, index) => (
                                 <div key={index} className="flex flex-col border-b border-gray-100 last:border-0 pb-2 last:pb-0">
-                                    <span className="font-semibold text-sm text-gray-800">{contact.name}</span>
-                                    <span className="text-xs text-gray-500">{contact.phone}</span>
+                                    <span className="font-bold text-[13px] text-gray-800">{contact.name}</span>
+                                    <span className="text-[11px] font-semibold text-gray-500">{contact.phone}</span>
                                 </div>
                             ))}
                         </div>
@@ -181,21 +214,21 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                     return (
                         <div className="flex items-center gap-2">
                             <div className="flex flex-col">
-                                <span className="text-xs font-medium text-gray-700">{firstContact.name}</span>
-                                <span className="text-[10px] text-gray-500">{firstContact.phone}</span>
+                                <span className="text-[12px] font-bold text-gray-700 leading-tight">{firstContact.name}</span>
+                                <span className="text-[10px] font-semibold text-gray-400">{firstContact.phone}</span>
                             </div>
                             {othersCount > 0 && (
                                 <Popover
                                     content={popoverContent}
-                                    title="Emergency Contacts"
+                                    title={<span className="font-bold">Emergency Contacts</span>}
                                     trigger="click"
                                     placement="topRight"
                                 >
                                     <Tag
-                                        color="blue"
-                                        className="cursor-pointer hover:opacity-80 transition-opacity text-[10px] m-0"
+                                        className="cursor-pointer hover:scale-105 transition-transform text-[10px] font-bold m-0 border-none rounded-full px-2"
+                                        style={{ backgroundColor: "#eff6ff", color: "#2563eb" }}
                                     >
-                                        +{othersCount} more
+                                        +{othersCount}
                                     </Tag>
                                 </Popover>
                             )}
@@ -210,11 +243,22 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                 key: "status",
                 sorter: (a: Customer, b: Customer) => a.status.localeCompare(b.status),
                 render: (status: string) => {
-                    let color = "green";
-                    if (status === "inactive") color = "orange";
-                    if (status === "suspended") color = "red";
-                    if (status === "blocked") color = "red";
-                    return <Tag color={color}>{status.charAt(0).toUpperCase() + status.slice(1)}</Tag>;
+                    let config = { color: "#10b981", bg: "#ecfdf5", border: "#a7f3d0" }; // active
+                    if (status === "inactive") config = { color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" };
+                    if (status === "suspended" || status === "blocked") config = { color: "#ef4444", bg: "#fef2f2", border: "#fecaca" };
+
+                    return (
+                        <Tag
+                            className="m-0 rounded-full px-3 py-0.5 font-bold text-[11px] border shadow-sm uppercase tracking-wider"
+                            style={{
+                                color: config.color,
+                                backgroundColor: config.bg,
+                                borderColor: config.border
+                            }}
+                        >
+                            {status}
+                        </Tag>
+                    );
                 },
             },
             {
@@ -222,28 +266,20 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                 dataIndex: "updated_at",
                 minWidth: 240,
                 key: "updated_at",
-                render: (text: string) =>
-                    text ? format(new Date(text), "MMMM do yyyy, h:mm a", {
-                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    }) : "-",
+                render: (text: string) => (
+                    <div className="flex items-center gap-2">
+                        <Text className="text-[11px] font-black text-slate-800 uppercase tracking-tight">
+                            {text ? format(new Date(text), "MMM dd, yyyy") : "-"}
+                        </Text>
+                        <div className="h-3 w-[1.5px] bg-indigo-200/60 rounded-full mx-1" />
+                        <Text className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                            {text ? format(new Date(text), "hh:mm a") : "-"}
+                        </Text>
+                    </div>
+                ),
                 sorter: (a: Customer, b: Customer) => {
                     const timeA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
                     const timeB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
-                    return timeA - timeB;
-                },
-            },
-            {
-                title: "Created At",
-                minWidth: 240,
-                dataIndex: "created_at",
-                key: "created_at",
-                render: (text: string) =>
-                    text ? format(new Date(text), "MMMM do yyyy, h:mm a", {
-                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                    }) : "-",
-                sorter: (a: Customer, b: Customer) => {
-                    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
-                    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
                     return timeA - timeB;
                 },
             },
@@ -254,31 +290,35 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                     const menuItems = [
                         {
                             key: "view",
-                            icon: <EyeOutlined />,
-                            label: "View Details",
+                            icon: <EyeOutlined className="text-gray-400" />,
+                            label: <span className="font-bold text-gray-700">View Details</span>,
                         },
-                        {
-                            key: "block",
-                            icon: <StopOutlined />,
-                            label: "Block Customer",
-                            danger: true,
-                        },
-                        {
-                            key: "suspend",
-                            icon: <ClockCircleOutlined />,
-                            label: "Suspend Customer",
-                            style: { color: "#fa8c16" },
-                        },
+                        ...(isSuperAdmin ? [
+                            {
+                                key: "block",
+                                icon: <StopOutlined />,
+                                label: <span className="font-bold">Block Customer</span>,
+                                danger: true,
+                            },
+                            {
+                                key: "suspend",
+                                icon: <ClockCircleOutlined className="text-orange-400" />,
+                                label: <span className="font-bold text-orange-600">Suspend Customer</span>,
+                            },
+                        ] : []),
                     ];
                     return (
                         <Space className="customer-action">
-                            <Button
-                                type="text"
-                                icon={<EyeOutlined />}
-                                onClick={() => openDrawer(record)}
-                            />
-                            <Dropdown menu={{ items: menuItems }} trigger={["click"]}>
-                                <Button type="text" icon={<EllipsisOutlined />} />
+                            <Tooltip title="View Details">
+                                <Button
+                                    type="text"
+                                    className="hover:bg-blue-50 text-blue-600 transition-colors"
+                                    icon={<EyeOutlined />}
+                                    onClick={() => openDrawer(record)}
+                                />
+                            </Tooltip>
+                            <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight">
+                                <Button type="text" className="text-gray-400 hover:text-gray-600" icon={<EllipsisOutlined />} />
                             </Dropdown>
                         </Space>
                     );
@@ -290,7 +330,31 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
 
     return (
         <>
-            <div ref={contentRef} className="h-full w-full">
+            <style>
+                {`
+                    .premium-table-flat .ant-table-thead > tr > th {
+                        background: #f8fafc !important;
+                        border-bottom: 1px solid #e2e8f0 !important;
+                        font-weight: 800 !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 0.05em !important;
+                        font-size: 10px !important;
+                        color: #64748b !important;
+                        padding: 12px 16px !important;
+                    }
+                    .premium-table-flat .ant-table-row {
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+                    .premium-table-flat .ant-table-row:hover > td {
+                        background: #f1f5f9 !important;
+                    }
+                    .premium-table-flat .ant-table {
+                        background: transparent !important;
+                    }
+                `}
+            </style>
+            <div ref={contentRef} className="h-full w-full bg-white">
                 <Table
                     key={tableHeight}
                     columns={columns}
@@ -299,7 +363,9 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                     pagination={false}
                     showSorterTooltip={false}
                     tableLayout="auto"
+                    size="middle"
                     scroll={{ y: Math.floor(tableHeight || 0) }}
+                    className="premium-table-flat"
                     onRow={(record) => ({
                         onClick: (event) => {
                             const isActionClick = (event.target as HTMLElement).closest(
@@ -317,6 +383,7 @@ const CustomerTable = ({ data }: CustomerTableProps) => {
                     customer={selectedCustomer}
                     open={drawerOpen}
                     onClose={() => setDrawerOpen(false)}
+                    isSuperAdmin={isSuperAdmin}
                 />
             )}
         </>

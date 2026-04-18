@@ -3,14 +3,15 @@ import {
   Button,
   Form,
   Input,
-  Modal,
+  Drawer,
   Popconfirm,
   Select,
   Table,
-  Tag,
+  // Tag,
+  Space,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 import { IoPersonAddOutline } from "react-icons/io5";
 import { IoMdRefresh } from "react-icons/io";
 import { format } from "date-fns";
@@ -137,14 +138,19 @@ export default function AdminPage() {
     form.resetFields();
   };
 
-  const roleTagColor: Record<string, string> = {
-    super_admin: "purple",
-    admin: "blue",
-  };
+  // const roleTagColor: Record<string, string> = {
+  //   super_admin: "purple",
+  //   admin: "blue",
+  // };
 
   const roleLabel: Record<string, string> = {
     super_admin: "Super Admin",
     admin: "Admin",
+  };
+
+  const roleStyles: Record<string, { color: string, bg: string, border: string }> = {
+    super_admin: { color: "#6366f1", bg: "#eef2ff", border: "#e0e7ff" },
+    admin: { color: "#3b82f6", bg: "#eff6ff", border: "#dbeafe" },
   };
 
   const columns: ColumnsType<AdminUser> = [
@@ -175,9 +181,16 @@ export default function AdminPage() {
       key: "role",
       minWidth: 120,
       render: (role: string) => (
-        <Tag color={roleTagColor[role] ?? "default"}>
+        <span
+          style={{
+            color: roleStyles[role]?.color,
+            backgroundColor: roleStyles[role]?.bg,
+            borderColor: roleStyles[role]?.border
+          }}
+          className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border whitespace-nowrap"
+        >
           {roleLabel[role] ?? role}
-        </Tag>
+        </span>
       ),
     },
     {
@@ -200,61 +213,68 @@ export default function AdminPage() {
     },
     ...(isSuperAdmin
       ? [
-          {
-            title: "Action",
-            key: "action",
-            width: 160,
-            render: (_: unknown, admin: AdminUser) => (
-              <div className="flex items-center gap-1">
+        {
+          title: "Action",
+          key: "action",
+          width: 140,
+          render: (_: unknown, admin: AdminUser) => (
+            <div className="flex items-center gap-1">
+              <Button
+                type="text"
+                size="small"
+                className="!text-indigo-600 hover:!bg-indigo-50 !flex items-center justify-center !p-1 !h-8 !w-8 rounded-lg transition-all"
+                icon={<EditOutlined className="text-lg" />}
+                onClick={() => openEditModal(admin)}
+              />
+              <Popconfirm
+                title="Delete admin user"
+                description="Are you sure you want to delete this admin user?"
+                onConfirm={() => handleDelete(admin.id)}
+                okText="Delete"
+                okButtonProps={{ danger: true }}
+                cancelText="Cancel"
+              >
                 <Button
-                  type="link"
-                  icon={<EditOutlined />}
-                  onClick={() => openEditModal(admin)}
-                >
-                  Edit
-                </Button>
-                <Popconfirm
-                  title="Delete admin user"
-                  description="Are you sure you want to delete this admin user?"
-                  onConfirm={() => handleDelete(admin.id)}
-                  okText="Delete"
-                  okButtonProps={{ danger: true }}
-                  cancelText="Cancel"
-                >
-                  <Button type="link" danger icon={<DeleteOutlined />}>
-                    Delete
-                  </Button>
-                </Popconfirm>
-              </div>
-            ),
-          } as ColumnsType<AdminUser>[number],
-        ]
+                  type="text"
+                  danger
+                  size="small"
+                  className="hover:!bg-rose-50 !flex items-center justify-center !p-1 !h-8 !w-8 rounded-lg transition-all"
+                  icon={<DeleteOutlined className="text-lg" />}
+                />
+              </Popconfirm>
+            </div>
+          ),
+        } as ColumnsType<AdminUser>[number],
+      ]
       : []),
   ];
 
   return (
     <TitleBar
       title="Admin Management"
-      description="Manage your admin users here"
+      description="Manage and orchestrate administrative access and platform permissions."
+      icon={
+        <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-blue-500 rounded-2xl flex items-center justify-center">
+          <SafetyCertificateOutlined className="text-white text-2xl" />
+        </div>
+      }
       extraContent={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <Button
+            icon={<IoMdRefresh className={`text-lg ${loading ? 'animate-spin' : ''}`} />}
+            onClick={() => dispatch(fetchAdminUsers())}
+            className="rounded-full h-11 w-11 flex items-center justify-center border-gray-100 text-gray-400 hover:text-indigo-600 transition-all bg-white"
+          />
           {isSuperAdmin && (
             <Button
-              icon={<IoPersonAddOutline />}
+              icon={<IoPersonAddOutline className="text-lg" />}
               type="primary"
               onClick={openCreateModal}
+              className="rounded-full h-11 px-8 font-bold !bg-gradient-to-r !from-indigo-600 !to-blue-500 border-none transition-all active:scale-95 flex items-center gap-2"
             >
-              Create Admin User
+              Create Admin
             </Button>
           )}
-          <Button
-            icon={<IoMdRefresh />}
-            loading={loading}
-            type="primary"
-            onClick={() => dispatch(fetchAdminUsers())}
-          >
-            Refresh
-          </Button>
         </div>
       }
     >
@@ -269,113 +289,143 @@ export default function AdminPage() {
           showSorterTooltip={false}
           tableLayout="auto"
           scroll={{ y: Math.floor(tableHeight || 0) }}
-        />
-
-        <Modal
+        />        <Drawer
           title={
-            modalMode === "create" ? "Create Admin User" : "Edit Admin User"
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                <SafetyCertificateOutlined className="text-xl" />
+              </div>
+              <div>
+                <div className="text-lg font-black text-slate-800 leading-none mb-1">
+                  {modalMode === "create" ? "Add New Administrator" : "Refine Admin Profile"}
+                </div>
+                <div className="text-xs text-slate-400 font-medium">
+                  {modalMode === "create" ? "Grant system-wide access permissions" : "Update user credentials and authority level"}
+                </div>
+              </div>
+            </div>
           }
+          width={560}
           open={isModalOpen}
-          onOk={handleModalSubmit}
-          onCancel={handleCancel}
-          okText={modalMode === "create" ? "Create" : "Update"}
-          confirmLoading={submitting}
-          destroyOnHidden
+          onClose={handleCancel}
+          extra={
+            <Space>
+              <Button onClick={handleCancel} className="rounded-xl px-6 font-bold h-10">Cancel</Button>
+              <Button
+                type="primary"
+                onClick={handleModalSubmit}
+                loading={submitting}
+                className="rounded-xl px-8 font-bold h-10 !bg-gradient-to-r !from-indigo-600 !to-blue-500 border-none"
+              >
+                {modalMode === "create" ? "Provision Access" : "Commit Changes"}
+              </Button>
+            </Space>
+          }
+          className="premium-drawer"
         >
-          <Form form={form} layout="vertical" validateTrigger="onSubmit">
-            <Form.Item
-              name="name"
-              label="Name"
-              rules={[
-                { required: true, message: "Name is required" },
-                { min: 2, message: "Name must be at least 2 characters" },
-                { max: 100, message: "Name must not exceed 100 characters" },
-              ]}
-            >
-              <Input placeholder="Enter full name" />
-            </Form.Item>
+          <Form form={form} layout="vertical" validateTrigger="onSubmit" className="mt-4">
+            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 mb-6">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-4 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                Identity & Access
+              </div>
 
-            <Form.Item
-              name="email"
-              label="Email"
-              rules={[
-                { required: true, message: "Email is required" },
-                { type: "email", message: "Enter a valid email address" },
-              ]}
-            >
-              <Input placeholder="Enter email address" />
-            </Form.Item>
+              <Form.Item
+                name="name"
+                label={<span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Full Name</span>}
+                rules={[
+                  { required: true, message: "Name is required" },
+                  { min: 2, message: "Name must be at least 2 characters" },
+                  { max: 100, message: "Name must not exceed 100 characters" },
+                ]}
+              >
+                <Input placeholder="Enter full name" className="premium-input-xl" />
+              </Form.Item>
 
-            <Form.Item
-              name="contact"
-              label="Contact (Phone)"
-              rules={[
-                {
-                  pattern: phoneRegex,
-                  message:
-                    "Enter a valid phone number (6–15 digits, optional +)",
-                },
-                { max: 15, message: "Contact must not exceed 15 characters" },
-              ]}
-            >
-              <Input placeholder="e.g. +911234567890 (optional)" />
-            </Form.Item>
+              <Form.Item
+                name="email"
+                label={<span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Email Address</span>}
+                rules={[
+                  { required: true, message: "Email is required" },
+                  { type: "email", message: "Enter a valid email address" },
+                ]}
+              >
+                <Input placeholder="Enter email address" className="premium-input-xl" />
+              </Form.Item>
 
-            <Form.Item
-              name="role"
-              label="Role"
-              rules={[{ required: true, message: "Role is required" }]}
-              initialValue="admin"
-            >
-              <Select placeholder="Select role">
-                <Select.Option value="admin">Admin</Select.Option>
-                <Select.Option value="super_admin">Super Admin</Select.Option>
-              </Select>
-            </Form.Item>
+              <Form.Item
+                name="role"
+                label={<span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Authority Level</span>}
+                rules={[{ required: true, message: "Role is required" }]}
+                initialValue="admin"
+              >
+                <Select placeholder="Select role" className="premium-select-xl">
+                  <Select.Option value="admin">Platform Admin</Select.Option>
+                  <Select.Option value="super_admin">Super Administrator</Select.Option>
+                </Select>
+              </Form.Item>
+            </div>
 
-            {modalMode === "create" && (
-              <>
-                <Form.Item
-                  name="password"
-                  label="Password"
-                  rules={[
-                    { required: true, message: "Password is required" },
-                    {
-                      pattern: passwordRegex,
-                      message:
-                        "Password must be 5–18 characters with at least 1 uppercase, 1 number, and 1 special character",
-                    },
-                  ]}
-                  hasFeedback
-                >
-                  <Input.Password placeholder="Enter password" />
-                </Form.Item>
+            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500 mb-4 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                Contact & Security
+              </div>
 
-                <Form.Item
-                  name="confirmPassword"
-                  label="Confirm Password"
-                  dependencies={["password"]}
-                  hasFeedback
-                  rules={[
-                    { required: true, message: "Please confirm your password" },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (!value || getFieldValue("password") === value) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(
-                          new Error("Passwords do not match")
-                        );
+              <Form.Item
+                name="contact"
+                label={<span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Phone Contact</span>}
+                rules={[
+                  {
+                    pattern: phoneRegex,
+                    message: "Enter valid phone number",
+                  },
+                ]}
+              >
+                <Input placeholder="+91 00000 00000" className="premium-input-xl" />
+              </Form.Item>
+
+              {modalMode === "create" && (
+                <>
+                  <Form.Item
+                    name="password"
+                    label={<span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Access Key</span>}
+                    rules={[
+                      { required: true, message: "Password is required" },
+                      {
+                        pattern: passwordRegex,
+                        message: "Must be 5–18 chars with Upper, Num, Special",
                       },
-                    }),
-                  ]}
-                >
-                  <Input.Password placeholder="Re-enter password" />
-                </Form.Item>
-              </>
-            )}
+                    ]}
+                    hasFeedback
+                  >
+                    <Input.Password placeholder="Create secure password" title="At least one uppercase, number, and special character" className="premium-input-xl" />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="confirmPassword"
+                    label={<span className="text-[11px] font-black uppercase tracking-widest text-slate-400">Verify Key</span>}
+                    dependencies={["password"]}
+                    hasFeedback
+                    rules={[
+                      { required: true, message: "Please confirm password" },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue("password") === value) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(new Error("Keys do not match"));
+                        },
+                      }),
+                    ]}
+                  >
+                    <Input.Password placeholder="Confirm access key" className="premium-input-xl" />
+                  </Form.Item>
+                </>
+              )}
+            </div>
           </Form>
-        </Modal>
+        </Drawer>
       </div>
     </TitleBar>
   );

@@ -1,13 +1,14 @@
 import React from "react";
 import {
-  Masonry, Card, Tag, Descriptions, Divider, Typography, Button,
+  Masonry, Divider, Typography, Button,
 } from "antd";
-import { GrPhone, GrLocation } from "react-icons/gr";
+import { GrPhone } from "react-icons/gr";
 import { IoReceiptOutline, IoPeopleOutline, IoCalendarOutline } from "react-icons/io5";
 import {
   UserOutlined, CarOutlined, MessageOutlined, FolderOutlined,
   MoneyCollectOutlined, HistoryOutlined, CalendarOutlined,
   PlayCircleOutlined, CheckCircleOutlined, ArrowRightOutlined,
+  EnvironmentOutlined, DollarOutlined,
 } from "@ant-design/icons";
 import {
   buildTripHistory,
@@ -22,28 +23,23 @@ interface Props {
 }
 
 // ─── DetailCard wrapper ───────────────────────────────────────────────────────
-const DetailCard = ({ icon, title, children }: {
+const DetailCard = ({ icon, title, children, className = "" }: {
   icon: React.ReactNode;
   title: string;
   children: React.ReactNode;
+  className?: string;
 }) => (
-  <Card
-    size="small"
-    style={{
-      marginBottom: 16,
-      border: "1px solid #d9d9d9",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-      borderRadius: 8,
-    }}
-    title={
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+  <div className={`bg-white rounded-[1rem] border border-gray-100 shadow-sm overflow-hidden mb-2 ${className}`}>
+    <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/30 flex items-center gap-3">
+      <div className="w-8 h-8 rounded-xl bg-white shadow-sm border border-gray-100 flex items-center justify-center text-indigo-600">
         {icon}
-        <span style={{ fontSize: 14, fontWeight: 500 }}>{title}</span>
       </div>
-    }
-  >
-    {children}
-  </Card>
+      <span className="text-xs font-extrabold text-gray-800 uppercase tracking-widest">{title}</span>
+    </div>
+    <div className="p-6">
+      {children}
+    </div>
+  </div>
 );
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -64,11 +60,10 @@ const formatDateTime = (value?: string | null) => {
 // ─── Actor badge color ────────────────────────────────────────────────────────
 const actorColor = (actor_type: string) => {
   switch (actor_type) {
-    case "user": return "border-blue-400   text-blue-600";
-    case "driver": return "border-green-400  text-green-600";
-    case "admin": return "border-purple-400 text-purple-600";
-    case "system": return "border-gray-400   text-gray-500";
-    default: return "border-gray-300   text-gray-500";
+    case "user": return "bg-blue-50 text-blue-600 border-blue-100";
+    case "driver": return "bg-emerald-50 text-emerald-600 border-emerald-100";
+    case "admin": return "bg-indigo-50 text-indigo-600 border-indigo-100";
+    default: return "bg-gray-50 text-gray-500 border-gray-100";
   }
 };
 
@@ -218,64 +213,45 @@ const TripDetailsMasonry: React.FC<Props> = ({ trip }) => {
       key: "basic-info",
       data: (
         <DetailCard
-          icon={<IoReceiptOutline size={20} className="text-indigo-600" />}
-          title="Basic Information"
+          icon={<IoReceiptOutline size={18} />}
+          title="Trip Essence"
         >
-          <div className="flex flex-wrap gap-2 mb-3">
-            <Tag>{trip?.service_type}</Tag>
-            <Tag>{trip?.ride_type}</Tag>
-            <Tag
-              color={
-                trip.trip_status === "LIVE" ? "green"
-                  : trip.trip_status === "COMPLETED" ? "blue"
-                    : trip.trip_status === "REQUESTED" ? "yellow"
-                      : trip.trip_status === "CANCELLED" ? "red"
-                        : trip.trip_status === "MID-CANCELLED" ? "pink"
-                          : "orange"
-              }
-            >
-              {trip?.trip_status}
-            </Tag>
+          <div className="flex flex-wrap gap-2 mb-6">
+            <span className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg text-[10px] font-extrabold tracking-widest uppercase border border-indigo-100">
+              {trip?.service_type}
+            </span>
+            <span className="bg-slate-50 text-slate-500 px-3 py-1 rounded-lg text-[10px] font-extrabold tracking-widest uppercase border border-slate-100">
+              {trip?.ride_type}
+            </span>
           </div>
 
-          <Descriptions layout="vertical" size="small" colon={false} column={1}>
-            <Descriptions.Item>
-              <div className="flex w-full items-start">
-                <div className="flex-1 pr-3">
-                  <div className="flex items-center gap-1 text-xs font-medium text-gray-700">
-                    <GrLocation className="text-green-600" />
-                    <strong>Pickup Location</strong>
-                  </div>
-                  <p className="m-1 text-xs text-gray-600 leading-relaxed break-words">
-                    {trip?.pickup_address}
-                  </p>
-                </div>
-                <div className="w-px bg-gray-300 self-stretch" />
-                <div className="flex-1 pl-3">
-                  <div className="flex items-center gap-1 text-xs font-medium text-gray-700">
-                    <GrLocation className="text-red-600" />
-                    <strong>Drop Location</strong>
-                  </div>
-                  <p className="m-1 text-xs text-gray-600 leading-relaxed break-words">
-                    {trip?.drop_address}
-                  </p>
-                </div>
-              </div>
-            </Descriptions.Item>
-          </Descriptions>
+          <div className="space-y-4">
+            <div className="relative pl-6">
+              <div className="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-50" />
+              <div className="absolute left-[4.5px] top-4 w-px h-8 bg-gray-100" />
+              <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400 block mb-1">Origin</span>
+              <p className="text-xs font-bold text-gray-700 leading-relaxed">{trip?.pickup_address}</p>
+            </div>
+            <div className="relative pl-6">
+              <div className="absolute left-0 top-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-4 ring-rose-50" />
+              <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400 block mb-1">Destination</span>
+              <p className="text-xs font-bold text-gray-700 leading-relaxed">{trip?.drop_address}</p>
+            </div>
+          </div>
 
-          <Divider />
-
-          <div className="flex gap-2">
+          <div className="mt-8 grid grid-cols-2 gap-3">
             {[
-              { label: "Estimate Km", value: trip?.Estimate_km, cls: "border-gray-300  bg-gray-300" },
-              { label: "Duration", value: trip?.trip_duration_minutes, cls: "border-gray-300  bg-gray-300" },
-              { label: "Covered Km", value: trip?.distance_km, cls: "border-gray-300  bg-gray-300" },
-              { label: "Total Fare", value: `₹${trip?.total_fare}`, cls: "border-violet-300 bg-violet-100" },
-            ].map(({ label, value, cls }) => (
-              <div key={label} className={`w-[70px] border ${cls} rounded px-2 py-2 text-center`}>
-                <strong className="block text-[9px] leading-tight">{value}</strong>
-                <p className="m-0 text-[8px] leading-tight">{label}</p>
+              { label: "Est. Dist", value: `${trip?.Estimate_km} KM`, icon: <EnvironmentOutlined className="text-emerald-500" /> },
+              { label: "Duration", value: `${trip?.trip_duration_minutes} MIN`, icon: <HistoryOutlined className="text-blue-500" /> },
+              { label: "Actual Dist", value: `${trip?.distance_km} KM`, icon: <PlayCircleOutlined className="text-indigo-500" /> },
+              { label: "Fare", value: `₹${trip?.total_fare}`, icon: <DollarOutlined className="text-amber-500" /> },
+            ].map(({ label, value, icon }) => (
+              <div key={label} className="bg-gray-50/50 border border-gray-100 rounded-2xl p-3 flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
+                  <span className="text-[14px]">{icon}</span>
+                </div>
+                <span className="text-xs font-extrabold text-gray-800 tracking-tight">{value}</span>
               </div>
             ))}
           </div>
@@ -288,30 +264,27 @@ const TripDetailsMasonry: React.FC<Props> = ({ trip }) => {
       key: "payment",
       data: (
         <DetailCard
-          icon={<FolderOutlined style={{ fontSize: 16, color: "#4f46e5" }} />}
-          title="Payment Details"
+          icon={<FolderOutlined />}
+          title="Settlement Status"
         >
-          <div className="flex items-center gap-8">
-            <div>
-              <p className="m-0 text-[10px] text-gray-500">Amount</p>
-              <strong className="block text-[11px]">₹{trip?.total_fare}</strong>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 bg-gray-50/50 rounded-2xl border border-gray-100">
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Amount</span>
+              <span className="text-sm font-extrabold text-gray-800 tracking-tight">₹{trip?.total_fare}</span>
             </div>
-            <div className="w-px h-6 bg-gray-300" />
-            <div>
-              <p className="m-0 text-[10px] text-gray-500">Method</p>
-              <strong className="block text-[11px]">{trip?.payment_method}</strong>
+            <div className="p-3 bg-gray-50/50 rounded-2xl border border-gray-100">
+              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Method</span>
+              <span className="text-sm font-extrabold text-gray-800 tracking-tight uppercase">{trip?.payment_method}</span>
             </div>
-            <div className="w-px h-6 bg-gray-300" />
-            <div>
-              <p className="m-0 text-[10px] text-gray-500">Status</p>
-              <strong className={`inline-block px-1.5 py-[1px] text-[10px] rounded border font-medium
-                ${trip?.payment_status === "PAID" ? "bg-green-100 text-green-700 border-green-300"
-                  : trip?.payment_status === "PENDING" ? "bg-amber-100 text-amber-700 border-amber-300"
-                    : trip?.payment_status === "FAILED" ? "bg-red-100   text-red-700   border-red-300"
-                      : "bg-gray-100  text-gray-600  border-gray-300"}`}>
-                {trip?.payment_status}
-              </strong>
-            </div>
+          </div>
+          <div className="mt-3 p-4 bg-white rounded-2xl border border-gray-100 flex items-center justify-between">
+            <span className="text-xs font-bold text-gray-700">Payment Health</span>
+            <span className={`px-4 py-1.5 rounded-full text-[10px] font-extrabold tracking-widest border
+                ${trip?.payment_status === "PAID" ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                : trip?.payment_status === "PENDING" ? "bg-amber-50 text-amber-600 border-amber-100"
+                  : "bg-rose-50 text-rose-600 border-rose-100"}`}>
+              {trip?.payment_status}
+            </span>
           </div>
         </DetailCard>
       ),
@@ -404,47 +377,41 @@ const TripDetailsMasonry: React.FC<Props> = ({ trip }) => {
       key: "tripchangehistory",
       data: (
         <DetailCard
-          icon={<HistoryOutlined style={{ fontSize: 18, color: "#4f46e5" }} />}
-          title="Trip Transaction History"
+          icon={<HistoryOutlined />}
+          title="Transaction Audit"
         >
           <div className="h-[60vh] flex flex-col">
-            <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+            <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
               {tripHistory.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-sm text-gray-400">
-                  No transaction history for this trip yet
+                <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-3 grayscale opacity-30">
+                  <HistoryOutlined className="text-4xl" />
+                  <span className="text-xs font-bold uppercase tracking-widest">No Records Found</span>
                 </div>
               ) : (
                 tripHistory.map((tx, index) => (
-                  <div key={tx.id ?? index} className="border-b pb-2 last:border-b-0">
+                  <div key={tx.id ?? index} className="relative pl-4 border-l-2 border-gray-50 pb-4 last:pb-0">
+                    <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-white border-2 border-indigo-200" />
 
-                    {/* Header: sequence + event type + actor badge */}
-                    <div className="flex justify-between items-center text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-400 font-mono">#{tx.sequence_no}</span>
-                        <b className="capitalize">{tx.event_type.replace(/_/g, " ")}</b>
-                      </div>
-                      <span className={`border px-1.5 py-0.5 rounded text-[10px] ${actorColor(tx.actor_type)}`}>
-                        {tx.actor_type.toUpperCase()}
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="bg-white border border-gray-100 text-gray-400 px-2 py-0.5 rounded text-[8px] font-mono">#{tx.sequence_no}</span>
+                      <span className={`border px-2 py-0.5 rounded-lg text-[9px] font-extrabold tracking-widest uppercase ${actorColor(tx.actor_type)}`}>
+                        {tx.actor_type}
                       </span>
                     </div>
 
-                    {/* Diff */}
-                    <div className="flex items-center gap-2 mt-1 text-xs">
-                      {renderTransactionDiff(tx)}
-                    </div>
-
-                    {/* Footer: actor name + time + notes */}
-                    <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-                      <div className="flex items-center gap-1">
-                        <span>{tx.actor_name ?? tx.actor_type}</span>
-                        <span>·</span>
-                        <span>{formatDateTime(tx.event_at as string)}</span>
+                    <div className="bg-gray-50/80 rounded-2xl p-3 border border-gray-100">
+                      <p className="text-[11px] font-extrabold text-gray-800 capitalize mb-1">
+                        {tx.event_type.replace(/_/g, " ")}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                        {renderTransactionDiff(tx)}
                       </div>
-                      {tx.notes && (
-                        <p className="text-violet-600 truncate max-w-[55%]">{tx.notes}</p>
-                      )}
                     </div>
 
+                    <div className="flex items-center justify-between mt-2 px-1">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">{formatDateTime(tx.event_at as string)}</span>
+                      {tx.notes && <span className="text-[10px] font-bold text-indigo-500 truncate max-w-[50%] tracking-tight">{tx.notes}</span>}
+                    </div>
                   </div>
                 ))
               )}
@@ -594,7 +561,7 @@ const TripDetailsMasonry: React.FC<Props> = ({ trip }) => {
   return (
     <Masonry
       columns={{ xs: 1, sm: 2, md: 3, lg: 4 }}
-      gutter={10}
+      gutter={[10, 0]}
       items={cards}
       itemRender={(item) => item.data}
     />
