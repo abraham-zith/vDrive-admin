@@ -43,6 +43,7 @@ import { useAdminTripAlert } from "./hooks/useAdminTripAlert";
 import { useUserAlert } from "./hooks/useUserAlert";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
 import { MdOutlineAccountBalanceWallet } from "react-icons/md";
+import SosMonitor from "./components/SosMonitor/SosMonitor";
 
 
 // Loading component for route suspense
@@ -97,6 +98,41 @@ const SignUp = lazy(() => import("./signup/Signup"));
 const Login = lazy(() => import("./login/Login"));
 const ResetPassword = lazy(() => import("./login/ResetPassword"));
 const PricingCombinations = lazy(() => import("./pages/PricingCombinations"));
+const Coupons = lazy(() => import("./pages/Coupons"));
+
+// RBAC: Higher-order component to protect sensitive routes
+const RoleProtectedRoute = ({
+  children,
+  allowedRoles
+}: {
+  children: React.ReactNode;
+  allowedRoles: string[];
+}) => {
+  const { role, loading } = useAppSelector((state) => state.auth);
+
+  if (loading) return <RouteLoadingFallback />;
+
+  if (!role || !allowedRoles.includes(role)) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-10 text-center">
+        <div className="text-6xl mb-4">🚫</div>
+        <h2 className="text-2xl font-black text-slate-800 mb-2">Access Restricted</h2>
+        <p className="text-slate-500 max-w-md mx-auto">
+          Your account level does not have the necessary permissions to access this administrative module.
+        </p>
+        <Button
+          type="primary"
+          className="mt-6 rounded-xl font-bold h-10 px-8 bg-indigo-600 border-none"
+          onClick={() => window.location.href = "/"}
+        >
+          Return to Dashboard
+        </Button>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
 
 // const PlaceholderContent: React.FC<{
 // title: string;
@@ -111,11 +147,14 @@ const PricingCombinations = lazy(() => import("./pages/PricingCombinations"));
 const { Content, Sider, Header } = Layout;
 
 const Logo: React.FC<{ collapsed: boolean }> = ({ collapsed }) => (
-  <div className="flex items-center justify-center gap-3 px-4 h-[64px] border-b border-gray-200">
-    <img height={32} width={32} src={logo} alt="" />
+  <div className={`flex items-center justify-center gap-3 px-6 h-[80px] border-b border-gray-200 transition-all duration-300 ${collapsed ? "px-0" : ""}`}>
+    <div className="relative">
+      <div className="absolute -inset-2 bg-indigo-500/10 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+      <img height={38} width={38} src={logo} alt="" className="relative drop-shadow-sm" />
+    </div>
 
     {!collapsed && (
-      <span className="font-semibold text-xl text-black whitespace-nowrap">
+      <span className="font-black text-xl text-slate-900 whitespace-nowrap tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-indigo-600">
         vDrive Admin
       </span>
     )}
@@ -129,10 +168,13 @@ const siderStyle: React.CSSProperties = {
   top: 0,
   bottom: 0,
   zIndex: 100,
+  borderRight: "1px solid rgba(226, 232, 240, 0.8)",
+  background: "#FFFFFF",
+  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
 };
 const RootLayout: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, loading, currentUser } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, loading, currentUser, role } = useAppSelector((state) => state.auth);
   const location = useLocation();
 
   useEffect(() => {
@@ -320,87 +362,57 @@ const RootLayout: React.FC = () => {
     }
   };
 
-  const menuItems: MenuProps["items"] = [
-    { label: <Link to="/">Dashboard</Link>, key: "/", icon: <HomeOutlined /> },
-    {
-      label: <Link to="/users">Users</Link>,
-      key: "/users",
-      icon: <TeamOutlined />,
-    },
-    {
-      label: <Link to="/customers">Customers</Link>,
-      key: "/customers",
-      icon: <UserOutlined />,
-    },
-    {
-      label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>,
-      key: "/PricingAndFareRules",
-      icon: <DollarOutlined />,
-    },
-    {
-      label: <Link to="/drivers">Drivers</Link>,
-      key: "/drivers",
-      icon: <PiSteeringWheel />,
-    },
-    {
-      label: <Link to="/admins">Admins</Link>,
-      key: "/admins",
-      icon: <RiAdminLine />,
-    },
-    {
-      label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>,
-      key: "/InvoiceTemplates",
-      icon: <IoReceiptOutline />,
-    },
-    {
-      label: <Link to="/TripDetails">TripDetails</Link>,
-      key: "/TripDetails",
-      icon: <IoCarOutline />,
-    },
-    {
-      label: <Link to="/trip-transactions">Trip Transactions</Link>,
-      key: "/trip-transactions",
-      icon: <EnvironmentOutlined />,
-    },
-    {
-      label: <Link to="/Deductions">Deduction Management</Link>,
-      key: "/Deductions",
-      icon: <MdOutlineMoneyOff />,
-    },
-    {
-      label: <Link to="/RechargePlan">Recharge Plan</Link>,
-      key: "/RechargePlan",
-      icon: <MdOutlineAccountBalanceWallet />,
-    },
-    {
-      label: <Link to="/taxes">Tax Management</Link>,
-      key: "/taxes",
-      icon: <DollarOutlined />,
-    },
-    {
-      label: <Link to="/pricing-combinations">Pricing Combinations</Link>,
-      key: "/pricing-combinations",
-      icon: <TableOutlined />,
-    },
-  ];
+  const menuItems = React.useMemo(() => {
+    const items: MenuProps["items"] = [
+      { label: <Link to="/">Dashboard</Link>, key: "/", icon: <HomeOutlined /> },
+      { label: <Link to="/users">Users</Link>, key: "/users", icon: <TeamOutlined /> },
+      { label: <Link to="/customers">Customers</Link>, key: "/customers", icon: <UserOutlined /> },
+      { label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>, key: "/PricingAndFareRules", icon: <DollarOutlined /> },
+      { label: <Link to="/drivers">Drivers</Link>, key: "/drivers", icon: <PiSteeringWheel /> },
+    ];
+
+    // RBAC: Only super_admin can manage other admins
+    if (role === 'super_admin') {
+      items.push({ label: <Link to="/admins">Admins</Link>, key: "/admins", icon: <RiAdminLine /> });
+    }
+
+    items.push(
+      { label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>, key: "/InvoiceTemplates", icon: <IoReceiptOutline /> },
+      { label: <Link to="/TripDetails">TripDetails</Link>, key: "/TripDetails", icon: <IoCarOutline /> },
+      { label: <Link to="/trip-transactions">Trip Transactions</Link>, key: "/trip-transactions", icon: <EnvironmentOutlined /> },
+      { label: <Link to="/Deductions">Deduction Management</Link>, key: "/Deductions", icon: <MdOutlineMoneyOff /> },
+      { label: <Link to="/RechargePlan">Recharge Plan</Link>, key: "/RechargePlan", icon: <MdOutlineAccountBalanceWallet /> },
+      { label: <Link to="/taxes">Tax Management</Link>, key: "/taxes", icon: <DollarOutlined /> },
+      { label: <Link to="/pricing-combinations">Pricing Combinations</Link>, key: "/pricing-combinations", icon: <TableOutlined /> },
+      { label: <Link to="/coupons">Coupons</Link>, key: "/coupons", icon: <DollarOutlined /> }
+    );
+
+    return items;
+  }, [role]);
   return (
     <ConfigProvider
       theme={{
         token: {
           colorPrimary: "#1d2a5c",
           colorPrimaryBg: "#ffffff",
+          // fontFamily: "'Plus Jakarta Sans', sans-serif",
         },
         components: {
           Layout: {
-            siderBg: "#FFFFFF",
+            siderBg: "transparent",
+            bodyBg: "#F8FAFC",
           },
           Menu: {
-            darkItemBg: "#FFFFFF",
-            darkPopupBg: "#FFFFFF",
-            darkItemSelectedBg: "#1D2A5C",
-            darkItemSelectedColor: "#FFFFFF",
-            darkItemColor: "#8A92A6",
-            darkItemHoverColor: "#1D2A5C",
+            itemBg: "transparent",
+            itemSelectedBg: "transparent", // Keep transparent
+            itemSelectedColor: "#FFFFFF",
+            itemColor: "#64748B",
+            itemHoverColor: "#1D2A5C",
+            itemHoverBg: "rgba(29, 42, 92, 0.04)",
+            itemActiveBg: "rgba(29, 42, 92, 0.08)",
+            itemBorderRadius: 16,
+            itemMarginInline: 12,
+            iconSize: 20,
           },
           Typography: {
             titleMarginBottom: 0,
@@ -408,12 +420,15 @@ const RootLayout: React.FC = () => {
           },
           Segmented: {
             trackBg: "rgb(241,245,249)",
+            itemColor: "#000000",
+            itemSelectedColor: "#1d2a5c",
           },
         },
       }}
     >
       <AntdApp>
         <AntdStaticHolder />
+        <SosMonitor />
         {loading && <FullScreenLoader />}
         <Layout
           hasSider={
@@ -428,14 +443,13 @@ const RootLayout: React.FC = () => {
               onMouseEnter={() => setCollapsed(false)}
               onMouseLeave={() => setCollapsed(true)}
             >
-              <div className="flex flex-col h-full">
-                <div className="flex-shrink-0">
+              <div className="flex flex-col h-full bg-white">
+                <div className="flex-shrink-0 group">
                   <Logo collapsed={collapsed} />
                 </div>
 
-                <div className="flex-grow overflow-y-auto">
+                <div className="flex-grow overflow-y-auto py-6 custom-scrollbar">
                   <Menu
-                    theme="dark"
                     mode="inline"
                     selectedKeys={
                       location.pathname.startsWith("/PricingAndFareRules")
@@ -448,43 +462,38 @@ const RootLayout: React.FC = () => {
                 </div>
 
                 <div
-                  className={`flex-shrink-0 p-4 border-t border-gray-200 block`}
+                  className={`flex-shrink-0 border-t border-gray-50 mt-auto transition-all duration-300 ${collapsed ? "p-2" : "p-6"}`}
                 >
                   <div
-                    className={`flex items-center w-full p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${collapsed ? "justify-center" : "gap-3"
+                    className={`flex items-center w-full p-3 rounded-2xl bg-slate-50 border border-gray-100/50 shadow-sm transition-all duration-300 group cursor-pointer ${collapsed ? "justify-center p-2" : "gap-3 mb-4"
                       }`}
                   >
-                    {collapsed ? null : (
-                      <Avatar size="large" icon={<UserOutlined />} />
-                    )}
-                    <div
-                      className={`grid transition-all duration-300 ease-in-out ${collapsed
-                        ? "grid-rows-[0fr] opacity-0"
-                        : "grid-rows-[1fr] opacity-100"
-                        }`}
-                    >
-                      <div className="overflow-hidden">
-                        <div className="flex flex-col text-black">
-                          <span className="font-medium whitespace-nowrap">
-                            {currentUser?.name || "—"}
-                          </span>
-                          <span className="text-xs text-gray-500 whitespace-nowrap">
-                            {currentUser?.email || "—"}
-                          </span>
-                        </div>
+                    <Avatar
+                      size={collapsed ? "small" : "large"}
+                      icon={<UserOutlined />}
+                      className="!bg-gradient-to-br !from-indigo-600 !to-blue-600 border-2 border-white shadow-md flex-shrink-0"
+                    />
+
+                    {!collapsed && (
+                      <div className="flex flex-col overflow-hidden transition-all duration-300">
+                        <span className="font-black text-[13px] text-slate-800 whitespace-nowrap leading-none mb-1">
+                          {currentUser?.name || "Member User"}
+                        </span>
+                        <span className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider whitespace-nowrap">
+                          {role === 'super_admin' ? 'Super Administrator' : 'Access Administrator'}
+                        </span>
                       </div>
-                    </div>
+                    )}
                   </div>
+
                   <Menu
-                    theme="dark"
                     mode="inline"
                     selectable={false}
-                    inlineCollapsed={collapsed}
                     items={[
                       {
                         key: "logout",
-                        label: "Logout",
-                        icon: <LogoutOutlined />,
+                        label: <span className="font-bold text-[11px] uppercase tracking-widest">Logout</span>,
+                        icon: <LogoutOutlined className="!text-lg" />,
                         danger: true,
                         onClick: async () => {
                           await dispatch(logoutAsync());
@@ -492,7 +501,7 @@ const RootLayout: React.FC = () => {
                         },
                       },
                     ]}
-                    className="bg-transparent border-0 mt-2 font-medium"
+                    className="bg-transparent border-0 mt-2"
                   />
                 </div>
               </div>
@@ -507,7 +516,8 @@ const RootLayout: React.FC = () => {
                   : collapsed
                     ? 80
                     : 250,
-              transition: "margin-left 0.2s",
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              backgroundColor: "#F8FAFC",
             }}
           >
             {isMobile && isAuthenticated && location.pathname !== "/login" && (
@@ -551,7 +561,7 @@ const RootLayout: React.FC = () => {
             )}
             <Content>
               <div
-                className={`p-1 w-full rounded-lg bg-[#F7F8FB] ${isMobile && isAuthenticated && location.pathname !== "/login"
+                className={`w-full bg-[#F7F8FB] ${isMobile && isAuthenticated && location.pathname !== "/login"
                   ? "pt-16 h-[100dvh]"
                   : "h-[100dvh]"
                   }`}
@@ -643,7 +653,9 @@ const router = createBrowserRouter([
         path: "admins",
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
-            <Admins />
+            <RoleProtectedRoute allowedRoles={['super_admin']}>
+              <Admins />
+            </RoleProtectedRoute>
           </Suspense>
         ),
       },
@@ -708,6 +720,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <PricingCombinations />
+          </Suspense>
+        ),
+      },
+      {
+        path: "coupons",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Coupons />
           </Suspense>
         ),
       },

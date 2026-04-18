@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import {
-  Drawer, Card, Tag, Typography, Button, Space,
-  Tooltip, Segmented, Avatar, Divider, Modal, Input, message,
+  Drawer, Typography, Button,
+  Tooltip, Segmented, Avatar, Modal, Input, message,
 } from "antd";
 import dayjs from "dayjs";
 import type { Customer } from "../../pages/Customers";
 import {
   UserOutlined, CloseOutlined, CloseCircleOutlined,
   CheckCircleOutlined, PhoneOutlined, MailOutlined, StopOutlined,
-  LineChartOutlined, ClockCircleOutlined, ExclamationCircleOutlined,
+  LineChartOutlined,
+  //  ClockCircleOutlined, 
+  ExclamationCircleOutlined,
+  GlobalOutlined, CalendarOutlined,
 } from "@ant-design/icons";
-import { capitalize } from "../../utilities/capitalize";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../../store";
 import {
@@ -21,12 +23,13 @@ import {
   deleteCustomer,
 } from "../../store/slices/customerSlice";
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 interface CustomerDetailsProps {
   customer: Customer | null;
   onClose: () => void;
   open: boolean;
+  isSuperAdmin?: boolean;
 }
 
 // ─── Confirmation modal helper ────────────────────────────────────────────────
@@ -78,7 +81,7 @@ const showConfirm = ({
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
-const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, open }) => {
+const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, open, isSuperAdmin = false }) => {
   if (!customer) return null;
 
   const dispatch = useDispatch<AppDispatch>();
@@ -184,211 +187,378 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
 
   // ─── Status-aware action buttons ───────────────────────────────────────────
   const renderStatusActions = () => {
+    if (!isSuperAdmin) return null;
     switch (customer.status) {
-
       case "blocked":
         return (
-          <Space wrap className="mb-3">
+          <div className="flex w-full gap-3">
             <Button
+              type="primary"
               icon={<CheckCircleOutlined />}
-              style={{ borderColor: "green", color: "green" }}
+              className="flex-1 !h-10 !rounded-xl !font-black !uppercase !tracking-wider !bg-emerald-600 hover:!bg-emerald-700 shadow-lg shadow-emerald-100 transition-all active:scale-95 border-none"
               loading={actionLoading}
               onClick={handleUnblock}
             >
-              Unblock
+              Recover Account
             </Button>
-            <Button danger icon={<CloseCircleOutlined />} loading={actionLoading} onClick={handleDelete}>
-              Delete
+            <Button
+              danger
+              type="text"
+              icon={<CloseCircleOutlined />}
+              loading={actionLoading}
+              onClick={handleDelete}
+              className="flex-1 !h-10 !rounded-xl !font-bold hover:!bg-rose-50"
+            >
+              Delete Data
             </Button>
-          </Space>
+          </div>
         );
 
       case "inactive":
-        return (
-          <Space wrap className="mb-3">
-            <Button
-              icon={<CheckCircleOutlined />}
-              style={{ borderColor: "green", color: "green" }}
-              loading={actionLoading}
-              onClick={handleEnable}
-            >
-              Activate
-            </Button>
-            <Button danger icon={<StopOutlined />} loading={actionLoading} onClick={handleBlock}>
-              Block
-            </Button>
-          </Space>
-        );
       case "suspended":
         return (
-          <Space wrap className="mb-3">
+          <div className="flex w-full gap-3">
             <Button
+              type="primary"
               icon={<CheckCircleOutlined />}
-              style={{ borderColor: "green", color: "green" }}
+              className="flex-1 !h-10 !rounded-xl !font-black !uppercase !tracking-wider !bg-emerald-600 hover:!bg-emerald-700 shadow-lg shadow-emerald-100 transition-all active:scale-95 border-none"
               loading={actionLoading}
               onClick={handleEnable}
             >
-              Activate
+              Enable Customer
             </Button>
-            <Button danger icon={<StopOutlined />} loading={actionLoading} onClick={handleBlock}>
-              Block
+            <Button
+              danger
+              type="dashed"
+              icon={<StopOutlined />}
+              loading={actionLoading}
+              onClick={handleBlock}
+              className="flex-1 !h-10 !rounded-xl !font-bold border-rose-200 text-rose-600 hover:!bg-rose-50"
+            >
+              Block ID
             </Button>
-          </Space>
+          </div>
         );
 
       default: // active
         return (
-          <Space wrap className="mb-3">
+          <div className="flex w-full gap-3">
             <Button
-              type="default"
               danger
+              type="primary"
               icon={<StopOutlined />}
               loading={actionLoading}
               onClick={handleBlock}
+              className="flex-1 !h-10 !rounded-xl !font-black !uppercase !tracking-wider !bg-rose-600 hover:!bg-black shadow-lg shadow-rose-100 transition-all active:scale-95 border-none"
             >
-              Block
+              Block Account
             </Button>
             <Button
-              type="dashed"
-              danger
+              type="default"
               icon={<CloseCircleOutlined />}
               loading={actionLoading}
               onClick={handleDisable}
+              className="flex-1 !h-10 !rounded-xl !font-black !uppercase !tracking-wider border-amber-200 text-amber-600 hover:!bg-amber-50 shadow-sm"
             >
               Suspend
             </Button>
-            {/* <Button icon={<EditOutlined />}>Edit</Button> */}
-          </Space>
+          </div>
         );
     }
   };
 
+  // ─── Status Tag Helper ────────────────────────────────────────────────────
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active": return "emerald";
+      case "suspended": return "orange";
+      case "blocked": return "red";
+      default: return "blue";
+    }
+  };
+
+  const statusColor = getStatusColor(customer.status);
+
   // ─── Tab content ────────────────────────────────────────────────────────────
   const basicInfo = (
-    <Card
-      title="Basic Information"
-      bordered={false}
-      className="rounded-2xl shadow-md"
-      extra={
-        <Tag color={customer.status === "active" ? "green" : "red"} className="rounded-xl">
-          {capitalize(customer.status)}
-        </Tag>
-      }
-    >
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <Text type="secondary">Full Name</Text>
-          <p className="text-md font-medium">{customer.full_name}</p>
+    <div className="grid grid-cols-2 gap-4 pt-2">
+      {/* ROW 1: Personal Profile & Emergency Contacts */}
+      <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:shadow-lg flex flex-col h-full">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
+            <UserOutlined className="text-blue-500 text-sm" />
+          </div>
+          <Title level={5} className="!m-0 text-gray-900 font-black tracking-tight uppercase text-[10px]">Personal Profile</Title>
         </div>
-        {customer.role && (
-          <Tag color="blue" className="rounded-xl">{capitalize(customer.role)}</Tag>
-        )}
-      </div>
 
-      <div className="space-y-2 mb-4">
-        <p><PhoneOutlined className="mr-2 text-gray-500" />{customer.phone_number}</p>
-        <p><MailOutlined className="mr-2 text-gray-500" />{customer.email}</p>
-        {customer.gender && (
-          <p><UserOutlined className="mr-2 text-gray-500" />{capitalize(customer.gender)}</p>
-        )}
-      </div>
+        <div className="space-y-4 flex-grow">
+          <div>
+            <span className="text-[8px] uppercase font-black tracking-[0.1em] text-gray-400 block mb-1 px-1">Full Name</span>
+            <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-50 flex items-center gap-3 group hover:bg-white hover:shadow-sm transition-all">
+              <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center shadow-sm text-slate-400 uppercase font-black text-[9px]">
+                {customer.full_name?.charAt(0) || "U"}
+              </div>
+              <div className="text-[13px] font-bold text-slate-700 tracking-tight">{customer.full_name}</div>
+            </div>
+          </div>
 
-      {customer.emergency_contacts && customer.emergency_contacts.length > 0 && (
-        <div className="mt-4">
-          <Divider plain style={{ margin: '12px 0' }}>
-            <Text type="secondary" style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Emergency Contacts
-            </Text>
-          </Divider>
-          <div className="space-y-3">
-            {customer.emergency_contacts.map((contact, index) => (
-              <div key={index} className="bg-blue-50/50 p-3 rounded-xl border border-blue-100/50">
-                <div className="flex items-center gap-2 mb-1">
-                  <UserOutlined className="text-blue-600 text-sm" />
-                  <span className="font-semibold text-sm text-gray-800">{contact.name}</span>
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <span className="text-[8px] uppercase font-black tracking-[0.1em] text-gray-400 block mb-1 px-1">Email Address</span>
+              <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-50 flex items-center gap-3 hover:bg-white hover:shadow-sm transition-all group">
+                <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-300 shadow-sm group-hover:text-blue-500 transition-colors">
+                  <MailOutlined className="text-xs" />
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-600 ml-5">
-                  <PhoneOutlined className="text-[10px]" />
-                  <span>{contact.phone}</span>
+                <span className="text-[13px] font-bold text-slate-700 truncate">{customer.email}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="text-[8px] uppercase font-black tracking-[0.1em] text-gray-400 block mb-1 px-1">Contact Number</span>
+                <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-50 flex items-center gap-3 hover:bg-white hover:shadow-sm transition-all group">
+                  <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-300 shadow-sm group-hover:text-emerald-500 transition-colors">
+                    <PhoneOutlined className="rotate-90 text-xs" />
+                  </div>
+                  <span className="text-[12px] font-black text-slate-700 font-mono tracking-tight line-clamp-1">{customer.phone_number}</span>
                 </div>
               </div>
-            ))}
+
+              <div>
+                <span className="text-[8px] uppercase font-black tracking-[0.1em] text-gray-400 block mb-1 px-1">Gender</span>
+                <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-50 flex items-center gap-2 hover:bg-white hover:shadow-sm transition-all group h-[42px]">
+                  <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-slate-300 shadow-sm group-hover:text-indigo-500 transition-colors">
+                    <GlobalOutlined className="text-xs" />
+                  </div>
+                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">{customer.gender || "Other"}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
-      <Divider />
-
-      <div className="flex justify-between">
-        <div>
-          <Text type="secondary">Joined</Text>
-          <p>{dayjs(customer.created_at).format("MMMM D, YYYY")}</p>
+      <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:shadow-lg flex flex-col h-full">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500">
+            <ExclamationCircleOutlined className="text-sm" />
+          </div>
+          <Title level={5} className="!m-0 text-gray-900 font-black tracking-tight uppercase text-[10px]">Emergency Contacts</Title>
         </div>
-        <div>
-          <Text type="secondary">Last Update</Text>
-          <p>{dayjs(customer.updated_at).format("MMMM D, YYYY")}</p>
+
+        <div className="space-y-2 flex-grow">
+          {customer.emergency_contacts && customer.emergency_contacts.length > 0 ? (
+            customer.emergency_contacts.map((contact, index) => (
+              <div key={index} className="bg-rose-50/30 p-3 rounded-2xl border border-rose-100/40 flex items-center justify-between group hover:bg-rose-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-rose-300 shadow-sm border border-rose-50 font-black text-[9px]">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <div className="font-black text-slate-800 text-[13px] leading-none mb-0.5">{contact.name}</div>
+                    <div className="text-[8px] text-rose-400 font-black tracking-wider uppercase">
+                      {contact.relationship || "Guardian"} • {contact.phone}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full py-4 text-center opacity-40">
+              <Text className="text-[9px] font-bold uppercase tracking-widest text-slate-400">No Contacts Found</Text>
+            </div>
+          )}
         </div>
       </div>
-    </Card>
+
+      {/* ROW 2: Account & Total Rides */}
+
+      <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:shadow-lg flex flex-col h-full">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-purple-50 rounded-xl flex items-center justify-center text-purple-500">
+            <CalendarOutlined className="text-sm" />
+          </div>
+          <Title level={5} className="!m-0 text-gray-900 font-black tracking-tight uppercase text-[10px]">Account Status</Title>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 relative">
+          <div className="group h-full">
+            <span className="text-[8px] uppercase font-black tracking-[0.1em] text-gray-400 block mb-1 px-1">Joined VDrive</span>
+            <div className="bg-indigo-50/30 px-4 py-3 rounded-2xl border border-indigo-100/30 h-full flex flex-col justify-center transition-all hover:bg-indigo-50 hover:shadow-sm">
+              <div className="font-black text-slate-800 text-sm leading-tight mb-0.5">{dayjs(customer.created_at).format("MMM DD, YYYY")}</div>
+              <div className="text-[8px] text-indigo-400 font-black uppercase tracking-[0.15em]">{dayjs(customer.created_at).format("hh:mm A")}</div>
+            </div>
+          </div>
+
+          <div className="group h-full">
+            <span className="text-[8px] uppercase font-black tracking-[0.1em] text-gray-400 block mb-1 px-1">Last System Update</span>
+            <div className="bg-slate-50/50 px-4 py-3 rounded-2xl border border-slate-100/50 h-full flex flex-col justify-center transition-all hover:bg-white hover:shadow-sm">
+              <div className="font-black text-slate-800 text-sm leading-tight mb-0.5">{dayjs(customer.updated_at).format("MMM DD, YYYY")}</div>
+              <div className="text-[8px] text-slate-400 font-black uppercase tracking-[0.15em]">{dayjs(customer.updated_at).format("hh:mm A")}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:shadow-lg flex flex-col h-full">
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+            <LineChartOutlined className="text-sm" />
+          </div>
+          <Title level={5} className="!m-0 text-gray-900 font-black tracking-tight uppercase text-[10px]">Trip Analytics</Title>
+        </div>
+
+        <div className="flex flex-col items-center justify-center flex-grow py-3 border-2 border-dashed border-slate-50 rounded-3xl">
+          <div className="text-[9px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1">Total Rides</div>
+          <div className="text-4xl font-black text-slate-900 tracking-tighter leading-none mb-1.5">124</div>
+          <div className="px-2 py-0.5 bg-emerald-100 rounded-full text-[8px] font-black text-emerald-600 uppercase tracking-widest">
+            +18% this month
+          </div>
+        </div>
+      </div>
+    </div>
   );
 
-  const activity = (
-    <Card title="Activity Log" bordered={false} className="rounded-2xl shadow-md">
-      <div className="text-center py-8">
-        <ClockCircleOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
-        <p className="mt-4 text-gray-500">No recent activity logs available.</p>
-      </div>
-    </Card>
-  );
+  // const activity = (
+  //   <div className="pt-2">
+  //     <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm text-center">
+  //       <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
+  //         <ClockCircleOutlined style={{ fontSize: 24, color: "#cbd5e1" }} />
+  //       </div>
+  //       <Title level={5} className="!m-0 !mb-1 text-gray-800">Activity History</Title>
+  //       <Text className="text-gray-400 text-sm">No recent activity logs found for this customer.</Text>
+  //     </div>
+  //   </div>
+  // );
 
   const segments = [
     {
-      label: <Tooltip title="Basic Information"><UserOutlined /></Tooltip>,
+      label: <Tooltip title="Basic Information"><div className="flex items-center justify-center gap-2 px-2 text-[11px] font-bold"><UserOutlined /> Info</div></Tooltip>,
       key: "1",
       content: basicInfo,
     },
-    {
-      label: <Tooltip title="Activity Log"><LineChartOutlined /></Tooltip>,
-      key: "2",
-      content: activity,
-    },
+    // {
+    //   label: <Tooltip title="Activity Log"><div className="flex items-center justify-center gap-2 px-2 text-[11px] font-bold"><LineChartOutlined /> Activity</div></Tooltip>,
+    //   key: "2",
+    //   content: activity,
+    // },
   ];
 
   return (
     <Drawer
-      title={
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar size={60} icon={<UserOutlined />} style={{ backgroundColor: "#1890ff" }} />
-            <div>
-              <div className="mt-4 text-md font-semibold">{customer.full_name}</div>
-              <p className="m-0 text-sm text-gray-500">Customer Details</p>
-            </div>
-          </div>
-          <Button type="text" icon={<CloseOutlined />} onClick={onClose} />
-        </div>
-      }
       placement="right"
-      width={480}
+      width={900}
       onClose={onClose}
       open={open}
       closable={false}
+      styles={{
+        body: { padding: 0, backgroundColor: "#f8fafc" },
+        header: { display: 'none' }
+      }}
     >
-      <div>{renderStatusActions()}</div>
+      {/* ─── Custom Premium Header ─────────────────────────────────────────── */}
+      <div className="relative overflow-hidden pt-8 pb-6 px-8 bg-white border-b border-gray-100">
+        {/* Decorative Status Orb */}
+        <div className={`absolute -top-12 -right-12 w-48 h-48 bg-${statusColor === 'emerald' ? 'indigo' : statusColor}-500/5 blur-3xl rounded-full transition-colors duration-700`} />
 
-      <div className="w-full p-3 bg-white rounded-lg shadow">
+        <div className="flex justify-between items-start relative z-10 mb-6">
+          <div className="flex items-center gap-5">
+            {/* ... avatar and titles ... */}
+            <div className="relative group">
+              {/* Dynamic Glow Layers */}
+              <div className={`absolute -inset-2 bg-gradient-to-tr from-${statusColor === 'emerald' ? 'indigo' : statusColor}-600 to-${statusColor === 'emerald' ? 'blue' : 'rose'}-400 rounded-[2rem] blur opacity-15 group-hover:opacity-25 transition-opacity duration-500`} />
+              <div className={`absolute -inset-1 bg-white rounded-[1.8rem] z-0 shadow-sm`} />
+
+              <Avatar
+                size={72}
+                icon={
+                  <div className="w-full h-full bg-gradient-to-br from-indigo-50 to-blue-50 rounded-full flex items-center justify-center">
+                    <UserOutlined />
+                  </div>
+                }
+                className={`relative z-10 bg-white border-4 border-white shadow-xl !text-slate-300 text-3xl flex items-center justify-center rounded-[1.5rem] transition-transform duration-500 group-hover:scale-105`}
+              />
+
+              <div className={`absolute -bottom-1 -right-1 z-20 w-7 h-7 bg-${statusColor === 'emerald' ? 'indigo' : statusColor}-600 border-4 border-white rounded-2xl flex items-center justify-center shadow-lg transform rotate-12 transition-transform group-hover:rotate-0`}>
+                <CheckCircleOutlined className="text-white text-[9px]" />
+              </div>
+            </div>
+
+            <div>
+              <Title level={3} className="!m-0 !mb-1 font-black text-slate-900 tracking-tight leading-none group">
+                {customer.full_name}
+                <div className="h-0.5 w-10 bg-indigo-500 rounded-full mt-2 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+              </Title>
+              <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all ${customer.status === 'active' ? 'bg-indigo-50 border-indigo-100 text-indigo-600' :
+                  customer.status === 'suspended' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                    'bg-rose-50 border-rose-100 text-rose-600'
+                  }`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                  {customer.status}
+                </div>
+                {customer.role && (
+                  <div className="px-2.5 py-0.5 rounded-xl text-[9px] font-black uppercase tracking-wider bg-slate-100 border border-slate-200/50 text-slate-500">
+                    {customer.role}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mr-2">
+              {renderStatusActions()}
+            </div>
+            <Button
+              type="text"
+              icon={<CloseOutlined className="text-slate-300 text-xs" />}
+              onClick={onClose}
+              className="hover:bg-slate-50 rounded-xl h-9 w-9 flex items-center justify-center transition-all active:scale-90"
+            />
+          </div>
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-4">
+          <div className="bg-slate-50/80 backdrop-blur-sm p-4 rounded-[1.5rem] border border-slate-100/50 flex items-center justify-between shadow-inner">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-slate-400 font-orange uppercase tracking-[0.2em] font-black">Customer ID</span>
+              <span className="text-[13px] text-slate-900 font-black font-mono tracking-tighter">{customer.user_code || "VDU-NEW"}</span>
+            </div>
+            <div className="h-6 w-px bg-slate-200/60" />
+            <div className="flex flex-col gap-0.5 text-right flex-grow px-4">
+              <span className="text-[8px] text-slate-400 font-orange uppercase tracking-[0.2em] font-black">Platform Authority</span>
+              <span className="text-[11px] text-slate-900 font-black tracking-tight flex items-center justify-end gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                vDrive Admin
+              </span>
+            </div>
+            <div className="h-6 w-px bg-slate-200/60" />
+            <Tooltip title="View Intel History">
+              <Button
+                icon={<LineChartOutlined className="text-sm" />}
+                className="!h-9 !w-9 !rounded-xl border-none shadow-none text-slate-300 hover:!text-indigo-600 hover:!bg-indigo-50/50 transition-all ml-2"
+              />
+            </Tooltip>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Drawer Body Content ─────────────────────────────────────────── */}
+      <div className="p-6">
         <Segmented
           block
           options={segments.map(({ label, key }) => ({ label, value: key }))}
           value={activeKey}
           onChange={(value) => setActiveKey(value as string)}
-          className="w-full rounded-lg"
-          style={{ backgroundColor: "#f5f5f5", padding: "8px" }}
+          className="w-full premium-segmented !bg-slate-100 !p-1 rounded-2xl"
         />
-      </div>
 
-      <div className="mt-4 p-4 bg-white rounded-lg shadow">
-        {segments.find((tab) => tab.key === activeKey)?.content}
+        <div className="mt-4">
+          {segments.find((tab) => tab.key === activeKey)?.content}
+        </div>
       </div>
     </Drawer>
   );

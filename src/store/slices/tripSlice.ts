@@ -245,8 +245,9 @@ export const fetchTrips = createAsyncThunk(
 export const selectTripByCode = (state: { trips: { trips: any[] } }, tripCode: string) =>
   state.trips.trips.find((t) => t.trip_code === tripCode);
 
-export const selectTripIdByCode = (state: { trips: { trips: any[] } }, tripCode: string) =>
-  state.trips.trips.find((t) => t.trip_code === tripCode)?.trip_id;
+export const selectTripIdByCode = (state: { trips: { trips: any[] } }, tripCode: string) => {
+  return state.trips.trips.find((t) => t.trip_code === tripCode)?.trip_id;
+};
 
 // ─── Slice ────────────────────────────────────────────────────────────────────
 const tripSlice = createSlice({

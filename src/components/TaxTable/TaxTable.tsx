@@ -1,8 +1,6 @@
-import { useRef } from "react";
-import { Table, Tag, Switch, Button, Space, Popconfirm, Tooltip } from "antd";
+import { Table, Switch, Button, Popconfirm, Tooltip } from "antd";
 import { EditOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import type { TableColumnsType } from "antd";
-import { useGetHeight } from "../../utilities/customheightWidth";
 import type { Tax } from "../../store/slices/taxSlice";
 
 interface TaxTableProps {
@@ -12,13 +10,14 @@ interface TaxTableProps {
   onDelete: (id: string) => void;
   onToggleStatus: (id: string, isActive: boolean) => void;
   loading?: boolean;
+  isSuperAdmin?: boolean;
 }
 
-const TAX_TYPE_COLORS: Record<string, string> = {
-  CENTRAL: "gold",
-  STATE: "green",
-  UNION_TERRITORY: "purple",
-  COMPOSITE: "blue",
+const TAX_TYPE_GRADIENTS: Record<string, string> = {
+  CENTRAL: "from-amber-400 to-orange-300 shadow-amber-100",
+  STATE: "from-emerald-400 to-teal-400 shadow-emerald-100",
+  UNION_TERRITORY: "from-purple-500 to-indigo-400 shadow-purple-100",
+  COMPOSITE: "from-blue-500 to-indigo-500 shadow-blue-100",
 };
 
 const TaxTable = ({
@@ -28,138 +27,142 @@ const TaxTable = ({
   onDelete,
   onToggleStatus,
   loading,
+  isSuperAdmin = false,
 }: TaxTableProps) => {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const tableHeight = useGetHeight(contentRef);
 
   const columns: TableColumnsType<Tax> = [
     {
-      title: "Tax Name",
-      dataIndex: "tax_name",         // ← taxName (DB: tax_name)
-      key: "taxName",
-      minWidth: 160,
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Tax Identity</span>,
+      dataIndex: "tax_name",
+      width: 240,
       sorter: (a, b) => a.tax_name.localeCompare(b.tax_name),
       render: (name: string, record: Tax) => (
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontWeight: 600 }}>{name}</span>
-          <span style={{ fontSize: 11, color: "#94a3b8", fontFamily: "monospace" }}>
-            {record.tax_code}
+        <div className="flex flex-col gap-1.5 py-1">
+          <span className="text-sm font-black text-gray-800 tracking-tight leading-none">{name}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-mono font-bold text-indigo-400 bg-indigo-50/50 px-2 py-0.5 rounded border border-indigo-100/50 uppercase tracking-tighter">
+              {record.tax_code}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Category</span>,
+      dataIndex: "tax_type",
+      width: 160,
+      render: (type: string) => (
+        <div className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-lg bg-gradient-to-br ${TAX_TYPE_GRADIENTS[type] || "from-slate-400 to-slate-500 shadow-slate-100"}`}>
+          {type?.replace(/_/g, " ")}
+        </div>
+      ),
+    },
+    {
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Levy (%)</span>,
+      dataIndex: "percentage",
+      width: 120,
+      sorter: (a, b) => a.percentage - b.percentage,
+      render: (percent: number) => (
+        <div className="inline-flex bg-indigo-50 text-indigo-600 px-3 py-1 rounded-xl text-xs font-black ring-1 ring-indigo-100">
+          {percent}%
+        </div>
+      ),
+    },
+    {
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Default</span>,
+      dataIndex: "is_default",
+      width: 100,
+      render: (isDefault: boolean) =>
+        isDefault ? (
+          <div className="flex items-center gap-1.5 text-amber-500 font-black text-[10px] uppercase tracking-widest">
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            Default
+          </div>
+        ) : (
+          <span className="text-gray-200">—</span>
+        ),
+    },
+    {
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Status</span>,
+      dataIndex: "is_active",
+      width: 130,
+      render: (isActive: boolean, record: Tax) => (
+        <div className="flex items-center gap-3">
+          <Switch
+            checked={isActive}
+            size="small"
+            disabled={!isSuperAdmin}
+            onChange={(checked) => onToggleStatus(record.id, checked)}
+            className={`${isActive ? "!bg-emerald-500" : "!bg-gray-200"} ${!isSuperAdmin ? "opacity-50" : ""}`}
+          />
+          <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? "text-emerald-600" : "text-gray-400"}`}>
+            {isActive ? "Active" : "Inactive"}
           </span>
         </div>
       ),
     },
     {
-      title: "Indian Tax",
-      dataIndex: "indian_tax",       // ← indianTax (DB: indian_tax)
-      key: "indianTax",
-      minWidth: 120,
-      render: (val: string) => val || <span style={{ color: "#cbd5e1" }}>—</span>,
-    },
-    {
-      title: "Tax Type",
-      dataIndex: "tax_type",         // ← taxType (DB: tax_type)
-      key: "taxType",
-      minWidth: 130,
-      render: (type: string) => (
-        <Tag color={TAX_TYPE_COLORS[type] || "cyan"} style={{ fontWeight: 600 }}>
-          {type?.replace(/_/g, " ")}
-        </Tag>
-      ),
-    },
-    {
-      title: "Percentage",
-      dataIndex: "percentage",
-      key: "percentage",
-      minWidth: 110,
-      sorter: (a, b) => a.percentage - b.percentage,
-      render: (percent: number) => (
-        <Tag color="geekblue" style={{ fontWeight: 700 }}>
-          {percent}%
-        </Tag>
-      ),
-    },
-    {
-      title: "Default",
-      dataIndex: "is_default",       // ← isDefault (DB: is_default)
-      key: "isDefault",
-      minWidth: 90,
-      render: (isDefault: boolean) =>
-        isDefault ? (
-          <Tag color="warning">Default</Tag>
-        ) : (
-          <span style={{ color: "#cbd5e1" }}>—</span>
-        ),
-    },
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      minWidth: 200,
-      ellipsis: true,
-      render: (desc: string) => desc || <span style={{ color: "#cbd5e1" }}>—</span>,
-    },
-    {
-      title: "Status",
-      dataIndex: "is_active",        // ← isActive (DB: is_active)
-      key: "isActive",
-      minWidth: 120,
-      render: (isActive: boolean, record: Tax) => (
-        <Switch
-          checked={isActive}
-          onChange={(checked) => onToggleStatus(record.id, checked)}
-          checkedChildren="Active"
-          unCheckedChildren="Inactive"
-        />
-      ),
-    },
-    {
-      title: "Actions",
+      title: "",
       key: "actions",
       fixed: "right",
-      width: 120,
+      width: 140,
       render: (_, record: Tax) => (
-        <Space size="small">
+        <div className="flex items-center justify-end gap-1">
           <Tooltip title="View Detail">
             <Button
               type="text"
-              icon={<EyeOutlined />}
+              icon={<EyeOutlined className="text-indigo-500 text-lg" />}
               onClick={() => onView(record)}
+              className="hover:bg-indigo-50 rounded-full h-9 w-9 flex items-center justify-center p-0"
             />
           </Tooltip>
-          <Tooltip title="Edit">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => onEdit(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Delete Tax"
-            description={`Are you sure you want to delete "${record.tax_name}"?`}
-            onConfirm={() => onDelete(record.id)}
-            okText="Delete"
-            okButtonProps={{ danger: true }}
-            cancelText="Cancel"
-          >
-            <Tooltip title="Delete">
-              <Button type="text" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
+          
+          {isSuperAdmin && (
+            <>
+              <Tooltip title="Modify Rule">
+                <Button
+                  type="text"
+                  icon={<EditOutlined className="text-indigo-500 text-lg" />}
+                  onClick={() => onEdit(record)}
+                  className="hover:bg-indigo-50 rounded-full h-9 w-9 flex items-center justify-center p-0"
+                />
+              </Tooltip>
+              <Popconfirm
+                title="Delete Tax Rule"
+                description={`Are you sure you want to delete the "${record.tax_name}" tax rule?`}
+                onConfirm={() => onDelete(record.id)}
+                okText="Delete"
+                okButtonProps={{ danger: true, className: "rounded-lg" }}
+                cancelText="Keep"
+                className="premium-popconfirm"
+              >
+                <Tooltip title="Delete Rule">
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined className="text-lg" />}
+                    className="hover:bg-rose-50 rounded-full h-9 w-9 flex items-center justify-center p-0"
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </>
+          )}
+        </div>
       ),
     },
   ];
 
   return (
-    <div ref={contentRef} className="h-full w-full">
+    <div className="flex-grow overflow-hidden h-full">
       <Table
         columns={columns}
         dataSource={data}
         rowKey="id"
         pagination={false}
         loading={loading}
-        scroll={{ y: tableHeight ? tableHeight - 40 : 400, x: "max-content" }}
-        className="tax-table"
+        scroll={{ y: 'calc(100vh - 400px)', x: "max-content" }}
+        sticky
+        className="premium-table-container tax-ledger-table"
       />
     </div>
   );

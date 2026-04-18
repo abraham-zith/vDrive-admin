@@ -9,6 +9,8 @@ import {
   Tooltip,
   notification,
   Modal,
+  Avatar,
+  Button,
 } from "antd";
 
 import type { TableColumnsType } from "antd";
@@ -18,7 +20,6 @@ import { GrPhone } from "react-icons/gr";
 import {
   UserOutlined,
   CarOutlined,
-  EnvironmentOutlined,
   UserAddOutlined,
   DollarOutlined,
   BellOutlined,
@@ -39,6 +40,7 @@ import TripDetailsDrawer from "./TripDetailsDrawer";
 
 interface Props {
   data: TripDetailsType[];
+  isSuperAdmin?: boolean;
 }
 
 // driver details popconfirms
@@ -103,7 +105,7 @@ const mockDrivers: Driver[] = [
   },
 ];
 
-const TripDetailsTable: React.FC<Props> = ({ data }) => {
+const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
   const dispatch = useDispatch();
   const [drawerOpen, setDrawerOpen] = useState(false);
   //const [trip, setTrip] = useState<TripDetailsType | null>(null);
@@ -169,35 +171,41 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
         label
       );
 
-    return [
-      {
-        key: "assign_driver",
-        label: withTooltip(
-          isDriverAssigned(r) ? "Reassign Driver" : "Assign Driver",
-        ),
-        icon: <UserAddOutlined />,
-        disabled: completed,
-      },
-      {
-        key: "fare",
-        label: withTooltip("Adjust Fare"),
-        icon: <DollarOutlined />,
-        disabled: completed,
-      },
-      {
-        key: "cancel",
-        label: withTooltip("Cancel Trip"),
-        icon: <StopOutlined />,
-        danger: true,
-        disabled: completed,
-      },
-      {
-        key: "trigger",
-        label: withTooltip("Trigger to Drivers"),
-        icon: <BellOutlined />,
-        disabled: completed,
-      },
-    ];
+    const items = [];
+    
+    if (isSuperAdmin) {
+      items.push(
+        {
+          key: "assign_driver",
+          label: withTooltip(
+            isDriverAssigned(r) ? "Reassign Driver" : "Assign Driver",
+          ),
+          icon: <UserAddOutlined />,
+          disabled: completed,
+        },
+        {
+          key: "fare",
+          label: withTooltip("Adjust Fare"),
+          icon: <DollarOutlined />,
+          disabled: completed,
+        },
+        {
+          key: "cancel",
+          label: withTooltip("Cancel Trip"),
+          icon: <StopOutlined />,
+          danger: true,
+          disabled: completed,
+        },
+        {
+          key: "trigger",
+          label: withTooltip("Trigger to Drivers"),
+          icon: <BellOutlined />,
+          disabled: completed,
+        }
+      );
+    }
+
+    return items;
   };
 
   // timeline (covert date and time in readable formate)
@@ -214,151 +222,159 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
   //  Table Columns
   const columns: TableColumnsType<TripDetailsType> = [
     {
-      title: "Trip ID",
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Trip ID</span>,
       dataIndex: "trip_code",
-      sorter: (a, b) => a.trip_code.localeCompare(b.trip_code),
+      width: 140,
       render: (_, r) => (
-        <Tooltip title="Click to Open Slider">
-          <span
-            style={{ color: "#000080", cursor: "pointer" }}
+        <Tooltip title="View Detailed Trip Analytics">
+          <div
             onClick={(e) => {
               e.stopPropagation();
               setActionTrip(r);
               setDrawerOpen(true);
             }}
+            className="group cursor-pointer flex items-center gap-2"
           >
-            {r.trip_code}
-          </span>
+            <div className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full font-mono text-[11px] font-extrabold tracking-tight border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+              {r.trip_code}
+            </div>
+          </div>
         </Tooltip>
       ),
     },
     {
-      title: "User",
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Customer Details</span>,
+      width: 200,
       render: (_, r) => (
-        <div>
-          <div>
-            {" "}
-            <UserOutlined style={{ marginRight: 6 }} />
-            {r.user_name}
+        <div className="flex items-center gap-3">
+          <Avatar
+            className="flex-shrink-0 bg-gradient-to-tr from-amber-400 to-orange-300 border-2 border-white shadow-sm"
+            icon={<UserOutlined />}
+          />
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-gray-800 tracking-tight leading-none">{r.user_name}</span>
+            <span className="text-[10px] text-gray-400 font-medium tracking-wider mt-1 flex items-center gap-1">
+              <GrPhone className="text-[9px]" /> {r.user_phone}
+            </span>
           </div>
-          <small className="flex items-center gap-1 text-gray-500">
-            <GrPhone className="text-xs" />
-            {r.user_phone}
-          </small>
         </div>
       ),
     },
     {
-      title: "Driver",
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Driver Partner</span>,
+      width: 200,
       render: (_, r) => {
         const hasDriver = isDriverAssigned(r);
-
         return (
-          <div>
-            <div className="flex items-center">
+          <div className="flex items-center gap-3">
+            <Avatar
+              className={`flex-shrink-0 border-2 border-white shadow-sm ${hasDriver ? 'bg-gradient-to-tr from-emerald-400 to-teal-300' : 'bg-gray-100'}`}
+              icon={hasDriver ? <CarOutlined /> : <UserAddOutlined className="text-gray-400" />}
+            />
+            <div className="flex flex-col">
               {hasDriver ? (
                 <>
-                  <CarOutlined style={{ marginRight: 6 }} />
-                  <span>{r.driver_name}</span>
+                  <span className="text-sm font-bold text-gray-800 tracking-tight leading-none">{r.driver_name}</span>
+                  <span className="text-[10px] text-gray-400 font-medium tracking-wider mt-1 flex items-center gap-1">
+                    <GrPhone className="text-[9px]" /> {r.driver_phone}
+                  </span>
                 </>
               ) : (
-                <span className="text-gray-400 text-xs italic">
-                  Not Assigned
-                </span>
+                <span className="text-xs font-medium text-gray-400 italic">Assign Pending...</span>
               )}
             </div>
-
-            {hasDriver && r.driver_phone && (
-              <small className="flex items-center gap-1 text-gray-500">
-                <GrPhone className="text-xs" />
-                {r.driver_phone}
-              </small>
-            )}
           </div>
         );
       },
     },
 
     {
-      title: "Route",
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Route Geography</span>,
+      width: 450,
       render: (_, r) => (
-        <div>
-          <div className="flex">
-            <EnvironmentOutlined style={{ marginRight: 6, color: "green" }} />
-            <p className="text-xs">
-              {r.pickup_address} → {r.drop_address}
-            </p>
+        <div className="flex flex-col gap-1 py-1">
+          <div className="flex items-center gap-2 group">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-4 ring-emerald-50 flex-shrink-0" />
+            <span className="text-[11px] font-bold text-gray-700 truncate max-w-[400px] leading-none">{r.pickup_address}</span>
           </div>
-
-          <div style={{ fontSize: 12, color: "#888" }}>
-            <p className="pl-5">
-              {r.distance_km} • ~{r.trip_duration_minutes}
-            </p>
+          <div className="ml-0.5 w-0.5 h-3 bg-gray-100" />
+          <div className="flex items-center gap-2 group">
+            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 ring-4 ring-rose-50 flex-shrink-0" />
+            <span className="text-[11px] font-bold text-gray-700 truncate max-w-[400px] leading-none">{r.drop_address}</span>
+          </div>
+          <div className="flex items-center gap-2 mt-1 pl-4">
+            <Tag className="m-0 border-gray-100 bg-gray-50 text-gray-500 text-[10px] font-bold rounded-lg px-2">
+              {r.distance_km} KM
+            </Tag>
+            <Tag className="m-0 border-indigo-100 bg-indigo-50 text-indigo-500 text-[10px] font-bold rounded-lg px-2">
+              ~{r.trip_duration_minutes} MINS
+            </Tag>
           </div>
         </div>
       ),
     },
     {
-      title: "Trip Status",
-      render: (_, r) => (
-        <Tag
-          color={
-            r.trip_status === "LIVE"
-              ? "green"
-              : r.trip_status === "COMPLETED"
-                ? "blue"
-                : r.trip_status === "REQUESTED"
-                  ? "yellow"
-                  : r.trip_status === "CANCELLED"
-                    ? "red"
-                    : r.trip_status === "MID-CANCELLED"
-                      ? "pink"
-                      : "orange"
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Trip Status</span>,
+      width: 140,
+      render: (_, r) => {
+        const getStatusColor = () => {
+          switch (r.trip_status) {
+            case "LIVE": return "from-emerald-500 to-teal-400 shadow-emerald-200";
+            case "COMPLETED": return "from-indigo-600 to-blue-500 shadow-blue-200 text-white";
+            case "REQUESTED": return "from-amber-400 to-orange-300 shadow-amber-200";
+            case "CANCELLED": return "from-rose-500 to-pink-500 shadow-rose-200 text-white";
+            default: return "from-slate-400 to-slate-500 shadow-slate-200 text-white";
           }
-        >
-          {r.trip_status}
-        </Tag>
+        };
+        return (
+          <div className={`inline-flex bg-gradient-to-r ${getStatusColor()} px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white shadow-lg`}>
+            {r.trip_status}
+          </div>
+        );
+      },
+    },
+    {
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Total Revenue</span>,
+      width: 120,
+      render: (_, r) => (
+        <div className="text-gray-800 font-extrabold text-sm tracking-tight">
+          ₹{Number(r.total_fare || 0).toLocaleString()}
+        </div>
       ),
     },
     {
-      title: "Fare",
-      render: (_, r) => <>₹{Number(r.base_fare || 0).toFixed(2)}</>,
-    },
-    {
-      title: "Service",
+      title: <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Service</span>,
+      width: 120,
       render: (_, r) => (
-        <Tag style={{ backgroundColor: "#ede9fe", color: "#5b21b6" }}>
+        <span className="bg-slate-50 text-slate-500 border border-slate-100 px-2.5 py-1 rounded-lg text-[10px] font-extrabold tracking-widest uppercase">
           {r.service_type}
-        </Tag>
+        </span>
       ),
     },
     {
-      title: "Type",
-      render: (_, r) => <Tag style={{ color: "#000080" }}>{r.ride_type}</Tag>,
-    },
-    {
-      title: "Actions",
+      title: "",
+      width: 80,
       render: (_, r) => (
-        <div className="flex gap-2">
-          <div>
-            <EyeOutlined
-              style={{ cursor: "pointer", fontSize: 16, color: "#000080" }}
+        <div className="flex items-center justify-end gap-1">
+          <Tooltip title="Deep Dive">
+            <Button
+              type="text"
+              icon={<EyeOutlined className="text-indigo-600 text-lg" />}
               onClick={(e) => {
                 e.stopPropagation();
                 setActionTrip(r);
                 setDrawerOpen(true);
               }}
+              className="hover:bg-indigo-50 rounded-full"
             />
-          </div>
-
-          <div>
+          </Tooltip>
+          {isSuperAdmin && (
             <Dropdown
               trigger={["click"]}
               menu={{
                 items: menuItems(r),
                 onClick: ({ key }) => {
                   setActionTrip(r);
-
                   if (key === "assign_driver") setActiveAction("ASSIGN_DRIVER");
                   if (key === "fare") setActiveAction("ADJUST_FARE");
                   if (key === "cancel") setActiveAction("CANCEL_TRIP");
@@ -366,9 +382,13 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
                 },
               }}
             >
-              <MoreOutlined style={{ cursor: "pointer" }} />
+              <Button
+                type="text"
+                icon={<MoreOutlined className="text-gray-400 text-xl" />}
+                className="hover:bg-gray-50 rounded-full"
+              />
             </Dropdown>
-          </div>
+          )}
         </div>
       ),
     },
@@ -628,12 +648,19 @@ const TripDetailsTable: React.FC<Props> = ({ data }) => {
   };
 
   return (
-    <div style={{ overflowX: "auto" }}>
+    <div className="flex-grow overflow-hidden h-full">
       <Table
         columns={columns}
         dataSource={data}
         rowKey="trip_id"
-        pagination={{ pageSize: 6 }}
+        pagination={{
+          pageSize: 6,
+          className: "!mb-0 !mt-4",
+          size: "small"
+        }}
+        scroll={{ x: 'max-content', y: 'calc(100vh - 425px)' }}
+        sticky
+        className="premium-table-container"
       />
 
       {/* Drawer */}

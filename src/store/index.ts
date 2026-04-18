@@ -8,7 +8,10 @@ import customerReducer from "./slices/customerSlice";
 import tripTransactionReducer from "./slices/tripTransactionSlice";
 import taxReducer from "./slices/taxSlice";
 import pricingCombinationReducer from "./slices/pricingCombinationSlice";
+import sosReducer from "./slices/sosSlice";
 import adminReducer from "./slices/adminSlice";
+import couponReducer from "./slices/couponSlice";
+import referralReducer from "./slices/referralSlice";
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +25,9 @@ export const store = configureStore({
     tax: taxReducer,
     pricingCombination: pricingCombinationReducer,
     admin: adminReducer,
+    sos: sosReducer,
+    coupon: couponReducer,
+    referral: referralReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

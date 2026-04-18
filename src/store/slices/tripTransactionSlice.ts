@@ -57,9 +57,6 @@ export const fetchTripTransaction = createAsyncThunk(
     async (tripId: string, { rejectWithValue }) => {
         try {
             const response = await axiosIns.get(`/api/triptransactions/bytripid/${tripId}`);
-            // const response = await axiosIns.get(`/api/triptransactions/bytripcode/${tripId}`);
-            // The response structure is { total: number, transactions: TripTransactionEvent[] }
-            console.log("response.data", response.data.data);
             return response.data?.data || response.data;
         } catch (err: any) {
             return rejectWithValue(
