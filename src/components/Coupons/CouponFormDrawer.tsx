@@ -121,7 +121,7 @@ const CouponFormDrawer: React.FC<CouponFormDrawerProps> = ({
             type="primary"
             onClick={() => form.submit()}
             loading={loading}
-            className="rounded-full h-11 px-10 font-bold bg-gradient-to-r from-blue-600 to-indigo-600 border-none flex items-center gap-2"
+            className="rounded-full h-11 px-10 font-bold !bg-gradient-to-r !from-blue-600 !to-indigo-600 border-none flex items-center gap-2"
           >
             {initialValues ? "Update Promotion" : "Publish Promotion"}
           </Button>

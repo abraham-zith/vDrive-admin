@@ -80,7 +80,7 @@ const ReferralFormDrawer: React.FC<ReferralFormDrawerProps> = ({
             type="primary"
             onClick={() => form.submit()}
             loading={loading}
-            className="rounded-full h-11 px-10 font-bold bg-gradient-to-r from-amber-500 to-orange-500 border-none flex items-center gap-2"
+            className="rounded-full h-11 px-10 font-bold !bg-gradient-to-r !from-amber-500 !to-orange-500 border-none flex items-center gap-2"
           >
             {initialValues ? "Update Rule" : "Create Rule"}
           </Button>

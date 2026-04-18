@@ -151,7 +151,7 @@ const TaxFormDrawer: React.FC<TaxFormDrawerProps> = ({
             onClick={() => form.submit()}
             loading={loading}
             disabled={!showPreview}
-            className="rounded-full h-11 px-10 font-bold bg-gradient-to-r from-indigo-600 to-violet-600 border-none flex items-center gap-2"
+            className="rounded-full h-11 px-10 font-bold !bg-gradient-to-r !from-indigo-600 !to-violet-600 border-none flex items-center gap-2"
           >
             {initialValues ? "Apply Revisions" : "Save Tax Rule"}
           </Button>
