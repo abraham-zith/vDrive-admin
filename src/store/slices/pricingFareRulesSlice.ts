@@ -19,6 +19,10 @@ export interface PricingFareRule {
   hotspot_name: string | null;
   multiplier: number | null;
   pincode: string | null;
+  extra_km_step: number;
+  extra_km_price: number;
+  extra_km_start_multiplier: number;
+  extra_km_checkpoints?: Array<{ id: string; multiplier: number; sort_order: number }>;
   time_slots?: DriverTimeSlot[];
 }
 
@@ -151,6 +155,10 @@ export const createPricingRuleWithSlots = createAsyncThunk(
       is_hotspot: boolean;
       hotspot_id?: string | null;
       multiplier?: number | null;
+      extra_km_step?: number;
+      extra_km_price?: number;
+      extra_km_start_multiplier?: number;
+      extra_km_checkpoints?: Array<{ multiplier: number; sort_order: number }>;
       time_slots: Array<{
         driver_types: string;
         day: string;
@@ -192,6 +200,10 @@ export const updatePricingRuleWithSlots = createAsyncThunk(
         is_hotspot?: boolean;
         hotspot_id?: string | null;
         multiplier?: number | null;
+        extra_km_step?: number;
+        extra_km_price?: number;
+        extra_km_start_multiplier?: number;
+      extra_km_checkpoints?: Array<{ multiplier: number; sort_order: number }>;
         time_slots?: Array<{
           driver_types: string;
           day: string;

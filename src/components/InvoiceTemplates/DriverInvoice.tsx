@@ -35,9 +35,9 @@ const DriverInvoice: React.FC<Props> = ({ isOpen, onClose, trip }) => {
           Ride Earnings Summary
         </p>
 
-        {/* Rider Info */}
+        {/* Customer Info */}
         <div className="mb-5">
-          <h2 className="font-semibold mb-2 text-gray-700">Rider</h2>
+          <h2 className="font-semibold mb-2 text-gray-700">Customer</h2>
           <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border">
             <IoPersonOutline size={40} className="text-gray-600" />
             <div className="text-sm">

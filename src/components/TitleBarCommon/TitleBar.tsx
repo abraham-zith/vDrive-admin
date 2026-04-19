@@ -3,6 +3,8 @@ import React from "react";
 interface TitleBarProps {
   title: string;
   description?: string;
+  icon?: React.ReactNode;
+  iconBgColor?: string;
   extraContent?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
@@ -13,25 +15,36 @@ const TitleBar: React.FC<TitleBarProps> = ({
   extraContent,
   children,
   description,
+  icon,
+  iconBgColor = "bg-blue-600",
   className,
 }) => {
   return (
-    <div className="w-full h-full flex flex-col gap-2">
-      <div className="flex justify-between items-center p-4 bg-white border-b border-gray-300">
-        <div>
-          <p className="font-bold text-2xl">{title}</p>
-          {description && (
-            <p className="text-sm text-gray-600">{description}</p>
+    <div className="w-full h-full flex flex-col bg-white">
+      <div className="flex justify-between items-center py-4 px-6 bg-white border-b border-gray-200">
+        <div className="flex items-center gap-4">
+          {icon && (
+            <div className={`flex items-center justify-center w-10 h-10 ${iconBgColor} rounded-xl`}>
+              <div className="text-white text-xl flex items-center justify-center">
+                {icon}
+              </div>
+            </div>
           )}
+          <div className="flex flex-col gap-0.5">
+            <h1 className="font-black text-xl text-slate-800 tracking-tight leading-none">{title}</h1>
+            {description && (
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{description}</p>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center space-x-2">{extraContent}</div>
+        <div className="flex items-center space-x-3 ">{extraContent}</div>
       </div>
       <div
         className={
           className?.length
             ? className
-            : "w-full h-full relative overflow-hidden"
+            : "w-full h-full relative overflow-hidden px-4 py-2 "
         }
       >
         {children}
