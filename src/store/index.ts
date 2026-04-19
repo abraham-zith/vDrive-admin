@@ -4,9 +4,16 @@ import locationReducer from "./slices/locationSlice";
 import tripReducer from "./slices/tripSlice";
 import pricingFareRulesReducer from "./slices/pricingFareRulesSlice";
 import hotspotReducer from "./slices/hotspotSlice";
+import customerReducer from "./slices/customerSlice";
+import tripTransactionReducer from "./slices/tripTransactionSlice";
+import taxReducer from "./slices/taxSlice";
+import pricingCombinationReducer from "./slices/pricingCombinationSlice";
+import sosReducer from "./slices/sosSlice";
 import adminReducer from "./slices/adminSlice";
 import driverReducer from "./slices/driverSlice";
 import sosReducer from "./slices/sosSlice";
+import couponReducer from "./slices/couponSlice";
+import referralReducer from "./slices/referralSlice";
 
 export const store = configureStore({
   reducer: {
@@ -15,9 +22,16 @@ export const store = configureStore({
     trips: tripReducer,
     pricingFareRules: pricingFareRulesReducer,
     hotspot: hotspotReducer,
+    customers: customerReducer,
+    tripTransaction: tripTransactionReducer,
+    tax: taxReducer,
+    pricingCombination: pricingCombinationReducer,
     admin: adminReducer,
     drivers: driverReducer,
     sos: sosReducer,
+    sos: sosReducer,
+    coupon: couponReducer,
+    referral: referralReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

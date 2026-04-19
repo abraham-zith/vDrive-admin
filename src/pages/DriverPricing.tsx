@@ -15,6 +15,7 @@ import DriverTimeSlotsAndPricing, {
   type UserTimeSlots,
 } from "../components/DriverPricing/DriverTimeSlotsAndPricing";
 import HotspotConfiguration from "../components/DriverPricing/HotspotConfiguration";
+import ExtraKmConfiguration, { type UiCheckpoint } from "../components/DriverPricing/ExtraKmConfiguration";
 import PricingPreview from "../components/DriverPricing/PricingPreview";
 import HotspotTypes from "../components/DriverPricing/HotspotTypes";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
@@ -44,6 +45,11 @@ const DriverPricing = () => {
   const [hotspotId, setHotspotId] = useState("");
   const [multiplier, setMultiplier] = useState(1);
 
+  const [extraKmStep, setExtraKmStep] = useState(5);
+  const [extraKmPrice, setExtraKmPrice] = useState(10);
+  const [extraKmStartMultiplier, setExtraKmStartMultiplier] = useState(1);
+  const [extraKmCheckpoints, setExtraKmCheckpoints] = useState<UiCheckpoint[]>([]);
+
   // Store initial names from API response for edit mode
   const [initialCountryName, setInitialCountryName] = useState<string>();
   const [initialStateName, setInitialStateName] = useState<string>();
@@ -65,6 +71,14 @@ const DriverPricing = () => {
           setHotspotEnabled(data.is_hotspot);
           setHotspotId(data.hotspot_id || "");
           setMultiplier(Number(data.multiplier) || 1);
+          setExtraKmStep(Number(data.extra_km_step) || 5);
+          setExtraKmPrice(Number(data.extra_km_price) || 10);
+          setExtraKmStartMultiplier(Number(data.extra_km_start_multiplier) || 1);
+          setExtraKmCheckpoints(
+            (data.extra_km_checkpoints ?? [])
+              .sort((a: any, b: any) => a.sort_order - b.sort_order)
+              .map((c: any, i: number) => ({ uid: i, multiplier: Number(c.multiplier) }))
+          );
 
           // Store initial names for display (professional approach)
           setInitialCountryName(data.country_name);
@@ -146,6 +160,10 @@ const DriverPricing = () => {
     setHotspotEnabled(false);
     setHotspotId("");
     setMultiplier(1);
+    setExtraKmStep(5);
+    setExtraKmPrice(10);
+    setExtraKmStartMultiplier(1);
+    setExtraKmCheckpoints([]);
     setTimeSlots({
       "normal-driver": [
         {
@@ -225,6 +243,10 @@ const DriverPricing = () => {
         is_hotspot: hotspotEnabled,
         hotspot_id: hotspotEnabled ? hotspotId : null,
         multiplier: hotspotEnabled ? multiplier : null,
+        extra_km_step: extraKmStep,
+        extra_km_price: extraKmPrice,
+        extra_km_start_multiplier: extraKmStartMultiplier,
+        extra_km_checkpoints: extraKmCheckpoints.map((c, i) => ({ multiplier: c.multiplier, sort_order: i })),
         time_slots: timeSlotsArray,
       };
 
@@ -310,6 +332,10 @@ const DriverPricing = () => {
         is_hotspot: hotspotEnabled,
         hotspot_id: hotspotEnabled ? hotspotId : null,
         multiplier: hotspotEnabled ? multiplier : null,
+        extra_km_step: extraKmStep,
+        extra_km_price: extraKmPrice,
+        extra_km_start_multiplier: extraKmStartMultiplier,
+        extra_km_checkpoints: extraKmCheckpoints.map((c, i) => ({ multiplier: c.multiplier, sort_order: i })),
         time_slots: timeSlotsArray,
       };
 
@@ -347,9 +373,10 @@ const DriverPricing = () => {
   return (
     <div className="h-full w-full">
       <div className="h-full flex justify-center px-0">
-        <div className="w-full flex flex-col min-h-screen gap-2">
+        <div className="w-full flex flex-col h-screen overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
           <TitleBar
-            className="w-full h-full "
+            className="w-full flex-1 min-h-0 flex flex-col gap-2"
             title={id ? "Edit Pricing" : "Add Pricing"}
             description="Configure pricing for different user types and time slots"
             extraContent={
@@ -364,7 +391,7 @@ const DriverPricing = () => {
               </div>
             }
           >
-            <div className="w-full">
+            <div className="w-full shrink-0">
               <Segmented<string>
                 options={[
                   {
@@ -385,9 +412,9 @@ const DriverPricing = () => {
               />
             </div>
             {activeTab === "configuration" ? (
-              <div className="w-full">
-                <div className="grid grid-cols-1 lg:grid-cols-[450px_1fr] gap-4 lg:gap-6 mt-2">
-                  <div className="flex flex-col gap-4 min-w-0">
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-[450px_1fr] gap-4 lg:gap-6 mt-2 h-full overflow-hidden">
+                  <div className="flex flex-col gap-4 min-w-0 overflow-y-auto pb-2 h-full">
                     <LocationConfiguration
                       country={country}
                       setCountry={setCountry}
@@ -410,6 +437,16 @@ const DriverPricing = () => {
                       multiplier={multiplier}
                       setMultiplier={setMultiplier}
                     />
+                    <ExtraKmConfiguration
+                      extraKmStep={extraKmStep}
+                      setExtraKmStep={setExtraKmStep}
+                      extraKmPrice={extraKmPrice}
+                      setExtraKmPrice={setExtraKmPrice}
+                      extraKmStartMultiplier={extraKmStartMultiplier}
+                      setExtraKmStartMultiplier={setExtraKmStartMultiplier}
+                      extraKmCheckpoints={extraKmCheckpoints}
+                      setExtraKmCheckpoints={setExtraKmCheckpoints}
+                    />
                   </div>
                   <div className="flex flex-col h-full overflow-auto">
                     <DriverTimeSlotsAndPricing
@@ -427,10 +464,11 @@ const DriverPricing = () => {
               <HotspotTypes />
             )}
           </TitleBar>
+          </div>
 
-          <div className="w-full mt-1">
+          <div className="shrink-0">
             {activeTab === "configuration" ? (
-              <Card className="w-full mt-auto">
+              <Card className="w-full rounded-none border-t">
                 <div className="flex flex-col sm:flex-row justify-end gap-2">
                   <Button
                     className="w-full sm:w-auto"
@@ -461,6 +499,7 @@ const DriverPricing = () => {
           </div>
         </div>
       </div>
+
       <Drawer
         title="Pricing Preview"
         open={isDrawerOpen}
@@ -479,6 +518,10 @@ const DriverPricing = () => {
             hotspotId={hotspotId}
             multiplier={multiplier}
             globalPrice={globalPrice}
+            extraKmStep={extraKmStep}
+            extraKmPrice={extraKmPrice}
+            extraKmStartMultiplier={extraKmStartMultiplier}
+            extraKmCheckpoints={extraKmCheckpoints}
           />
         </div>
       </Drawer>

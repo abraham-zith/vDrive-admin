@@ -49,11 +49,15 @@ interface AdvancedFiltersProps {
   filterFields: FilterField[];
   applyFilters: (values: FilterValues) => void;
   initialValues?: FilterValues;
+  isStandalone?: boolean;
+  onClear?: () => void;
 }
 
 const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
   filterFields,
   applyFilters,
+  onClear,
+  isStandalone = false,
   //initialValues = {},
 }) => {
   const [activeFilterPanel, setActiveFilterPanel] = useState<string[]>([]);
@@ -61,7 +65,8 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
   const handleClearAllFilters = () => {
     filterForm.resetFields();
-    applyFilters({});
+    applyFilters(filterForm.getFieldsValue());
+    if (onClear) onClear();
   };
 
   const onFilterValuesChange = (
@@ -176,12 +181,55 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
     filterForm.setFieldsValue(computedInitialValues);
   }, [computedInitialValues, filterForm]);
 
+  const FilterFormContent = (
+    <Form
+      form={filterForm}
+      name="advanced_filters"
+      onValuesChange={onFilterValuesChange}
+      layout="vertical"
+      initialValues={computedInitialValues}
+    >
+      <Row gutter={[16, 16]} align="bottom">
+        {filterFields.map((field) => (
+          <Col xs={24} sm={12} md={5} key={field.name}>
+            <Form.Item
+              name={field.type === "range" ? undefined : field.name}
+              label={<span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{field.label}</span>}
+              style={{ marginBottom: 0 }}
+            >
+              {renderField(field)}
+            </Form.Item>
+          </Col>
+        ))}
+        {isStandalone && (
+          <Col xs={24} sm={12} md={4}>
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Button 
+                type="link" 
+                size="small" 
+                onClick={handleClearAllFilters} 
+                danger 
+                className="font-black uppercase tracking-wider text-[10px] hover:text-rose-600 transition-colors h-[40px] flex items-center"
+              >
+                Clear Filters
+              </Button>
+            </Form.Item>
+          </Col>
+        )}
+      </Row>
+    </Form>
+  );
+
+  if (isStandalone) {
+    return FilterFormContent;
+  }
+
   return (
     <Collapse
       activeKey={activeFilterPanel}
       onChange={(key) => setActiveFilterPanel(Array.isArray(key) ? key : [key])}
-      style={{ backgroundColor: "white" }}
-      //marginBottom: 24,
+      ghost
+      size="small"
       expandIconPosition="end"
     >
       <Panel
@@ -190,8 +238,8 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
             <FilterOutlined />
             <span
               style={{
-                fontSize: "1.125rem",
-                lineHeight: "1.75rem",
+                fontSize: "1rem",
+                lineHeight: "1.5rem",
                 fontWeight: 600,
               }}
             >
@@ -214,28 +262,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           </div>
         }
       >
-        <Form
-          form={filterForm}
-          name="advanced_filters"
-          onValuesChange={onFilterValuesChange}
-          layout="vertical"
-          initialValues={computedInitialValues}
-
-          //initialValues={initialValues}
-        >
-          <Row gutter={[16, 16]}>
-            {filterFields.map((field) => (
-              <Col xs={24} sm={12} md={6} key={field.name}>
-                <Form.Item
-                  name={field.type === "range" ? undefined : field.name}
-                  label={field.label}
-                >
-                  {renderField(field)}
-                </Form.Item>
-              </Col>
-            ))}
-          </Row>
-        </Form>
+        {FilterFormContent}
       </Panel>
     </Collapse>
   );

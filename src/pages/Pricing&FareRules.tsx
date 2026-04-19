@@ -260,6 +260,12 @@ const PricingAndFareRules: React.FC = () => {
                 hotspotId={previewRule.hotspot_name || ""}
                 multiplier={Number(previewRule.multiplier || 1)}
                 timeSlots={transformSlotsForPreview(previewRule)}
+                extraKmStep={Number(previewRule.extra_km_step) || 5}
+                extraKmPrice={Number(previewRule.extra_km_price) || 10}
+                extraKmStartMultiplier={Number(previewRule.extra_km_start_multiplier) || 1}
+                extraKmCheckpoints={(previewRule.extra_km_checkpoints ?? [])
+                  .sort((a: any, b: any) => a.sort_order - b.sort_order)
+                  .map((c: any, i: number) => ({ uid: i, multiplier: Number(c.multiplier) }))}
               />
             </div>
           )}
