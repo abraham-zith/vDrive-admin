@@ -2,7 +2,10 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export interface SosAlert {
   sos_id: string;
-  driver_id: string;
+  driver_id?: string;
+  user_id?: string;
+  user_type?: string;
+  name?: string;
   driver_name?: string;
   trip_id?: string;
   latitude?: number;

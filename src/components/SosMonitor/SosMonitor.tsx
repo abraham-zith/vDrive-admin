@@ -66,7 +66,7 @@ const SosMonitor: React.FC = () => {
                 console.log("SOS TRIGGERED", data.data);
                 dispatch(addSosAlert({
                     sos_id: data.data.id || data.data.sos_id,
-                    user_id: data.data.user_id || data.data.user_id,
+                    user_id: data.data.user_id,
                     user_type: data.data.user_type,
                     trip_id: data.data.trip_id,
                     status: 'ACTIVE',
@@ -138,7 +138,7 @@ const SosMonitor: React.FC = () => {
                                 ]}
                             >
                                 <List.Item.Meta
-                                    title={<Text strong>{item.user_type === 'driver' ? 'Driver' : 'User'} ID: {item.user_id.substring(0, 8)}...</Text>}
+                                    title={<Text strong>{item.user_type === 'driver' ? 'Driver' : 'User'} ID: {item.user_id?.substring(0, 8)}...</Text>}
                                     description={<Text type="secondary">{new Date(item.created_at).toLocaleTimeString()}</Text>}
                                 />
                             </List.Item>
