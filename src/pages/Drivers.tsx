@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button, Spin } from "antd";
 import { IoMdRefresh } from "react-icons/io";
 import DriverTable from "../components/DriverTable/DriverTable";
@@ -8,47 +8,13 @@ import AdvancedFilters from "../components/AdvancedFilters/AdvanceFilters";
 import type { FilterField } from "../components/AdvancedFilters/AdvanceFilters";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchDrivers } from "../store/slices/driverSlice";
-import type { Driver, DriverRole, DriverStatus } from "../store/slices/driverSlice";
+import type { Driver, DriverStatus } from "../store/slices/driverSlice";
 
 export interface Filters {
   status: DriverStatus[];
-  role: DriverRole[];
+  plan: string[];
   joined_at: Date | null;
 }
-
-const fields: FilterField[] = [
-  {
-    name: "status",
-    label: "Status",
-    type: "select",
-    options: [
-      { value: "active", label: "Active" },
-      { value: "inactive", label: "Inactive" },
-      { value: "suspended", label: "Suspended" },
-      { value: "pending", label: "Pending" },
-      { value: "blocked", label: "Blocked" },
-    ],
-  },
-  {
-    name: "role",
-    label: "Role",
-    type: "select",
-    options: [
-      { value: "premium", label: "Premium" },
-      { value: "elite", label: "Elite" },
-      { value: "normal", label: "Normal" },
-    ],
-  },
-  {
-    name: "rating",
-    label: "Rating",
-    type: "slider",
-    min: 0,
-    max: 5,
-    step: 0.1,
-  },
-  { name: "joined", label: "Joined", type: "date" },
-];
 
 const Drivers = () => {
   const dispatch = useAppDispatch();
@@ -63,8 +29,68 @@ const Drivers = () => {
     setFilteredData(Array.isArray(DATA) ? DATA : []);
   }, [DATA]);
 
+  // Dynamic filter fields based on current driver data
+  const planOptions = useMemo(() => {
+    const plans = new Set<string>();
+    DATA.forEach(d => {
+      if (d.active_subscription?.plan_name) {
+        plans.add(d.active_subscription.plan_name);
+      }
+    });
+    return Array.from(plans).sort().map(p => ({ value: p, label: p }));
+  }, [DATA]);
+
+  const fields: FilterField[] = useMemo(() => [
+    {
+      name: "search",
+      label: "Search Driver",
+      type: "input",
+    },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "active", label: "Active" },
+        { value: "inactive", label: "Inactive" },
+        { value: "suspended", label: "Suspended" },
+        { value: "pending", label: "Pending" },
+        { value: "blocked", label: "Blocked" },
+      ],
+    },
+    {
+      name: "plan",
+      label: "Subscription Plan",
+      type: "select",
+      options: planOptions,
+    },
+    {
+      name: "rating",
+      label: "Rating",
+      type: "slider",
+      min: 0,
+      max: 5,
+      step: 0.1,
+    },
+    { name: "joined", label: "Joined", type: "date" },
+  ], [planOptions]);
+
   const applyFilters = (values: Record<string, any>) => {
     let tempData = DATA;
+
+    // Search by Name, System ID, or vDrive ID
+    if (values?.search) {
+      const searchText = values.search.toLowerCase();
+      tempData = tempData.filter((d) => {
+        return (
+          d.full_name?.toLowerCase().includes(searchText) ||
+          d.driver_id?.toLowerCase().includes(searchText) ||
+          d.vdrive_id?.toLowerCase().includes(searchText) ||
+          d.id?.toLowerCase().includes(searchText)
+        );
+      });
+    }
+
     if (values?.status?.length > 0) {
       const selectedStatuses = Array.isArray(values?.status)
         ? values?.status
@@ -73,12 +99,17 @@ const Drivers = () => {
         selectedStatuses.includes(user?.status),
       );
     }
-    if (values?.role?.length > 0) {
-      const selectedRole = Array.isArray(values?.role)
-        ? values?.role
-        : [values?.role];
-      tempData = tempData.filter((user) => selectedRole.includes(user?.role));
+    
+    // Subscription Plan Filter
+    if (values?.plan?.length > 0) {
+      const selectedPlans = Array.isArray(values?.plan)
+        ? values?.plan
+        : [values?.plan];
+      tempData = tempData.filter((user) =>
+        selectedPlans.includes(user?.active_subscription?.plan_name),
+      );
     }
+
     if (values?.joined) {
       tempData = tempData.filter((user) =>
         dayjs(user?.created_at).isSame(values?.joined, "day"),

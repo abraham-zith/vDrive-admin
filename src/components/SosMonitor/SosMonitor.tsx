@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { addSosAlert, updateSosLocation, resolveSosAlert } from "../../store/slices/sosSlice";
+import { addSosAlert, updateSosLocation, resolveSosAlert, setSosAlerts } from "../../store/slices/sosSlice";
 import { useSocket } from "../../hooks/useSocket";
 import { Card, Button, Modal, List, Badge, Typography } from "antd";
 import { GoogleMap, Marker, useLoadScript } from "@react-google-maps/api";
-import { WarningOutlined, EyeOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import { WarningOutlined, EyeOutlined, CheckCircleOutlined, LoadingOutlined } from "@ant-design/icons";
+import * as sosApi from "../../api/sosApi";
+import { message } from "antd";
 
 const { Text } = Typography;
 
@@ -21,10 +23,39 @@ const SosMonitor: React.FC = () => {
     const { socket } = useSocket();
     const [selectedSosId, setSelectedSosId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
 
     const { isLoaded } = useLoadScript({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAP_API || "",
     });
+
+  useEffect(() => {
+    const fetchActiveSos = async () => {
+      try {
+        const response = await sosApi.getActiveSos();
+        if (response.success && Array.isArray(response.data)) {
+          // Format data to match SosAlert interface if needed
+          const alerts = response.data.map((item: any) => ({
+             sos_id: item.id || item.sos_id,
+             driver_id: item.user_id || item.driver_id,
+             trip_id: item.trip_id,
+             status: 'ACTIVE',
+             created_at: item.created_at,
+             latitude: item.latitude,
+             longitude: item.longitude,
+             driver_name: item.user?.full_name || item.driver?.full_name,
+             pickup_address: item.trip?.pickup_address,
+             trip_status: item.trip?.status
+          }));
+          dispatch(setSosAlerts(alerts));
+        }
+      } catch (error) {
+        console.error("Failed to fetch active SOS alerts:", error);
+      }
+    };
+
+    fetchActiveSos();
+  }, [dispatch]);
 
     useEffect(() => {
         if (!socket) return;
@@ -35,7 +66,7 @@ const SosMonitor: React.FC = () => {
                 console.log("SOS TRIGGERED", data.data);
                 dispatch(addSosAlert({
                     sos_id: data.data.id || data.data.sos_id,
-                    user_id: data.data.user_id,
+                    user_id: data.data.user_id || data.data.user_id,
                     user_type: data.data.user_type,
                     trip_id: data.data.trip_id,
                     status: 'ACTIVE',
@@ -43,7 +74,7 @@ const SosMonitor: React.FC = () => {
                     latitude: data.data.latitude || 0,
                     longitude: data.data.longitude || 0,
                     // Enriched data
-                    name: data.data.user?.full_name,
+                    name: data.data.user?.full_name || data.data.user?.full_name,
                     pickup_address: data.data.trip?.pickup_address,
                     trip_status: data.data.trip?.status
                 }));
@@ -122,10 +153,30 @@ const SosMonitor: React.FC = () => {
                 onCancel={() => setIsModalOpen(false)}
                 footer={[
                     <Button key="close" onClick={() => setIsModalOpen(false)}>Close Monitor</Button>,
-                    <Button key="resolve" type="primary" icon={<CheckCircleOutlined />} onClick={() => {
-                        // Admin resolve (optional hook)
-                        setIsModalOpen(false);
-                    }}>Acknowledge</Button>
+                    <Button 
+            key="resolve" 
+            type="primary" 
+            danger
+            icon={isResolving ? <LoadingOutlined /> : <CheckCircleOutlined />} 
+            loading={isResolving}
+            onClick={async () => {
+                          if (!selectedSosId) return;
+               setIsResolving(true);
+               try {
+                 await sosApi.resolveSos(selectedSosId);
+                 message.success("SOS Alert marked as RESOLVED");
+                            setIsModalOpen(false);
+                           setSelectedSosId(null);
+               } catch (error) {
+                 console.error("Failed to resolve SOS:", error);
+                 message.error("Failed to resolve SOS alert. Please try again.");
+               } finally {
+                 setIsResolving(false);
+               }
+            }}
+          >
+            Mark as Resolved
+          </Button>
                 ]}
                 width={800}
             >

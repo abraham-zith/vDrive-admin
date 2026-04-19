@@ -3,14 +3,13 @@ import { useRef, useState } from "react";
 import {
   Table,
   Tag,
-  Progress,
-  Rate,
   Avatar,
   Tooltip,
   Button,
   Input,
   Space,
   Dropdown,
+  AutoComplete,
 } from "antd";
 import dayjs from "dayjs";
 import { messageApi as message } from "../../utilities/antdStaticHolder";
@@ -25,6 +24,7 @@ import {
   EditOutlined,
   StopOutlined,
   ClockCircleOutlined,
+  StarFilled,
 } from "@ant-design/icons";
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import type { InputRef, TableColumnType } from "antd";
@@ -48,10 +48,10 @@ const DriverTable = ({ data }: DriverTableProps) => {
 
   const selectedDriver = selectedDriverId
     ? data.find(
-        (d) =>
-          String(d.driverId || d.driver_id || "") === selectedDriverId ||
-          (d.id && String(d.id) === selectedDriverId),
-      )
+      (d) =>
+        String(d.driverId || d.driver_id || "") === selectedDriverId ||
+        (d.id && String(d.id) === selectedDriverId),
+    )
     : null;
 
   const openDrawer = (driver: Driver) => {
@@ -104,49 +104,73 @@ const DriverTable = ({ data }: DriverTableProps) => {
     dataIndex: DataIndex,
     copyKey?: keyof Driver,
     additionalSearchFields: (keyof Driver)[] = [],
-  ): TableColumnType<Driver> => ({
-    filterDropdown: ({
-      setSelectedKeys,
-      selectedKeys,
-      confirm,
-      clearFilters,
-    }) => (
-      <div className="p-4" onKeyDown={(e) => e.stopPropagation()}>
-        <Input
-          ref={searchInput}
-          placeholder={`Search ${String(dataIndex)}`}
-          value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
-          onPressEnter={() =>
-            handleSearch(selectedKeys as string[], confirm, dataIndex)
-          }
-          style={{ marginBottom: 8, display: "block" }}
-        />
-        <Space>
-          <Button
-            type="primary"
-            onClick={() =>
-              handleSearch(selectedKeys as string[], confirm, dataIndex)
+  ): TableColumnType<Driver> => {
+    // Generate unique suggestions for this column based on all data
+    const suggestions = Array.from(
+      new Set(
+        data.flatMap((record) => {
+          const primaryVal = record[dataIndex]?.toString() || "";
+          const extraVals = additionalSearchFields.map((f) => record[f]?.toString() || "");
+          return [primaryVal, ...extraVals].filter((v) => v.trim() !== "");
+        })
+      )
+    )
+      .sort()
+      .map((val) => ({ value: val }));
+
+    return {
+      filterDropdown: ({
+        setSelectedKeys,
+        selectedKeys,
+        confirm,
+        clearFilters,
+      }) => (
+        <div className="p-4" onKeyDown={(e) => e.stopPropagation()}>
+          <AutoComplete
+            options={suggestions}
+            style={{ marginBottom: 8, display: "block" }}
+            value={selectedKeys[0] as string}
+            onSelect={(value) => {
+              setSelectedKeys([value]);
+              handleSearch([value], confirm, dataIndex);
+            }}
+            onChange={(value) => setSelectedKeys(value ? [value] : [])}
+            filterOption={(inputValue, option) =>
+              option!.value.toUpperCase().includes(inputValue.toUpperCase())
             }
-            icon={<SearchOutlined />}
-            size="small"
-            style={{ width: 90 }}
           >
-            Search
-          </Button>
-          <Button
-            type="link"
-            onClick={() => clearFilters && handleReset(clearFilters, confirm)}
-            size="small"
-            style={{ width: 90 }}
-          >
-            Reset
-          </Button>
-        </Space>
-      </div>
-    ),
+            <Input
+              ref={searchInput}
+              placeholder={`Search ${String(dataIndex)}`}
+              onPressEnter={() =>
+                handleSearch(selectedKeys as string[], confirm, dataIndex)
+              }
+            />
+          </AutoComplete>
+          <Space>
+            <Button
+              type="primary"
+              onClick={() =>
+                handleSearch(selectedKeys as string[], confirm, dataIndex)
+              }
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Search
+            </Button>
+            <Button
+              type="link"
+              onClick={() => clearFilters && handleReset(clearFilters, confirm)}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+          </Space>
+        </div>
+      ),
+
     filterIcon: (filtered: boolean) => (
       <SearchOutlined style={{ color: filtered ? "#1677ff" : undefined }} />
     ),
@@ -197,7 +221,8 @@ const DriverTable = ({ data }: DriverTableProps) => {
         content
       );
     },
-  });
+    };
+  };
   const columns: ColumnsType<Driver> = [
     {
       title: "Driver",
@@ -207,8 +232,8 @@ const DriverTable = ({ data }: DriverTableProps) => {
       ...getColumnSearchProps("full_name", "driver_id", ["vdrive_id", "id"]),
       render: (_, record) => (
         <div className="flex items-center gap-4 py-1">
-          <Avatar 
-            src={record.profilePicUrl || record.profile_pic_url} 
+          <Avatar
+            src={record.profilePicUrl || record.profile_pic_url}
             size={48}
             className="border-2 border-slate-100 shadow-sm"
           >
@@ -242,28 +267,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
       ),
     },
 
-    {
-      title: "Role",
-      dataIndex: "role",
-      key: "role",
-      minWidth: 120,
-      render: (role: string) => {
-        const colors: Record<string, string> = {
-          premium: "purple",
-          elite: "orange",
-          normal: "default",
-        };
-        return (
-          <Tag 
-            bordered={false} 
-            color={colors[role]} 
-            className="capitalize font-medium px-3 rounded-full"
-          >
-            {role}
-          </Tag>
-        );
-      },
-    },
+
     {
       title: "Status",
       dataIndex: "status",
@@ -278,9 +282,9 @@ const DriverTable = ({ data }: DriverTableProps) => {
           blocked: "error",
         };
         return (
-          <Tag 
-            bordered={false} 
-            color={colors[status]} 
+          <Tag
+            bordered={false}
+            color={colors[status]}
             className="capitalize font-medium px-3 rounded-full"
           >
             {status}
@@ -295,9 +299,9 @@ const DriverTable = ({ data }: DriverTableProps) => {
       render: (_, record) => {
         const plan = record.active_subscription;
         if (!plan) return <Tag color="default">No Plan</Tag>;
-        
+
         const isExpired = dayjs(plan.expiry_date).isBefore(dayjs());
-        
+
         return (
           <div className="flex flex-col gap-0.5">
             <Tag bordered={false} color={isExpired ? "error" : "success"} className="capitalize font-medium px-3 rounded-full w-fit">
@@ -313,14 +317,27 @@ const DriverTable = ({ data }: DriverTableProps) => {
     {
       title: "Rating",
       dataIndex: "rating",
-      minWidth: 160,
+      minWidth: 100,
       key: "rating",
-      render: (rating: number) => (
-        <div className="flex items-center gap-1">
-          <Rate disabled allowHalf value={rating} style={{ fontSize: 14 }} />
-          <span className="text-sm text-gray-600">{rating}</span>
-        </div>
-      ),
+      render: (rating: any) => {
+        const numericRating = Number(rating) || 0;
+        const isHigh = numericRating >= 4.5;
+        const isGood = numericRating >= 4.0;
+
+        return (
+          <Tooltip title={`${numericRating.toFixed(1)} / 5.0 Rating`}>
+            <div className={`
+              flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all duration-300 w-fit 
+              ${isHigh ? 'bg-amber-50 border-amber-100' : isGood ? 'bg-orange-50 border-orange-100' : 'bg-slate-50 border-slate-100'}
+            `}>
+              <StarFilled style={{ color: "#EAB308", fontSize: 13 }} />
+              <span className={`text-[13px] font-black tracking-tight ${isHigh ? 'text-amber-700' : isGood ? 'text-orange-700' : 'text-slate-600'}`}>
+                {numericRating.toFixed(1)}
+              </span>
+            </div>
+          </Tooltip>
+        );
+      },
     },
     {
       title: "Total Trips",
@@ -341,48 +358,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
       ),
     },
 
-    {
-      title: "Credits",
-      key: "credits",
-      minWidth: 180,
-      render: (_, record) => {
-        const balance = record.credit?.balance || 0;
-        const limit = record.credit?.limit || 1;
-        const percent = (balance / limit) * 100;
-        
-        let strokeColor = "#1677ff";
 
-        if (percent < 20) {
-          strokeColor = "#ff4d4f";
-        } else if (percent < 50) {
-          strokeColor = "#fa8c16";
-        } else {
-          strokeColor = "#52c41a";
-        }
-
-        return (
-          <div 
-            className="cursor-pointer group hover:bg-slate-50 p-2 rounded-md transition-all" 
-            onClick={() => openDrawer(record)}
-          >
-            <div className="flex justify-between text-[11px] font-bold mb-1">
-              <span className="text-slate-600">
-                ₹{balance.toLocaleString()} / ₹{limit.toLocaleString()}
-              </span>
-              <span style={{ color: strokeColor }}>{Math.round(percent)}%</span>
-            </div>
-            <Progress
-              percent={percent}
-              size="small"
-              showInfo={false}
-              strokeColor={strokeColor}
-              trailColor="#f1f5f9"
-              strokeWidth={6}
-            />
-          </div>
-        );
-      },
-    },
     {
       title: "Joined",
       dataIndex: "created_at",
@@ -391,10 +367,10 @@ const DriverTable = ({ data }: DriverTableProps) => {
       render: (date: string) =>
         date
           ? new Date(date).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
           : "N/A",
     },
 

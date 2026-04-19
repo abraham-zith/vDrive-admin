@@ -1,18 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import {
   Plus,
   Search,
-  CheckCircle,
-  XCircle,
-  Edit2,
   Trash2,
   X,
   Zap,
-  Trophy,
+  ChevronDown,
+  Users,
+  Edit3,
+  Power,
+  Flame,
+  TrendingUp,
+  History,
+  CheckCircle2,
   Crown,
+  Sparkles,
+  ArrowUpRight,
+  MoreVertical,
+  Filter,
+  CreditCard
 } from 'lucide-react';
 import axios from '../api/axios';
-import { ClockCircleOutlined } from '@ant-design/icons';
+import { messageApi, modalApi, notificationApi } from '../utilities/antdStaticHolder';
+import { Checkbox, Select, Drawer, Button, Avatar, Tag, Dropdown } from 'antd';
+import { useNavigate } from 'react-router-dom';
+
+const PromotionsTab = lazy(() => import('./Promotions'));
 
 /* ================= TYPES ================= */
 
@@ -20,26 +33,70 @@ interface RechargePlan {
   id: number;
   planName: string;
   description: string;
-  rideLimit: any;
   validityDays: any;
   dailyPrice: number;
   weeklyPrice: number;
   monthlyPrice: number;
   features: any;
   isActive: boolean;
+  tag?: string; // New field for badges
 }
+
+/* ================= UTILS ================= */
+
+
+
+const CountdownTimer: React.FC<{ expiryDate: string }> = ({ expiryDate }) => {
+  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const difference = new Date(expiryDate).getTime() - new Date().getTime();
+      if (difference > 0 && difference < 86400000) { // < 24 hours
+        setTimeLeft({
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        });
+      } else {
+        setTimeLeft(null);
+      }
+    };
+
+    calculateTime();
+    const timer = setInterval(calculateTime, 1000);
+    return () => clearInterval(timer);
+  }, [expiryDate]);
+
+  if (!timeLeft) return null;
+
+  return (
+    <div className="flex items-center gap-1 bg-rose-600 text-white px-1.5 py-0.5 rounded text-[9px] font-bold font-mono animate-pulse shadow-sm border border-rose-500 whitespace-nowrap">
+      <span>{String(timeLeft.hours).padStart(2, '0')}</span>
+      <span className="opacity-50">:</span>
+      <span>{String(timeLeft.minutes).padStart(2, '0')}</span>
+      <span className="opacity-50">:</span>
+      <span>{String(timeLeft.seconds).padStart(2, '0')}</span>
+    </div>
+  );
+};
 
 /* ================= COMPONENT ================= */
 
 const RechargePlanPage: React.FC = () => {
+  const navigate = useNavigate();
   const [plans, setPlans] = useState<RechargePlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"plans" | "subscriptions">("plans");
+  const [activeTab, setActiveTab] = useState<"plans" | "subscriptions" | "promotions">("plans");
   const [activeSubscriptions, setActiveSubscriptions] = useState<any[]>([]);
   const [loadingActiveSubs, setLoadingActiveSubs] = useState(false);
+  const [expandedPlanId, setExpandedPlanId] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form State
   const [formData, setFormData] = useState({
@@ -51,14 +108,23 @@ const RechargePlanPage: React.FC = () => {
     monthlyPrice: '',
     features: [] as string[],
     isActive: true,
+    tag: '',
   });
+
+  const [subSearchTerm, setSubSearchTerm] = useState("");
+  const [subFilter, setSubFilter] = useState<string>("ALL");
+  const [selectedPlanIds, setSelectedPlanIds] = useState<number[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyPlanName, setHistoryPlanName] = useState("");
 
   /* ---- Fetch Plans ---- */
   const fetchPlans = async () => {
     try {
       setLoading(true);
       const res = await axios.get('/api/recharge-plans');
-      
+
       // Dev Logging
       if (import.meta.env.DEV) {
         console.group('RECHARGE PLANS API RESPONSE');
@@ -83,11 +149,10 @@ const RechargePlanPage: React.FC = () => {
       }
 
       // Map database snake_case to frontend CamelCase
-      const mappedPlans = rawData.map((p: any) => ({
-        id: p.id,
+      const mappedPlans = rawData.map((p: any, idx: number) => ({
+        id: p.id || (idx + 1000), // Ensure unique ID even if DB ID is missing to prevent expansion bugs
         planName: p.plan_name || p.planName,
         description: p.description,
-        rideLimit: p.ride_limit || p.rideLimit,
         validityDays: p.validity_days || p.validityDays,
         dailyPrice: Number(p.daily_price || p.dailyPrice || 0),
         weeklyPrice: Number(p.weekly_price || p.weeklyPrice || 0),
@@ -105,6 +170,7 @@ const RechargePlanPage: React.FC = () => {
           }
           return [];
         })(),
+        tag: p.tag || '',
         isActive: p.is_active !== undefined ? p.is_active : p.isActive,
       }));
       setPlans(mappedPlans);
@@ -124,21 +190,38 @@ const RechargePlanPage: React.FC = () => {
     try {
       setLoadingActiveSubs(true);
       const res = await axios.get("/api/recharge-plans/active-subscriptions");
-      
-      const respData = res.data;
-      let extractedSubs = [];
-      
-      if (Array.isArray(respData)) {
-        extractedSubs = respData;
-      } else if (Array.isArray(respData.data)) {
-        extractedSubs = respData.data;
-      } else if (respData.data?.data && Array.isArray(respData.data.data)) {
-        extractedSubs = respData.data.data;
-      } else if (respData.subscriptions && Array.isArray(respData.subscriptions)) {
-        extractedSubs = respData.subscriptions;
+
+      // Dev Logging
+      if (import.meta.env.DEV) {
+        console.group('ACTIVE SUBSCRIPTIONS API RESPONSE');
+        console.log('Full Response:', res.data);
+        console.groupEnd();
       }
 
-      setActiveSubscriptions(extractedSubs);
+      const respData = res.data;
+      let rawSubs = [];
+
+      if (Array.isArray(respData)) {
+        rawSubs = respData;
+      } else if (Array.isArray(respData.data)) {
+        rawSubs = respData.data;
+      } else if (respData.data?.data && Array.isArray(respData.data.data)) {
+        rawSubs = respData.data.data;
+      } else if (respData.subscriptions && Array.isArray(respData.subscriptions)) {
+        rawSubs = respData.subscriptions;
+      }
+
+      const mappedSubs = rawSubs.map((s: any) => ({
+        id: s.id,
+        driverName: s.driver_name || s.driverName || 'N/A',
+        driverPhone: s.driver_phone || s.driverPhone || 'N/A',
+        planName: s.plan_name || s.planName || 'N/A',
+        billingCycle: s.billing_cycle || s.billingCycle || 'N/A',
+        startDate: s.start_date || s.startDate,
+        expiryDate: s.expiry_date || s.expiryDate,
+      }));
+
+      setActiveSubscriptions(mappedSubs);
     } catch (err) {
       console.error("Failed to fetch active subscriptions:", err);
     } finally {
@@ -149,7 +232,7 @@ const RechargePlanPage: React.FC = () => {
   const formatFeatureLabel = (key: string) => {
     // If it already looks like a sentence, leave it
     if (key.includes(' ')) return key;
-    
+
     // Mapping for common technical keys
     const mapping: Record<string, string> = {
       zero_commission: "Zero Commission",
@@ -170,40 +253,13 @@ const RechargePlanPage: React.FC = () => {
       .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
-  const getPlanConfig = (name: string) => {
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes('premium')) {
-      return {
-        icon: <Crown size={24} fill="currentColor" />,
-        bgColor: 'bg-amber-50',
-        textColor: 'bg-amber-50 text-amber-600',
-        borderColor: 'border-amber-100',
-        accentColor: 'text-amber-600'
-      };
-    }
-    if (lowerName.includes('elite')) {
-      return {
-        icon: <Trophy size={24} fill="currentColor" />,
-        bgColor: 'bg-purple-50',
-        textColor: 'bg-purple-50 text-purple-600',
-        borderColor: 'border-purple-100',
-        accentColor: 'text-purple-600'
-      };
-    }
-    return {
-      icon: <Zap size={24} fill="currentColor" />,
-      bgColor: 'bg-blue-50',
-      textColor: 'bg-blue-50 text-blue-600',
-      borderColor: 'border-blue-100',
-      accentColor: 'text-blue-600'
-    };
-  };
+
 
   /* ---- Handlers ---- */
   const handleOpenModal = (plan?: RechargePlan) => {
     if (plan) {
       setEditingId(plan.id);
-      
+
       setFormData({
         planName: plan.planName,
         description: plan.description || '',
@@ -211,8 +267,9 @@ const RechargePlanPage: React.FC = () => {
         dailyPrice: plan.dailyPrice.toString(),
         weeklyPrice: plan.weeklyPrice.toString(),
         monthlyPrice: plan.monthlyPrice.toString(),
-        features: Array.isArray(plan.features) ? [...plan.features] : [],
+        features: Array.isArray(plan.features) ? plan.features.map(f => formatFeatureLabel(f)) : [],
         isActive: plan.isActive,
+        tag: plan.tag || '',
       });
     } else {
       setEditingId(null);
@@ -225,600 +282,1153 @@ const RechargePlanPage: React.FC = () => {
         monthlyPrice: '',
         features: [],
         isActive: true,
+        tag: '',
       });
     }
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        planName: formData.planName,
-        description: formData.description,
-        validityDays: Number(formData.validityDays),
-        dailyPrice: Number(formData.dailyPrice),
-        weeklyPrice: Number(formData.weeklyPrice),
-        monthlyPrice: Number(formData.monthlyPrice),
-        features: formData.features.filter(f => f.trim()),
-        isActive: formData.isActive,
-      };
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.planName.trim()) newErrors.planName = "Plan name is required";
+    if (!formData.validityDays || Number(formData.validityDays) <= 0) newErrors.validityDays = "Validity must be greater than 0";
+    if (!formData.dailyPrice || Number(formData.dailyPrice) < 0) newErrors.dailyPrice = "Price cannot be negative";
 
-      if (editingId) {
-        await axios.patch(`/api/recharge-plans/update/${editingId}`, payload);
-        alert('Plan updated successfully!');
-      } else {
-        await axios.post('/api/recharge-plans/create', payload);
-        alert('New plan created successfully!');
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    if (!validateForm()) {
+      messageApi.error('Please correct the errors in the form.');
+      return;
+    }
+
+    const action = editingId ? 'update' : 'create';
+
+    modalApi.confirm({
+      title: editingId ? 'Confirm Plan Update' : 'Confirm New Plan',
+      content: `Are you sure you want to ${action} this plan configuration?`,
+      okText: editingId ? 'Update Plan' : 'Create Plan',
+      cancelText: 'Cancel',
+      centered: true,
+      onOk: async () => {
+        try {
+          setIsSubmitting(true);
+          const payload = {
+            planName: formData.planName,
+            description: formData.description,
+            validityDays: Number(formData.validityDays),
+            dailyPrice: Number(formData.dailyPrice),
+            weeklyPrice: Number(formData.weeklyPrice),
+            monthlyPrice: Number(formData.monthlyPrice),
+            features: formData.features.filter(f => f.trim()),
+            isActive: formData.isActive,
+            tag: formData.tag,
+          };
+
+          if (editingId) {
+            await axios.patch(`/api/recharge-plans/update/${editingId}`, payload);
+            notificationApi.success({
+              message: 'Plan Updated',
+              description: `"${formData.planName}" has been successfully updated.`,
+              placement: 'topRight',
+            });
+          } else {
+            await axios.post('/api/recharge-plans/create', payload);
+            notificationApi.success({
+              message: 'Plan Created',
+              description: `"${formData.planName}" has been successfully created.`,
+              placement: 'topRight',
+            });
+          }
+          setIsModalOpen(false);
+          fetchPlans();
+        } catch (err: any) {
+          console.error('Failed to save plan:', err);
+          messageApi.error(err?.response?.data?.message || 'Failed to save plan. Please check all fields.');
+        } finally {
+          setIsSubmitting(false);
+        }
       }
-      setIsModalOpen(false);
-      fetchPlans();
-    } catch (err) {
-      console.error('Failed to save plan:', err);
-      alert('Failed to save plan. Please check all fields.');
+    });
+  };
+
+
+
+  const handleBulkAction = async (action: 'deactivate' | 'increase_price') => {
+    if (selectedPlanIds.length === 0) return;
+
+    modalApi.confirm({
+      title: 'Global Bulk Action',
+      content: `Applying change to ${selectedPlanIds.length} plans. This sequence may take a moment.`,
+      okText: 'Proceed',
+      onOk: async () => {
+        try {
+          setIsSubmitting(true);
+          for (const id of selectedPlanIds) {
+            const plan = plans.find(p => p.id === id);
+            if (!plan) continue;
+
+            if (action === 'deactivate') {
+              await axios.patch(`/api/recharge-plans/status/${id}`, { isActive: false });
+            } else {
+              const payload = {
+                dailyPrice: Math.round(plan.dailyPrice * 1.1),
+                weeklyPrice: Math.round(plan.weeklyPrice * 1.1),
+                monthlyPrice: Math.round(plan.monthlyPrice * 1.1),
+              };
+              await axios.patch(`/api/recharge-plans/update/${id}`, payload);
+            }
+          }
+          notificationApi.success({
+            message: 'Updates Complete',
+            description: `Modified ${selectedPlanIds.length} plans successfully.`,
+          });
+          setSelectedPlanIds([]);
+          fetchPlans();
+        } catch (err) {
+          messageApi.error('Action partially failed. Please check logs.');
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
+    });
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedPlanIds.length === filteredPlans.length) {
+      setSelectedPlanIds([]);
+    } else {
+      setSelectedPlanIds(filteredPlans.map(p => p.id));
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this plan?')) {
-      try {
-        await axios.delete(`/api/recharge-plans/delete/${id}`);
-        alert('Plan deleted successfully');
-        fetchPlans();
-      } catch (err) {
-        console.error('Failed to delete plan:', err);
-        alert('Failed to delete plan');
-      }
-    }
+    const plan = plans.find(p => p.id === id);
+    modalApi.confirm({
+      title: 'Delete Plan?',
+      content: `Are you sure you want to delete "${plan?.planName}"? This action cannot be undone.`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await axios.delete(`/api/recharge-plans/delete/${id}`);
+          messageApi.success('Plan deleted successfully');
+          fetchPlans();
+        } catch (err) {
+          console.error('Failed to delete plan:', err);
+          messageApi.error('Failed to delete plan');
+        }
+      },
+    });
   };
 
   const toggleStatus = async (id: number, currentStatus: boolean) => {
     try {
       await axios.patch(`/api/recharge-plans/status/${id}`, { isActive: !currentStatus });
-      alert(`Plan ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
+      messageApi.success(`Plan ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
       fetchPlans();
     } catch (err) {
       console.error('Failed to update status:', err);
-      alert('Failed to update status');
+      messageApi.error('Failed to update status');
     }
   };
 
-  const filteredPlans = plans.filter((p) =>
-    p.planName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchPlanHistory = async (id: number, name: string) => {
+    try {
+      setHistoryLoading(true);
+      setHistoryPlanName(name);
+      setIsHistoryOpen(true);
+      const res = await axios.get(`/api/recharge-plans/history/${id}`);
+      setHistoryData(res.data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch history:', err);
+      messageApi.error('Failed to fetch plan history');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const filteredPlans = plans.filter((p) => {
+    const matchesSearch = p.planName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" ||
+      (statusFilter === "active" && p.isActive) ||
+      (statusFilter === "inactive" && !p.isActive);
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Recharge Plans</h1>
-          <p className="text-gray-500">Manage driver subscription and recharge tiered plans</p>
+    <div className="flex flex-col h-full overflow-hidden p-3 gap-3 bg-gray-50/50 min-h-screen font-sans">
+      {/* Header section */}
+      <div className="flex items-center space-x-3 shrink-0">
+        <div className="flex items-center justify-center w-10 h-10 bg-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20">
+          <Crown className="text-white text-xl" />
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-lg active:scale-95"
-        >
-      <Plus size={20} />
-      Create New Plan
-    </button>
-  </div>
-
-  <div className="flex gap-4 mb-8 border-b border-gray-200">
-    <button
-      onClick={() => setActiveTab("plans")}
-      className={`pb-4 px-4 font-bold transition-all ${
-        activeTab === "plans"
-          ? "text-blue-600 border-b-2 border-blue-600"
-          : "text-gray-400 hover:text-gray-600"
-      }`}
-    >
-      Manage Plans
-    </button>
-    <button
-      onClick={() => setActiveTab("subscriptions")}
-      className={`pb-4 px-4 font-bold transition-all ${
-        activeTab === "subscriptions"
-          ? "text-blue-600 border-b-2 border-blue-600"
-          : "text-gray-400 hover:text-gray-600"
-      }`}
-    >
-      Active Subscriptions
-    </button>
-  </div>
-
-  {activeTab === "plans" ? (
-    <>
-      <div className="mb-10 relative max-w-xl group">
-        <Search
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
-          size={20}
-        />
-        <input
-          type="text"
-          placeholder="Search by plan name..."
-          className="w-full pl-12 pr-6 py-4 bg-white border-2 border-transparent shadow-sm rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 focus:shadow-xl outline-none transition-all font-medium text-gray-700 placeholder:text-gray-300"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div>
+          <h1 className="!m-0 text-lg sm:text-xl font-extrabold text-gray-900 tracking-tight">Recharge Plans</h1>
+          <p className="block text-[9px] text-gray-400 font-medium font-outfit uppercase tracking-widest">
+            Configuration & Subscription Management
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? (
-          [1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse bg-white p-6 rounded-2xl h-64 shadow-sm border border-gray-100" />
-          ))
-        ) : filteredPlans.length > 0 ? (
-          filteredPlans.map((plan) => {
-            const config = getPlanConfig(plan.planName);
-            return (
-              <div
-                key={plan.id}
-                className={`bg-white rounded-2xl p-6 shadow-sm border-2 transition-all hover:shadow-md ${
-                  plan.isActive ? 'border-transparent' : 'border-red-100 opacity-80'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className={`p-3 rounded-xl ${config.textColor}`}>
-                    {config.icon}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleOpenModal(plan)}
-                      className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(plan.id)}
-                      className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
+      {/* Dashboard-Style Navigation Toolbelt */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-2 rounded-2xl border border-gray-100 shadow-sm shrink-0">
+        <div className="flex gap-1 p-1 bg-gray-50/80 rounded-xl border border-gray-100">
+          <button
+            onClick={() => setActiveTab("plans")}
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "plans" 
+              ? "bg-white text-indigo-600 shadow-sm border border-gray-200" 
+              : "text-gray-500 hover:text-indigo-600"}`}
+          >
+            <Crown size={14} />
+            Manage Plans
+            <span className="ml-1 px-1.5 py-0.5 bg-gray-200/50 text-gray-500 text-[10px] rounded-md">{plans.length}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("subscriptions")}
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "subscriptions" 
+              ? "bg-white text-indigo-600 shadow-sm border border-gray-200" 
+              : "text-gray-500 hover:text-indigo-600"}`}
+          >
+            <Users size={14} />
+            Subscriptions
+            <span className="ml-1 px-1.5 py-0.5 bg-gray-200/50 text-gray-500 text-[10px] rounded-md">{activeSubscriptions.length}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("promotions")}
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "promotions" 
+              ? "bg-white text-indigo-600 shadow-sm border border-gray-200" 
+              : "text-gray-500 hover:text-indigo-600"}`}
+          >
+            <Zap size={14} />
+            Offers & Promos
+          </button>
+        </div>
 
-                <h3 className={`text-2xl font-black text-gray-900 mb-2 tracking-tight transition-colors group-hover:${config.accentColor}`}>
-                  {plan.planName}
-                </h3>
-                <p className="text-gray-500 text-xs font-semibold leading-relaxed mb-6 line-clamp-2 h-9">
-                  {plan.description}
-                </p>
+        <div className="flex items-center gap-3 pr-2">
+          {activeTab === "plans" && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 bg-white border border-gray-100 hover:border-indigo-100 px-4 py-1.5 rounded-lg transition-all active:scale-95 text-xs font-bold shadow-sm"
+            >
+              <Plus size={14} strokeWidth={3} />
+              <span>Create New Plan</span>
+            </button>
+          )}
+          {activeTab === "subscriptions" && (
+            <button
+              onClick={fetchActiveSubscriptions}
+              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
+            >
+              <Zap size={14} className="text-amber-500" />
+              Sync Data
+            </button>
+          )}
+        </div>
+      </div>
 
-                <div className="flex items-center gap-2 px-4 py-2 bg-orange-50/50 text-orange-700 rounded-xl text-[10px] font-black uppercase tracking-widest border border-orange-100/50">
-                  <ClockCircleOutlined style={{ fontSize: '14px' }} />
-                  {typeof plan.validityDays === 'object' && plan.validityDays !== null ? 'Multi' : plan.validityDays} Days
-                </div>
-
-                <div className="space-y-3 mb-6">
-                  {plan.dailyPrice > 0 && (
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400 font-medium lowercase">Daily Price</span>
-                      <span className="font-bold text-blue-600">₹{plan.dailyPrice}</span>
-                    </div>
-                  )}
-                  {plan.weeklyPrice > 0 && (
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400 font-medium lowercase">Weekly Price</span>
-                      <span className="font-bold text-purple-600">₹{plan.weeklyPrice}</span>
-                    </div>
-                  )}
-                  {plan.monthlyPrice > 0 && (
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400 font-medium lowercase">Monthly Price</span>
-                      <span className="font-bold text-indigo-600">₹{plan.monthlyPrice}</span>
-                    </div>
-                  )}
-                </div>
-
-                {Array.isArray(plan.features) && plan.features.length > 0 && (
-                  <div className="mb-6 pt-4 border-t border-gray-50">
-                    <span className="text-[10px] text-gray-400 uppercase font-black tracking-widest block mb-3">Included Features</span>
-                    <ul className="space-y-2">
-                      {plan.features.slice(0, 4).map((feature: string, idx: number) => (
-                        <li key={idx} className="flex items-center gap-2 text-xs text-gray-600 font-medium">
-                          <CheckCircle size={14} className="text-green-500 shrink-0" />
-                          <span className="truncate">{formatFeatureLabel(feature)}</span>
-                        </li>
-                      ))}
-                      {plan.features.length > 4 && (
-                        <li className="text-[10px] text-blue-500 font-bold ml-5">+{plan.features.length - 4} more features</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center pt-4 border-t border-gray-50">
-                  <div
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors ${
-                      plan.isActive ? 'bg-green-100/80 text-green-700' : 'bg-red-100/80 text-red-700'
-                    }`}
-                  >
-                    {plan.isActive ? <CheckCircle size={10} /> : <XCircle size={10} />}
-                    {plan.isActive ? 'Active' : 'Disabled'}
-                  </div>
-                  <button
-                    onClick={() => toggleStatus(plan.id, plan.isActive)}
-                    className={`text-xs font-black uppercase tracking-wider transition-colors ${
-                      plan.isActive ? 'text-red-500 hover:text-red-600' : 'text-green-600 hover:text-green-700'
-                    }`}
-                  >
-                    {plan.isActive ? 'Disable' : 'Enable'}
-                  </button>
-                </div>
+      {activeTab === "plans" ? (
+        <>
+          <div className="flex flex-col sm:flex-row gap-3 py-1 items-center justify-between">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center gap-3 px-3 py-1.5 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-indigo-100 transition-all group/selectall">
+                <Checkbox
+                  checked={selectedPlanIds.length === filteredPlans.length && filteredPlans.length > 0}
+                  indeterminate={selectedPlanIds.length > 0 && selectedPlanIds.length < filteredPlans.length}
+                  onChange={toggleAllSelection}
+                  className="custom-card-checkbox"
+                />
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover/selectall:text-indigo-600 transition-colors cursor-default select-none">
+                  {selectedPlanIds.length > 0 ? `${selectedPlanIds.length} Selected` : 'Bulk Selection'}
+                </span>
               </div>
-            );
-          })
-        ) : (
-          <div className="col-span-full py-20 bg-white rounded-2xl text-center border-2 border-dashed border-gray-200">
-            <p className="text-gray-400">No recharge plans found. Create your first one!</p>
+
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within/search:text-indigo-500 transition-colors" size={16} />
+                <input
+                  type="text"
+                  placeholder="Analyze plans by name..."
+                  className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-100 rounded-xl text-xs focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400 transition-all shadow-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <Select
+                defaultValue="all"
+                style={{ width: 130, height: 32 }}
+                onChange={setStatusFilter}
+                className="custom-select-dashboard"
+                suffixIcon={<ChevronDown size={14} className="text-gray-400" />}
+                options={[
+                  { value: 'all', label: 'All Status' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
+              />
+            </div>
+            
           </div>
-        )}
-      </div>
-    </>
-  ) : (
-    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-800">Live Driver Subscriptions</h2>
-        <button
-          onClick={fetchActiveSubscriptions}
-          className="p-2 hover:bg-gray-100 rounded-lg text-blue-600 transition-colors"
-          title="Refresh List"
-        >
-          <Zap size={18} />
-        </button>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Driver</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Active Plan</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Cycle</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Start Date</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Expiry Date</th>
-              <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loadingActiveSubs ? (
-              [1, 2, 3].map((i) => (
-                <tr key={i} className="animate-pulse">
-                  <td colSpan={6} className="px-6 py-8">
-                    <div className="h-10 bg-gray-50 rounded-xl w-full"></div>
-                  </td>
-                </tr>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+            {loading ? (
+              [1, 2, 3].map((i: number) => (
+                <div key={i} className="animate-pulse bg-white p-8 rounded-2xl h-80 shadow-sm border border-slate-100" />
               ))
-            ) : activeSubscriptions.length > 0 ? (
-              activeSubscriptions.map((sub: any) => {
-                const daysLeft = Math.ceil((new Date(sub.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                const isExpiring = daysLeft < 3;
+            ) : filteredPlans.length > 0 ? (
+              filteredPlans.map((plan, index) => {
+                const isExpanded = expandedPlanId === plan.id;
+                const activeSubCount = activeSubscriptions.filter(s => s.planName?.toLowerCase() === plan.planName?.toLowerCase()).length;
                 
+                const planNameLower = plan.planName?.toLowerCase() || '';
+                let themeConfig = { color: '#0ea5e9', bg: 'bg-sky-500', shadow: 'shadow-sky-500/20', Icon: Zap };
+
+                if (planNameLower.includes('basic')) {
+                  themeConfig = { color: '#0ea5e9', bg: 'bg-sky-500', shadow: 'shadow-sky-500/20', Icon: Zap };
+                } else if (planNameLower.includes('elite')) {
+                  themeConfig = { color: '#a855f7', bg: 'bg-purple-500', shadow: 'shadow-purple-500/20', Icon: Sparkles };
+                } else if (planNameLower.includes('premium')) {
+                  themeConfig = { color: '#f59e0b', bg: 'bg-amber-500', shadow: 'shadow-amber-500/20', Icon: Crown };
+                }
+
                 return (
-                  <tr key={sub.id} className="group hover:bg-gray-50/80 transition-all duration-200">
-                    <td className="px-6 py-6 border-b border-gray-50">
-                      <div className="font-black text-gray-900 tracking-tight">{sub.driver_name}</div>
-                      <div className="text-xs font-bold text-gray-400 mt-1">{sub.driver_phone}</div>
-                    </td>
-                    <td className="px-6 py-6 border-b border-gray-50">
-                      <span className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                        {sub.plan_name}
-                      </span>
-                    </td>
-                    <td className="px-6 py-6 border-b border-gray-50">
-                      <span className="text-xs font-black text-gray-500 uppercase tracking-tighter bg-gray-100 px-2 py-1 rounded-md">
-                        {sub.billing_cycle}
-                      </span>
-                    </td>
-                    <td className="px-6 py-6 border-b border-gray-50 text-xs font-bold text-gray-500">
-                      {new Date(sub.start_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="px-6 py-6 border-b border-gray-50">
-                      <div className="text-xs font-black text-gray-900">
-                        {new Date(sub.expiry_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        <span className={`ml-2 text-[9px] font-black uppercase tracking-tight px-1.5 py-0.5 rounded-md ${
-                          isExpiring ? 'bg-red-50 text-red-500' : 'bg-gray-50 text-gray-400'
-                        }`}>
-                          {daysLeft}d left
-                        </span>
+                  <div
+                    key={plan.id}
+                    className={`bg-white rounded-xl border transition-all duration-300 ease-out flex flex-col overflow-hidden relative group/card ${isExpanded
+                      ? 'border-gray-200 ring-4 ring-gray-50'
+                      : 'border-gray-100 hover:border-gray-200'
+                      }`}
+                  >
+                    {/* Top colored border */}
+                    <div 
+                      className="absolute top-0 left-0 right-0 h-[4px] z-20"
+                      style={{ backgroundColor: themeConfig.color }}
+                    />
+
+                    {/* Card Body Area */}
+                    <div className="p-4 pt-6 relative">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="flex items-center gap-3">
+                          {/* Selection Checkbox */}
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="shrink-0"
+                          >
+                            <Checkbox
+                              checked={selectedPlanIds.includes(plan.id)}
+                              onChange={() => {
+                                setSelectedPlanIds(prev =>
+                                  prev.includes(plan.id) ? prev.filter(id => id !== plan.id) : [...prev, plan.id]
+                                );
+                              }}
+                              className="custom-card-checkbox-circle"
+                            />
+                          </div>
+
+                          {/* Plan Icon Box */}
+                          <div className={`w-9 h-9 rounded-lg ${themeConfig.bg} flex items-center justify-center text-white shadow-lg ${themeConfig.shadow}`}>
+                            <themeConfig.Icon size={18} fill="currentColor" />
+                          </div>
+
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-xl font-extrabold text-[#111827] tracking-tight">{plan.planName}</h3>
+                              <div className="flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                <span className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">Live</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              <div className="flex items-center gap-1">
+                                <Users size={12} className="text-gray-400" />
+                                <span className="text-[10px] font-bold text-gray-500">{activeSubCount} Sub</span>
+                              </div>
+                              {index === 1 && (
+                                <div className="flex items-center gap-1">
+                                  <Flame size={12} className="text-orange-500" fill="currentColor" />
+                                  <span className="text-[9px] font-black uppercase text-orange-500 tracking-widest">Hot</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Density Metric */}
+                        <div className="flex flex-col items-end">
+                           <div className="flex items-center gap-1.5 mb-1">
+                             <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest font-outfit">Density</span>
+                             <span className="text-[14px] font-extrabold text-indigo-500">{Math.round((activeSubCount / (activeSubscriptions.length || 1)) * 100)}%</span>
+                           </div>
+                           <div className="w-16 h-1 bg-gray-50 rounded-full overflow-hidden border border-gray-100">
+                             <div 
+                               className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
+                               style={{ width: `${(activeSubCount / (activeSubscriptions.length || 1)) * 100}%` }}
+                             />
+                           </div>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-6 border-b border-gray-50">
-                      <div className="flex items-center gap-1.5 text-green-600 text-[10px] font-black uppercase tracking-widest bg-green-50 px-3 py-1.5 rounded-full w-fit">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                        Active
+
+                      {/* Triple Pricing Grid - Exact replication */}
+                      <div className="grid grid-cols-3 gap-2 mb-6 h-28">
+                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-1 group/price cursor-pointer transition-all hover:border-gray-200">
+                           <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Daily</span>
+                           <span className="text-2xl font-black text-[#111827] tracking-tighter">₹{plan.dailyPrice}</span>
+                        </div>
+                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-1 group/price cursor-pointer transition-all hover:border-gray-200">
+                           <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Weekly</span>
+                           <span className="text-2xl font-black text-[#111827] tracking-tighter">₹{plan.weeklyPrice}</span>
+                        </div>
+                        <div className={`relative p-3 rounded-xl shadow-lg border-indigo-400/20 flex flex-col items-center justify-center gap-1 group/price cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${index === 0 ? 'bg-indigo-600' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}>
+                           <span className="text-[9px] font-bold text-white/70 uppercase tracking-widest text-center">Monthly</span>
+                           <span className="text-2xl font-black text-white tracking-tighter">₹{plan.monthlyPrice}</span>
+                           <div className="flex items-center gap-1">
+                              <div className="w-1 h-1 bg-white/60 rounded-full"></div>
+                              <span className="text-[8px] font-black text-white uppercase tracking-tighter">Best Ops</span>
+                           </div>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
+
+                      {/* Plan Configuration with separator */}
+                      <div className="mt-4">
+                         <div className="flex items-center gap-3 mb-4">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Plan Configuration</span>
+                            <div className="h-px flex-1 bg-gray-100"></div>
+                         </div>
+                         <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-1 h-32 overflow-hidden items-start">
+                            {plan.features.slice(0, 6).map((feat: string, i: number) => {
+                              const isNegative = feat.toLowerCase().startsWith('no ') || feat.toLowerCase().includes('not included') || feat.toLowerCase() === 'local bookings only';
+                              return (
+                               <div key={i} className="flex items-center gap-2.5">
+                                  {isNegative ? (
+                                    <div className="shrink-0 w-5 h-5 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500">
+                                      <X size={11} strokeWidth={3} />
+                                    </div>
+                                  ) : (
+                                    <div className="shrink-0 w-5 h-5 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500">
+                                      <CheckCircle2 size={11} strokeWidth={3} />
+                                    </div>
+                                  )}
+                                  <span className={`text-[12px] font-semibold truncate ${isNegative ? 'text-gray-400 line-through' : 'text-gray-600'}`}>{feat}</span>
+                               </div>
+                              )
+                            })}
+                         </div>
+                      </div>
+
+                      {/* Card Footer Metric & Action */}
+                      <div className="mt-8 pt-4 border-t border-gray-50 flex items-center justify-between">
+                         <div className="flex items-center gap-2 text-emerald-500">
+                            <ArrowUpRight size={14} strokeWidth={3} />
+                            <span className="text-[11px] font-bold tracking-tight">Conversion 40%</span>
+                         </div>
+                         <button 
+                           onClick={(e) => { e.stopPropagation(); setExpandedPlanId(isExpanded ? null : plan.id); }}
+                           className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-900 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95"
+                         >
+                           Manage
+                         </button>
+                      </div>
+
+                      {/* Original Expanded Actions area moved inside for consistency */}
+                      {isExpanded && (
+                        <div className="mt-6 flex gap-4 animate-in slide-in-from-top-2 duration-300">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleOpenModal(plan); }}
+                            className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 py-2 rounded-lg text-xs font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm"
+                          >
+                            <Edit3 size={14} />
+                            Edit
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleStatus(plan.id, plan.isActive); }}
+                            className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 py-2 rounded-lg text-xs font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm"
+                          >
+                            <Power size={14} className={plan.isActive ? 'text-rose-500' : 'text-emerald-500'} />
+                            {plan.isActive ? 'Off' : 'On'}
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(plan.id); }}
+                            className="p-2 bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-100 hover:bg-slate-50 rounded-lg transition-all shadow-sm"
+                            title="Delete Plan"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); fetchPlanHistory(plan.id, plan.planName); }}
+                            className="p-2 bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-100 hover:bg-slate-50 rounded-lg transition-all shadow-sm"
+                            title="View History"
+                          >
+                            <History size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 );
               })
             ) : (
-              <tr>
-                <td colSpan={6} className="px-6 py-32 text-center">
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="p-4 bg-gray-50 rounded-full text-gray-300">
-                      <Zap size={40} />
-                    </div>
-                    <p className="text-gray-400 font-bold">No active driver subscriptions found currently.</p>
-                  </div>
-                </td>
-              </tr>
+              <div className="col-span-full py-20 bg-white rounded-2xl text-center border border-dashed border-slate-200">
+                <p className="text-slate-400 text-sm">No plans found. Create your first one!</p>
+              </div>
             )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )}
-
-
-      {/* MODAL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
-            <div className="px-8 py-6 border-b border-gray-100 bg-white sticky top-0 z-10">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-3xl font-black text-gray-900 tracking-tight">{editingId ? 'Edit Plan' : 'Create New Plan'}</h2>
-                  <p className="text-sm font-medium text-gray-500 mt-1 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                    Configure tiered pricing and dynamic features
-                  </p>
+          </div>
+        </>
+      ) : activeTab === "subscriptions" ? (
+        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-2 duration-500">
+          {/* Dashboard-Style Controls for Subscriptions */}
+          <div className="flex flex-col sm:flex-row gap-3 py-1 items-center justify-between">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-md group/search">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within/search:text-indigo-500 transition-colors" size={16} />
+                <input
+                  type="text"
+                  placeholder="Analyze subscriptions by driver name or phone..."
+                  className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-100 rounded-xl text-xs focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400 transition-all shadow-sm"
+                  value={subSearchTerm}
+                  onChange={(e) => setSubSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-1.5 border border-gray-100 rounded-xl p-1 bg-white shadow-sm">
+                <div className="pl-2 pr-1">
+                  <Filter size={14} className="text-gray-400" />
                 </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-3 hover:bg-gray-100 rounded-2xl text-gray-400 hover:text-gray-900 transition-all active:scale-90"
-                >
-                  <X size={24} />
-                </button>
+                {['ALL', 'BASIC', 'ELITE', 'PREMIUM'].map(f => (
+                  <button 
+                    key={f}
+                    onClick={() => setSubFilter(f)}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all uppercase tracking-widest ${subFilter === f ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-50 flex justify-between items-center bg-white">
+              <div className="flex items-center gap-3">
+                <div className="p-1 px-2.5 bg-indigo-50 text-indigo-500 rounded-lg font-outfit text-xs font-extrabold tracking-tighter">LIVE FEED</div>
+                <div className="h-4 w-px bg-gray-100"></div>
+                <h2 className="text-sm font-extrabold text-gray-900 tracking-tight uppercase">Active Subscriptions</h2>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50">
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Driver Identity</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Plan Config</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Billing Cycle</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Timeline Progress</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Ops Delta</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest w-10"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loadingActiveSubs ? (
+                    [1, 2, 3].map((i: number) => (
+                      <tr key={i} className="animate-pulse">
+                        <td colSpan={6} className="px-6 py-6">
+                          <div className="h-8 bg-slate-50 rounded-lg w-full"></div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : activeSubscriptions.filter(s => {
+                    const matchesSearch = s.driverName?.toLowerCase().includes(subSearchTerm.toLowerCase()) || s.driverPhone?.toLowerCase().includes(subSearchTerm.toLowerCase());
+                    const matchesFilter = subFilter === 'ALL' || (s.planName && s.planName.toUpperCase().includes(subFilter));
+                    return matchesSearch && matchesFilter;
+                  }).length > 0 ? (
+                    activeSubscriptions
+                      .filter(s => {
+                        const matchesSearch = s.driverName?.toLowerCase().includes(subSearchTerm.toLowerCase()) || s.driverPhone?.toLowerCase().includes(subSearchTerm.toLowerCase());
+                        const matchesFilter = subFilter === 'ALL' || (s.planName && s.planName.toUpperCase().includes(subFilter));
+                        return matchesSearch && matchesFilter;
+                      })
+                      .map((sub: any) => {
+                        const daysLeft = Math.ceil((new Date(sub.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                        const isExpiring = daysLeft < 3;
+                        const totalDays = Math.ceil((new Date(sub.expiryDate).getTime() - new Date(sub.startDate).getTime()) / (1000 * 60 * 60 * 24));
+                        const daysElapsed = totalDays - daysLeft;
+                        const progress = Math.min(100, Math.max(0, (daysElapsed / (totalDays || 1)) * 100));
+                        
+                        const planNameLower = sub.planName?.toLowerCase() || '';
+                        let badgeClass = 'bg-indigo-50/50 text-indigo-600 border-indigo-100/50';
+                        if (planNameLower.includes('basic')) badgeClass = 'bg-sky-50 text-sky-600 border-sky-100';
+                        else if (planNameLower.includes('elite')) badgeClass = 'bg-purple-50 text-purple-600 border-purple-100';
+                        else if (planNameLower.includes('premium')) badgeClass = 'bg-amber-50 text-amber-600 border-amber-100';
+
+                        return (
+                          <tr key={sub.id} className="group hover:bg-gray-50/50 transition-colors">
+                            <td className="px-6 py-3">
+                              <div className="flex items-center gap-3">
+                                <Avatar
+                                  size={32}
+                                  className="bg-indigo-50 text-indigo-500 font-extrabold border border-indigo-100 uppercase text-[10px]"
+                                >
+                                  {sub.driverName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                </Avatar>
+                                <div className="flex flex-col">
+                                  <div className="font-extrabold text-gray-800 text-[12px] tracking-tight">{sub.driverName}</div>
+                                  <div className="text-[10px] font-bold text-gray-300 mt-0.5 tracking-tighter uppercase">{sub.driverPhone}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-widest ${badgeClass}`}>
+                                {sub.planName}
+                              </span>
+                            </td>
+                            <td className="px-6 py-3">
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-gray-50/80 px-2 py-0.5 rounded border border-gray-100 transition-colors group-hover:bg-white">
+                                  {sub.billingCycle}
+                                </span>
+                                {(sub.amountPaid || sub.price) && (
+                                   <div className="flex items-center gap-1 mt-0.5 text-slate-400">
+                                      <CreditCard size={10} />
+                                      <span className="text-[9px] font-bold">₹{sub.amountPaid || sub.price || '---'}</span>
+                                   </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-3 w-48">
+                               <div className="flex flex-col gap-1.5 w-full">
+                                  <div className="flex items-center justify-between text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                    <span>{sub.startDate ? new Date(sub.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '---'}</span>
+                                    <span>{sub.expiryDate ? new Date(sub.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '---'}</span>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full transition-all duration-500 ${isExpiring ? 'bg-rose-500' : 'bg-emerald-400'}`}
+                                      style={{ width: `${progress}%` }}
+                                    />
+                                  </div>
+                               </div>
+                            </td>
+                            <td className="px-6 py-3">
+                              <div className="flex flex-col gap-1 items-start">
+                                <div className={`flex items-center gap-1.5 text-[11px] font-black tracking-tight ${isExpiring ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {isNaN(daysLeft) ? 'N/A' : `${daysLeft}D REMAINING`}
+                                  {isExpiring && !isNaN(daysLeft) && daysLeft >= 1 && (
+                                    <span className="relative flex h-1.5 w-1.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span>
+                                    </span>
+                                  )}
+                                </div>
+                                <CountdownTimer expiryDate={sub.expiryDate} />
+                              </div>
+                            </td>
+                            <td className="px-6 py-3 text-right">
+                              <Dropdown
+                                trigger={['click']}
+                                menu={{
+                                  items: [
+                                    { 
+                                      key: '1', 
+                                      label: <span className="text-xs font-semibold text-gray-700">View Driver Profile</span>,
+                                      onClick: () => navigate('/drivers') // Or `/drivers/${sub.driverId}` if you have the ID.
+                                    }
+                                  ]
+                                }}
+                                placement="bottomRight"
+                              >
+                                <button className="p-1.5 text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors">
+                                  <MoreVertical size={16} />
+                                </button>
+                              </Dropdown>
+                            </td>
+                          </tr>
+                        );
+                      })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="p-3 bg-slate-50 rounded-full text-slate-200">
+                            <Zap size={32} />
+                          </div>
+                          <p className="text-slate-400 text-xs font-medium">No active subscriptions found.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
+          <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+             <div className="flex items-center gap-3">
+                <Zap size={16} className="text-indigo-500" />
+                <span className="text-xs font-extrabold text-gray-900 tracking-tight uppercase">Promotion Systems</span>
+             </div>
+          </div>
+          <div className="flex-1 bg-gray-50/30">
+            <Suspense fallback={<div className="flex items-center justify-center p-20 animate-pulse text-indigo-500 font-extrabold text-xs">INITIALIZING OPS ENGINE...</div>}>
+              <PromotionsTab />
+            </Suspense>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedPlanIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-8 duration-500">
+          <div className="bg-[#1a1a1a] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-6 border border-white/5 backdrop-blur-xl">
+            <div className="flex items-center gap-3 pr-6 border-r border-white/10 select-none">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500 flex items-center justify-center font-black text-xs shadow-lg shadow-indigo-500/40 ring-4 ring-indigo-500/10">
+                {selectedPlanIds.length}
+              </div>
+              <div className="flex flex-col">
+                 <span className="text-[11px] font-black tracking-tight uppercase">Operational Units</span>
+                 <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-0.5">Selected focus</span>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="overflow-y-auto flex-1 custom-scrollbar px-8 py-6">
-              <div className="space-y-10">
-                {/* SECTION: BASIC INFO */}
-                <section>
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-                        <Zap size={20} fill="currentColor" />
-                      </div>
-                      <h3 className="text-lg font-bold text-gray-900">Basic Information</h3>
-                    </div>
-                    {/* PLAN PRESETS */}
-                    {!editingId && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Presets:</span>
-                        {['Basic', 'Elite', 'Premium'].map((type) => (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => {
-                              const presets: any = {
-                                Basic: {
-                                  name: 'Basic Plan',
-                                  desc: 'Entry-level plan for drivers who want to operate within their local city with zero commission.',
-                                  features: ["Zero commission on all rides", "Access to local city rides only", "Accept instant ride requests", "Basic customer support", "Scheduled rides not available"]
-                                },
-                                Elite: {
-                                  name: 'Elite Plan',
-                                  desc: 'Advanced plan for drivers who want more ride options and higher earning opportunities.',
-                                  features: ["Zero commission on all rides", "Access to all available ride types", "Scheduled rides enabled (only for weekly and monthly plans)", "Outstation trips enabled", "One-way trips enabled", "Priority ride matching"]
-                                },
-                                Premium: {
-                                  name: 'Premium Plan',
-                                  desc: 'Full-featured plan designed for high-performing drivers with maximum ride access and priority support.',
-                                  features: ["Zero commission on all rides", "Access to all available ride types", "Scheduled rides enabled (only for weekly and monthly plans)", "All ride categories enabled: Local rides, Outstation trips, One-way trips, Round trips", "Priority ride matching", "24/7 priority support"]
-                                }
-                              };
-                              const p = presets[type];
-                              setFormData({
-                                ...formData,
-                                planName: p.name,
-                                description: p.desc,
-                                features: p.features
-                              });
-                            }}
-                            className="text-[10px] font-bold px-3 py-1.5 bg-gray-50 hover:bg-blue-50 hover:text-blue-600 rounded-lg border border-gray-100 transition-all active:scale-95"
-                          >
-                            {type}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2.5">Plan Name</label>
-                      <input
-                        type="text"
-                        required
-                        className="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-900 placeholder:text-gray-300"
-                        placeholder="e.g. Premium Executive Tier"
-                        value={formData.planName}
-                        onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2.5">Description</label>
-                      <textarea
-                        rows={3}
-                        className="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-medium text-gray-600 resize-none placeholder:text-gray-300"
-                        placeholder="Briefly describe the target audience or benefits..."
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      />
-                    </div>
-
-
-                    <div className="relative group">
-                      <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2.5 flex items-center gap-2">
-                        Validity Period
-                        <span className="text-[10px] bg-orange-50 text-orange-500 px-2 py-0.5 rounded-full lowercase font-bold">Days</span>
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        className="w-full px-5 py-3.5 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-black text-gray-900"
-                        value={formData.validityDays}
-                        onChange={(e) => setFormData({ ...formData, validityDays: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <hr className="border-gray-50" />
-
-                {/* SECTION: PRICING TIERS */}
-                <section>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2.5 bg-green-50 text-green-600 rounded-xl">
-                      <Zap size={20} />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900">Pricing Tiers (₹)</h3>
-                      <p className="text-[11px] text-gray-400 font-medium">Define costs for different billing cycles</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-tight text-center">Daily</label>
-                      <input
-                        type="number"
-                        required
-                        className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-900 text-center"
-                        placeholder="0"
-                        value={formData.dailyPrice}
-                        onChange={(e) => setFormData({ ...formData, dailyPrice: e.target.value })}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-tight text-center">Weekly</label>
-                      <input
-                        type="number"
-                        required
-                        className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-900 text-center"
-                        placeholder="0"
-                        value={formData.weeklyPrice}
-                        onChange={(e) => setFormData({ ...formData, weeklyPrice: e.target.value })}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-tight text-center">Monthly</label>
-                      <input
-                        type="number"
-                        required
-                        className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all font-bold text-gray-900 text-center"
-                        placeholder="0"
-                        value={formData.monthlyPrice}
-                        onChange={(e) => setFormData({ ...formData, monthlyPrice: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </section>
-
-                <hr className="border-gray-50" />
-
-                {/* SECTION: FEATURES */}
-                <section className="pb-4">
-                  <div className="flex justify-between items-center mb-6">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">Included Features</h3>
-                      <p className="text-[11px] text-gray-400 font-medium italic">Define what drivers receive with this plan</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const suggestions = [
-                          "Zero commission on all rides",
-                          "Access to local city rides only",
-                          "Access to all available ride types",
-                          "Accept instant ride requests",
-                          "Scheduled rides enabled (Weekly/Monthly)",
-                          "Outstation trips enabled",
-                          "One-way trips enabled",
-                          "Round trips enabled",
-                          "Priority ride matching",
-                          "24/7 priority support",
-                          "Basic customer support"
-                        ];
-                        const newFeatures = [...formData.features];
-                        suggestions.forEach(s => {
-                          if (!newFeatures.includes(s)) newFeatures.push(s);
-                        });
-                        setFormData({ ...formData, features: newFeatures });
-                      }}
-                      className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-xl transition-all active:scale-95"
-                    >
-                      + Quick Add Suggestions
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {formData.features.map((feature, index) => (
-                      <div key={index} className="flex gap-3 group transform transition-all animate-in slide-in-from-left-4 duration-300">
-                        <div className="flex-1 relative">
-                          <CheckCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-green-500" size={18} />
-                          <input
-                            type="text"
-                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none transition-all text-sm font-bold text-gray-700"
-                            value={feature}
-                            onChange={(e) => {
-                              const newFeatures = [...formData.features];
-                              newFeatures[index] = e.target.value;
-                              setFormData({ ...formData, features: newFeatures });
-                            }}
-                            placeholder="e.g. 24/7 Executive Priority Support"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newFeatures = formData.features.filter((_, i) => i !== index);
-                            setFormData({ ...formData, features: newFeatures });
-                          }}
-                          className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all active:scale-90"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    ))}
-                    
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, features: [...formData.features, ''] })}
-                      className="w-full py-4 border-2 border-dashed border-gray-100 rounded-[1.5rem] text-gray-400 hover:text-blue-500 hover:border-blue-200 hover:bg-blue-50/30 transition-all font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 active:scale-[0.98]"
-                    >
-                      <Plus size={18} />
-                      Add Custom Feature
-                    </button>
-                  </div>
-                </section>
-              </div>
-            </form>
-
-            {/* FIXED FOOTER */}
-            <div className="p-8 border-t border-gray-50 bg-white sticky bottom-0 z-10">
-              <div className="flex justify-end items-center gap-6">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-3 text-sm font-black uppercase tracking-widest text-gray-400 hover:text-gray-900 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-[1.25rem] font-black uppercase tracking-widest text-xs shadow-2xl shadow-blue-200 transition-all active:scale-95 hover:-translate-y-1"
-                >
-                  {editingId ? 'Save Changes' : 'Create Plan'}
-                </button>
-              </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleBulkAction('deactivate')}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold transition-all disabled:opacity-50 border border-white/5"
+              >
+                <Power size={12} />
+                STOP OPS
+              </button>
+              <button
+                onClick={() => handleBulkAction('increase_price')}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] font-extrabold transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/20"
+              >
+                <TrendingUp size={12} />
+                INCREASE PRICE (+10%)
+              </button>
+              <button
+                onClick={() => setSelectedPlanIds([])}
+                className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-[10px] font-bold text-gray-400 transition-all uppercase"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
+
+
+      <Drawer
+        title={
+          <div className="flex flex-col">
+            <div className="flex justify-between items-center mr-8">
+              <span className="text-xl font-bold text-slate-900">{editingId ? 'Edit Plan' : 'Create Plan'}</span>
+              {!editingId && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        planName: 'Basic Plan',
+                        description: 'Entry-level plan for local operation.',
+                        features: ["Zero commission on local rides", "Instant requests", "Basic support"]
+                      });
+                    }}
+                    className="text-[10px] font-bold px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 transition-colors"
+                  >
+                    Basic
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        planName: 'Elite Plan',
+                        description: 'Advanced plan for higher earnings.',
+                        features: ["Zero commission on all rides", "Outstation trips", "Priority matching"]
+                      });
+                    }}
+                    className="text-[10px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 rounded text-indigo-600 transition-colors"
+                  >
+                    Elite
+                  </button>
+                </div>
+              )}
+            </div>
+            <span className="text-xs text-slate-500 font-normal mt-0.5">Configure pricing, validity, and features</span>
+          </div>
+        }
+        placement="right"
+        width={520}
+        onClose={() => setIsModalOpen(false)}
+        open={isModalOpen}
+        closeIcon={<X size={20} className="text-slate-400" />}
+        styles={{
+          header: { borderBottom: '1px solid #f1f5f9', padding: '24px' },
+          body: { padding: '24px' },
+          footer: { borderTop: '1px solid #f1f5f9', padding: '24px' }
+        }}
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button
+              disabled={isSubmitting}
+              onClick={() => setIsModalOpen(false)}
+              className="px-6 h-10 rounded-lg border-slate-200 text-slate-600 font-semibold"
+            >
+              Cancel
+            </Button>
+            <Button
+              loading={isSubmitting}
+              type="primary"
+              onClick={() => handleSubmit()}
+              className="px-8 h-10 rounded-lg font-semibold"
+            >
+              {editingId ? 'Save Changes' : 'Create Plan'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          {/* Plan Name, Status & Tag */}
+          <div className="grid grid-cols-6 gap-4">
+            <div className="col-span-3 space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Plan Name</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-900 shadow-sm"
+                placeholder="e.g. Starter"
+                value={formData.planName}
+                onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
+              />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Badge Tag</label>
+              <Select
+                className="w-full h-[42px]"
+                value={formData.tag || ''}
+                onChange={(val) => setFormData({ ...formData, tag: val })}
+                options={[
+                  { value: '', label: 'No Badge' },
+                  { value: 'MOST POPULAR', label: 'Most Popular' },
+                  { value: 'BEST VALUE', label: 'Best Value' },
+                  { value: 'RECOMMENDED', label: 'Recommended' },
+                  { value: 'LIMITED OFFER', label: 'Limited Offer' },
+                  { value: 'PREMIUM CHOICE', label: 'Premium Choice' },
+                  { value: 'ESSENTIAL', label: 'Essential' },
+                  { value: 'PRO', label: 'Pro' }
+                ]}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</label>
+              <Select
+                className="w-full h-[42px]"
+                value={formData.isActive ? 'active' : 'inactive'}
+                onChange={(val) => setFormData({ ...formData, isActive: val === 'active' })}
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Description</label>
+            <textarea
+              className="w-full px-4 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-600 shadow-sm min-h-[80px]"
+              placeholder="Briefly describe the plan benefits..."
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+
+          {/* Validity */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Validity (Days)</label>
+            <input
+              type="number"
+              className={`w-full px-4 py-2.5 bg-white border ${errors.validityDays ? 'border-rose-400 focus:ring-rose-500/10' : 'border-slate-200 focus:ring-indigo-500/10'} rounded-lg focus:outline-none focus:ring-2 focus:border-indigo-500 transition-all font-bold text-slate-900 shadow-sm`}
+              value={formData.validityDays}
+              onChange={(e) => {
+                setFormData({ ...formData, validityDays: e.target.value });
+                if (errors.validityDays) setErrors({ ...errors, validityDays: '' });
+              }}
+            />
+            {errors.validityDays && <p className="text-[10px] text-rose-500 font-bold ml-1">{errors.validityDays}</p>}
+          </div>
+
+          {/* Pricing Row */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pricing (₹)</label>
+            <div className="grid grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 block ml-1 uppercase">Daily</span>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
+                  value={formData.dailyPrice}
+                  onChange={(e) => setFormData({ ...formData, dailyPrice: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 block ml-1 uppercase">Weekly</span>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
+                  value={formData.weeklyPrice}
+                  onChange={(e) => setFormData({ ...formData, weeklyPrice: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-400 block ml-1 uppercase">Monthly</span>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
+                  value={formData.monthlyPrice}
+                  onChange={(e) => setFormData({ ...formData, monthlyPrice: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Plan Features</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, features: [...formData.features, ''] })}
+                  className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 flex items-center gap-1"
+                >
+                  <Plus size={10} /> Add Feature
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Quick Suggestions</span>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "Unlimited Ride Requests", "Keep 100% of Earnings", "Local Rides Enabled",
+                  "Scheduled Rides Enabled", "One-Way Trips", "Round Trips Enabled",
+                  "Outstation Booking Access", "Premium Rider Match", "Airport Pickups Enabled",
+                  "Zero Hidden Fees", "Zero Cancellation Penalty", "Direct Customer Payments",
+                  "Priority 24/7 Helpline", "Advanced Area Heatmap", "Top Rated Driver Badge",
+                  "Auto-Accept Next Ride", "Instant Withdrawal", "Flexible Working Hours"
+                ].map(sug => {
+                  const isAdded = formData.features.includes(sug);
+                  return (
+                    <Tag.CheckableTag
+                      key={sug}
+                      checked={isAdded}
+                      onChange={(checked) => {
+                        if (checked) {
+                          setFormData({ ...formData, features: [...formData.features, sug] });
+                        } else {
+                          setFormData({ ...formData, features: formData.features.filter(f => f !== sug) });
+                        }
+                      }}
+                      className={`px-3 py-1 rounded-full border transition-all ${isAdded ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-200'}`}
+                    >
+                      {sug}
+                    </Tag.CheckableTag>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+              {formData.features.map((feature: string, idx: number) => (
+                <div key={idx} className="flex gap-2 group animate-in slide-in-from-right-2 duration-200">
+                  <input
+                    type="text"
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm"
+                    placeholder="e.g. Priority Support"
+                    value={feature}
+                    onChange={(e) => {
+                      const newFeatures = [...formData.features];
+                      newFeatures[idx] = e.target.value;
+                      setFormData({ ...formData, features: newFeatures });
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const newFeatures = formData.features.filter((_, i) => i !== idx);
+                      setFormData({ ...formData, features: newFeatures });
+                    }}
+                    className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))}
+              {formData.features.length === 0 && (
+                <p className="text-[11px] text-slate-400 italic text-center py-4 bg-slate-50 rounded-lg border border-dashed border-slate-200">No features added yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </Drawer>
+
+      {/* Version History Drawer */}
+      <Drawer
+        title={
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <History size={18} className="text-indigo-600 drop-shadow-sm" />
+              <span className="text-lg font-bold text-slate-900 tracking-tight">Plan History</span>
+            </div>
+            <span className="text-xs text-slate-500 font-normal mt-0.5">{historyPlanName}</span>
+          </div>
+        }
+        placement="right"
+        width={480}
+        onClose={() => setIsHistoryOpen(false)}
+        open={isHistoryOpen}
+        closeIcon={<X size={20} className="text-slate-400 hover:text-rose-500 transition-colors" />}
+        styles={{
+          header: { borderBottom: '1px solid #f1f5f9', padding: '24px', backgroundColor: '#ffffff' },
+          body: { padding: '24px', backgroundColor: '#ffffff' }
+        }}
+        className="history-drawer"
+      >
+        <div className="space-y-8 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-[2px] before:bg-slate-100">
+          {historyLoading ? (
+            [1, 2, 3].map(i => (
+              <div key={i} className="animate-pulse bg-white p-4 h-24 ml-8" />
+            ))
+          ) : historyData.length > 0 ? (
+            historyData.map((item, idx) => (
+              <div
+                key={item.id}
+                className="relative pl-8 group animate-in slide-in-from-right-4 duration-500 fill-mode-both"
+                style={{ animationDelay: `${idx * 150}ms` }}
+              >
+                {/* Connector Dot */}
+                <div className="absolute left-[7px] top-1.5 h-2.5 w-2.5 rounded-full border-[2px] border-indigo-500 bg-white z-10" />
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                       <span className="text-[12px] font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
+                         <Avatar size={20} className="bg-slate-100 text-slate-600 text-[10px] font-bold">
+                           {(item.admin_name || 'A')[0].toUpperCase()}
+                         </Avatar>
+                         {item.admin_name || "Admin"}
+                       </span>
+                       <span className="text-slate-300">•</span>
+                       <Tag color={
+                          item.action === 'CREATE' ? 'blue' :
+                            item.action === 'UPDATE' ? 'orange' : 'purple'
+                        } className="m-0 text-[10px] uppercase font-bold border-0 px-2 py-0.5 rounded-md">
+                         {item.action === 'TOGGLE_STATUS' ? 'STATUS CHANGE' : item.action}
+                       </Tag>
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-400/80 tabular-nums">
+                      {new Date(item.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </span>
+                  </div>
+
+                  {item.action === 'UPDATE' && item.previous_data && item.new_data && (
+                    <div className="flex flex-col gap-2 mt-1">
+                      {Object.keys(item.new_data || {}).map(field => {
+                        if (['updated_at', 'created_at', 'id'].includes(field)) return null;
+                        
+                        const oldVal = item.previous_data ? item.previous_data[field] : undefined;
+                        const newVal = item.new_data[field];
+
+                        if (oldVal !== undefined && JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                          const formatValue = (val: any) => {
+                             if (val === null || val === undefined) return 'None';
+                             if (typeof val === 'boolean') return val ? 'Active' : 'Inactive';
+                             if (Array.isArray(val)) return val.join(', ');
+                             if (typeof val === 'object') return JSON.stringify(val);
+                             return String(val);
+                          };
+
+                          return (
+                            <div key={field} className="flex items-start gap-3 w-full">
+                              <span className="text-[10px] font-bold text-slate-400 w-28 shrink-0 uppercase tracking-wider pt-0.5">{field.replace(/_/g, ' ')}:</span>
+                              <div className="flex items-start gap-2 text-[11px] font-medium text-slate-700 flex-1">
+                                <span className="line-through text-slate-400 break-words max-w-[120px]">
+                                  {formatValue(oldVal)}
+                                </span>
+                                <span className="text-slate-300 mt-0.5">→</span>
+                                <span className={typeof newVal === 'boolean' ? (newVal ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold') : 'text-indigo-600 font-bold break-words max-w-[120px]'}>
+                                  {formatValue(newVal)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                  )}
+
+                  {item.action === 'CREATE' && (
+                    <div className="mt-1">
+                      <p className="text-xs text-slate-500">Plan initialized with base configuration and live status.</p>
+                    </div>
+                  )}
+
+                  {item.action === 'TOGGLE_STATUS' && (
+                    <div className="flex items-center gap-3 mt-1 text-xs">
+                      <span className="text-slate-500 font-medium w-28 shrink-0">Status change:</span>
+                      <span className={item.new_data.is_active ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold'}>
+                        {item.new_data.is_active ? 'Activated' : 'Deactivated'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200 ml-10 shadow-inner">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <History size={32} className="text-slate-200" />
+              </div>
+              <p className="text-slate-400 text-sm font-bold tracking-tight">No history records found</p>
+              <p className="text-slate-300 text-[11px] mt-1">Audit logs will appear as soon as changes are made.</p>
+            </div>
+          )}
+        </div>
+      </Drawer>
+      <style>{`
+        .history-drawer .ant-drawer-content-wrapper {
+          border-radius: 32px 0 0 32px !important;
+          overflow: hidden !important;
+        }
+        .custom-card-checkbox .ant-checkbox-inner {
+          border-radius: 6px !important;
+          border-color: #e2e8f0 !important;
+        }
+        .custom-card-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+          background-color: #4f46e5 !important;
+          border-color: #4f46e5 !important;
+        }
+        .custom-card-checkbox-circle .ant-checkbox-inner {
+          border-radius: 50% !important;
+          border-color: #d1d5db !important;
+          width: 18px !important;
+          height: 18px !important;
+        }
+        .custom-card-checkbox-circle .ant-checkbox-checked .ant-checkbox-inner {
+          background-color: transparent !important;
+          border-color: #4f46e5 !important;
+        }
+        .custom-card-checkbox-circle .ant-checkbox-checked .ant-checkbox-inner::after {
+          border-color: #4f46e5 !important;
+          width: 5px !important;
+          height: 9px !important;
+        }
+      `}</style>
     </div>
   );
 };
