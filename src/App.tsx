@@ -37,14 +37,14 @@ import FullScreenLoader from "./components/FullScreenLoader";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashBoard from "./pages/DashBoard";
 import { MdOutlineMoneyOff } from "react-icons/md";
-import { AntdStaticHolder } from "./utilities/antdStaticHolder";
+import { AntdStaticHolder, notificationApi } from "./utilities/antdStaticHolder";
+import { useSocket } from "./hooks/useSocket";
 import { notification } from "antd";
 import { useAdminTripAlert } from "./hooks/useAdminTripAlert";
 import { useUserAlert } from "./hooks/useUserAlert";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
 import { MdOutlineAccountBalanceWallet } from "react-icons/md";
 import SosMonitor from "./components/SosMonitor/SosMonitor";
-
 
 // Loading component for route suspense
 const RouteLoadingFallback = () => (
@@ -182,12 +182,38 @@ const RootLayout: React.FC = () => {
       dispatch(fetchCurrentUser());
     }
   }, [isAuthenticated, currentUser, dispatch]);
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleDriverEvent = (data: any) => {
+      let title = 'Driver Notification';
+      if (data.eventType === 'NEW_DRIVER') title = 'New Driver Registered';
+      else if (data.eventType === 'DRIVER_PROFILE_COMPLETED') title = 'Profile Completed';
+      else if (data.eventType === 'SUBSCRIPTION_ACTIVATED') title = 'New Subscription';
+      else if (data.eventType === 'SUBSCRIPTION_RENEWED') title = 'Subscription Renewed';
+
+      notificationApi?.info({
+        message: title,
+        description: data.message,
+        placement: 'topRight',
+        duration: 5,
+      });
+    };
+
+    socket.on("driver_event", handleDriverEvent);
+
+    return () => {
+      socket.off("driver_event", handleDriverEvent);
+    };
+  }, [socket]);
 
 
 
@@ -621,6 +647,9 @@ const RootLayout: React.FC = () => {
               </div>
             </Drawer>
           )}
+
+          {/* SOS Monitor - Always active for authenticated admins */}
+          {isAuthenticated && <SosMonitor />}
         </Layout>
       </AntdApp>
     </ConfigProvider>
