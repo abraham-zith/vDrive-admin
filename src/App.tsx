@@ -346,6 +346,137 @@ const RootLayout: React.FC = () => {
 
   useUserAlert(handleNewUser);
 
+
+
+  const handleNewTrip = useCallback((newTrip: any) => {
+    console.log("New trip received", newTrip);
+
+    const key = `trip-${newTrip.id}`; // unique key per notification
+
+    notification.info({
+      key,
+      message: (
+        <span style={{ fontWeight: 600, fontSize: 14 }}>
+          🚗 New Trip Requested — #{newTrip.id}
+        </span>
+      ),
+      description: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          {/* Pickup */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+            <EnvironmentOutlined style={{ color: '#22c55e', marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>PICKUP</div>
+              <div style={{ fontSize: 13, color: '#000' }}>
+                {newTrip.pickupLocation?.address || newTrip.pickupLocation || 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          {/* Dropoff */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+            <EnvironmentOutlined style={{ color: '#ef4444', marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>DROP-OFF</div>
+              <div style={{ fontSize: 13, color: '#000' }}>
+                {newTrip.dropoffLocation?.address || newTrip.dropoffLocation || 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div
+            onClick={() => {
+              notification.destroy(key);                          // close this notification
+              navigate(`/TripDetails?selected=${newTrip.id}`);         // ✅ redirect with trip selected
+            }}
+            style={{
+              marginTop: 6,
+              cursor: 'pointer',
+              color: '#3b82f6',
+              fontWeight: 600,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            View Trip Details <ArrowRightOutlined />
+          </div>
+        </div>
+      ),
+      placement: 'topRight',
+      duration: 8,       // stays longer so admin can read it
+      style: {
+        background: '#fff',
+        border: '1px solid #ccc',
+        borderRadius: 10,
+      },
+    });
+  }, [navigate]);
+
+  useAdminTripAlert(handleNewTrip);
+
+  const handleNewUser = useCallback((newUser: any) => {
+    console.log("New user registered", newUser);
+
+    const key = `user-${newUser.id || Date.now()}`;
+
+    notification.success({
+      key,
+      message: (
+        <span style={{ fontWeight: 600, fontSize: 14 }}>
+          👤 New User Registered!
+        </span>
+      ),
+      description: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          {/* User Detail */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+            <UserOutlined style={{ color: '#3b82f6', marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 13, color: '#000', fontWeight: 500 }}>
+                {newUser.full_name || newUser.fullName || 'Unknown User'}
+              </div>
+              <div style={{ fontSize: 11, color: '#888' }}>
+                {newUser.phone_number || newUser.phoneNumber || 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div
+            onClick={() => {
+              notification.destroy(key);
+              navigate(`/customers`);
+            }}
+            style={{
+              marginTop: 6,
+              cursor: 'pointer',
+              color: '#3b82f6',
+              fontWeight: 600,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            Manage Users <ArrowRightOutlined />
+          </div>
+        </div>
+      ),
+      placement: 'topRight',
+      duration: 8,
+      style: {
+        background: '#fff',
+        border: '1px solid #ccc',
+        borderRadius: 10,
+      },
+    });
+  }, [navigate]);
+
+  useUserAlert(handleNewUser);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
