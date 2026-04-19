@@ -35,7 +35,8 @@ export const RechargePlanController = {
   
   async createRechargePlan(req: Request, res: Response, next: NextFunction) {
     try {
-      const plan = await RechargePlanService.createPlan(req.body);
+      const adminId = (req as any).user?.id;
+      const plan = await RechargePlanService.createPlan(req.body, adminId);
       return successResponse(res, 201, "Recharge plan created successfully", plan);
     } catch (err) {
       next(err);
@@ -45,7 +46,8 @@ export const RechargePlanController = {
   
   async editRechargePlan(req: Request, res: Response, next: NextFunction) {
     try {
-      const plan = await RechargePlanService.updatePlan(Number(req.params.id), req.body);
+      const adminId = (req as any).user?.id;
+      const plan = await RechargePlanService.updatePlan(Number(req.params.id), req.body, adminId);
       return successResponse(res, 200, "Recharge plan updated successfully", plan);
     } catch (err) {
       next(err);
@@ -55,8 +57,9 @@ export const RechargePlanController = {
   
   async toggleRechargePlanStatus(req: Request, res: Response, next: NextFunction) {
     try {
+      const adminId = (req as any).user?.id;
       const { isActive } = req.body;
-      const plan = await RechargePlanService.toggleStatus(Number(req.params.id), isActive);
+      const plan = await RechargePlanService.toggleStatus(Number(req.params.id), isActive, adminId);
       return successResponse(res, 200, "Recharge plan status updated successfully", plan);
     } catch (err) {
       next(err);
@@ -73,9 +76,21 @@ export const RechargePlanController = {
     }
   },
 
+  async getRechargePlanHistory(req: Request, res: Response, next: NextFunction) {
+    try {
+      const history = await RechargePlanService.getPlanHistory(Number(req.params.id));
+      return successResponse(res, 200, "Recharge plan history fetched successfully", history);
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async getAllActiveDriverSubscriptions(req: Request, res: Response, next: NextFunction) {
-    // This data lives in User-Driver API
-    const targetPath = '/api/subscriptions/all-active'; // Map to the correct endpoint in user-driver-api
-    return forwardRequest(req, res, next, config.userDriverApiUrl, targetPath);
+    try {
+      const subscriptions = await RechargePlanService.getActiveSubscriptions();
+      return successResponse(res, 200, "Active subscriptions fetched successfully", subscriptions);
+    } catch (err) {
+      next(err);
+    }
   },
 };

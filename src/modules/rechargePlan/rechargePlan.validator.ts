@@ -19,6 +19,10 @@ export const RechargePlanValidation = {
     monthlyPrice: Joi.number().precision(2).default(0),
     features: Joi.any().default({}),
     isActive: Joi.boolean().default(true),
+    tag: Joi.string().max(100).allow('', null),
+    promoCode: Joi.string().allow('', null),
+    promoDiscount: Joi.number().min(0).max(100).default(0),
+    firstRechargeDiscount: Joi.number().min(0).max(100).default(0),
   }),
 
   updateValidation: Joi.object({
@@ -30,6 +34,10 @@ export const RechargePlanValidation = {
     monthlyPrice: Joi.number().precision(2),
     features: Joi.any(),
     isActive: Joi.boolean(),
+    tag: Joi.string().max(100).allow('', null),
+    promoCode: Joi.string().allow('', null),
+    promoDiscount: Joi.number().min(0).max(100),
+    firstRechargeDiscount: Joi.number().min(0).max(100),
   })
 
     .min(1)

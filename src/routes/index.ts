@@ -22,6 +22,7 @@ import { sendToSocket } from '../services/socket';
 import tripTransactionManagementRoutes from '../modules/trip-transaction-management/trip-transaction.routes';
 import taxRoutes from '../modules/tax-management/tax.routes';
 import pricingCombinationRoutes from '../modules/pricing-combinations/pricing-combinations.routes';
+import promoRoutes from '../modules/promo-management/promo.routes';
 
 const router = Router();
 
@@ -48,6 +49,7 @@ router.use('/trips', tripManagementRoutes);
 router.use('/generate-presigned-url', s3Routes);
 router.use('/driver-reconciliation', driverReconciliationRoutes);
 router.use('/recharge-plans', rechargePlanRoutes);
+router.use('/promos', promoRoutes);
 router.use('/pricing-fare-rules', pricingFareRulesRoutes);
 router.use('/sos', sosManagementRoutes);
 router.use('/triptransactions', tripTransactionManagementRoutes);

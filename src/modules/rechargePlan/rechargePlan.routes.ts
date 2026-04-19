@@ -18,6 +18,13 @@ router.get(
 );
 
 
+router.get(
+  '/history/:id',
+  validateParams(RechargePlanValidation.idValidation),
+  RechargePlanController.getRechargePlanHistory
+);
+
+
 router.post(
   '/create',
   validateBody(RechargePlanValidation.createValidation),

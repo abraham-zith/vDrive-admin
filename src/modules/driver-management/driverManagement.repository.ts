@@ -139,15 +139,51 @@ export class DriverManagementRepository {
       "SELECT COUNT(*) FROM drivers WHERE is_deleted = false AND status = 'active'"
     );
 
-    // Today's registrations
+    // Today's boundaries
+    const today = 'CURRENT_DATE';
+    
+    // Today's metrics
     const todayUsersResult = await query(
-      "SELECT COUNT(*) FROM users WHERE created_at >= CURRENT_DATE"
+      `SELECT COUNT(*) FROM users WHERE created_at >= ${today}`
     );
     const todayDriversResult = await query(
-      "SELECT COUNT(*) FROM drivers WHERE created_at >= CURRENT_DATE AND is_deleted = false"
+      `SELECT COUNT(*) FROM drivers WHERE created_at >= ${today} AND is_deleted = false`
     );
     const todaySubscriptionsResult = await query(
-      "SELECT COUNT(*) FROM driver_subscriptions WHERE created_at >= CURRENT_DATE AND status = 'active'"
+      `SELECT COUNT(*) FROM driver_subscriptions WHERE created_at >= ${today} AND status = 'active'`
+    );
+    const todayTripsResult = await query(
+      `SELECT COUNT(*) as total, 
+              SUM(total_fare) FILTER (WHERE trip_status = 'COMPLETED') as revenue 
+       FROM trips WHERE created_at >= ${today}`
+    );
+
+    // Total counts (Lifetime)
+    const totalUsersResult = await query(
+      "SELECT COUNT(*) FROM users"
+    );
+    const totalSubscriptionsResult = await query(
+      "SELECT COUNT(*) FROM driver_subscriptions WHERE status = 'active'"
+    );
+    const totalEarningsResult = await query(
+      "SELECT SUM(total_fare) as total FROM trips WHERE trip_status = 'COMPLETED'"
+    );
+
+    // Yesterday's metrics for trends
+    const yesterday = "CURRENT_DATE - INTERVAL '1 day'";
+    const yesterdayUsersResult = await query(
+      `SELECT COUNT(*) FROM users WHERE created_at >= ${yesterday} AND created_at < ${today}`
+    );
+    const yesterdayDriversResult = await query(
+      `SELECT COUNT(*) FROM drivers WHERE created_at >= ${yesterday} AND created_at < ${today} AND is_deleted = false`
+    );
+    const yesterdaySubscriptionsResult = await query(
+      `SELECT COUNT(*) FROM driver_subscriptions WHERE created_at >= ${yesterday} AND created_at < ${today} AND status = 'active'`
+    );
+    const yesterdayTripsResult = await query(
+      `SELECT COUNT(*) as total, 
+              SUM(total_fare) FILTER (WHERE trip_status = 'COMPLETED') as revenue 
+       FROM trips WHERE created_at >= ${yesterday} AND created_at < ${today}`
     );
 
     // Dynamic counts: Available (Online & no active trip) vs On Trip (Active trip)
@@ -155,7 +191,6 @@ export class DriverManagementRepository {
       "SELECT COUNT(*) FROM drivers WHERE is_deleted = false AND (availability->>'online' = 'true' OR availability->>'status' = 'ONLINE')"
     );
 
-    // On trip means ANY ongoing status that assigned a driver
     const onTripResult = await query(
       "SELECT COUNT(DISTINCT driver_id) FROM trips WHERE trip_status IN ('ACCEPTED', 'ARRIVING', 'ARRIVED', 'LIVE', 'DESTINATION_REACHED')"
     );
@@ -179,6 +214,27 @@ export class DriverManagementRepository {
     const activeTripsCount = parseInt(onTripResult.rows[0]?.count || '0');
     const onlineCount = parseInt(onlineResult.rows[0]?.count || '0');
 
+    // Helper to calculate trend
+    const calculateTrend = (curr: number, prev: number) => {
+      if (prev === 0) return curr > 0 ? '+100%' : '0%';
+      const diff = ((curr - prev) / prev) * 100;
+      return `${diff > 0 ? '+' : ''}${Math.round(diff)}%`;
+    };
+
+    const stats = {
+      todayNewUsers: parseInt(todayUsersResult.rows[0]?.count || '0'),
+      todayNewDrivers: parseInt(todayDriversResult.rows[0]?.count || '0'),
+      todaySubscriptions: parseInt(todaySubscriptionsResult.rows[0]?.count || '0'),
+      todayTrips: parseInt(todayTripsResult.rows[0]?.total || '0'),
+      todayRevenue: parseFloat(todayTripsResult.rows[0]?.revenue || '0'),
+      
+      yesterdayUsers: parseInt(yesterdayUsersResult.rows[0]?.count || '0'),
+      yesterdayDrivers: parseInt(yesterdayDriversResult.rows[0]?.count || '0'),
+      yesterdaySubscriptions: parseInt(yesterdaySubscriptionsResult.rows[0]?.count || '0'),
+      yesterdayTrips: parseInt(yesterdayTripsResult.rows[0]?.total || '0'),
+      yesterdayRevenue: parseFloat(yesterdayTripsResult.rows[0]?.revenue || '0'),
+    };
+
     return {
       totalDrivers: parseInt(totalResult.rows[0]?.count || '0'),
       activeDrivers: parseInt(activeResult.rows[0]?.count || '0'),
@@ -186,11 +242,23 @@ export class DriverManagementRepository {
       onTripDrivers: activeTripsCount,
       totalScheduledRides: parseInt(totalScheduledResult.rows[0]?.count || '0'),
       acceptedScheduledRides: parseInt(acceptedScheduledResult.rows[0]?.count || '0'),
-      todayNewUsers: parseInt(todayUsersResult.rows[0]?.count || '0'),
-      todayNewDrivers: parseInt(todayDriversResult.rows[0]?.count || '0'),
-      todaySubscriptions: parseInt(todaySubscriptionsResult.rows[0]?.count || '0'),
+      todayNewUsers: stats.todayNewUsers,
+      todayNewDrivers: stats.todayNewDrivers,
+      todaySubscriptions: stats.todaySubscriptions,
+      totalUsers: parseInt(totalUsersResult.rows[0]?.count || '0'),
+      totalSubscriptions: parseInt(totalSubscriptionsResult.rows[0]?.count || '0'),
+      totalEarnings: parseFloat(totalEarningsResult.rows[0]?.total || '0'),
+      todayTrips: stats.todayTrips,
+      todayRevenue: stats.todayRevenue,
       pendingVerifications: parseInt(pendingVerificationsResult.rows[0]?.count || '0'),
       documentExpiryAlerts: parseInt(documentExpiryAlertsResult.rows[0]?.count || '0'),
+      trends: {
+        users: calculateTrend(stats.todayNewUsers, stats.yesterdayUsers),
+        drivers: calculateTrend(stats.todayNewDrivers, stats.yesterdayDrivers),
+        subscriptions: calculateTrend(stats.todaySubscriptions, stats.yesterdaySubscriptions),
+        trips: calculateTrend(stats.todayTrips, stats.yesterdayTrips),
+        revenue: calculateTrend(stats.todayRevenue, stats.yesterdayRevenue),
+      }
     };
   }
 
