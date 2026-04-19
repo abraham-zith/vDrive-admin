@@ -55,6 +55,10 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         }
       });
 
+      socketRef.current.onAny((eventName, ...args) => {
+        console.log(`Incoming Event: ${eventName}`, args);
+      });
+
       socketRef.current.on("disconnect", () => {
         setIsConnected(false);
         setSocketId(null);

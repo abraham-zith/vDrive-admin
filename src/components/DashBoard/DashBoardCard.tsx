@@ -56,7 +56,7 @@ const DashboardCard: React.FC = () => {
     {
       title: "Total Users",
       value: "120,540",
-      subtitle: "riders trust our platform",
+      subtitle: "customers trust our platform",
       iconBgKey: "bg-blue-400",
       icon: <TeamOutlined />,
       subIcon: <GlobalOutlined />,
