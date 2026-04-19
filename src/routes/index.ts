@@ -13,14 +13,18 @@ import s3Routes from '../modules/s3/s3.routes';
 import driverReconciliationRoutes from '../modules/driver-reconciliation/driverReconciliation.routes';
 import rechargePlanRoutes from '../modules/rechargePlan/rechargePlan.routes';
 import pricingFareRulesRoutes from '../modules/pricing-fare-rules/pricingFareRules.routes';
+import driverManagementRoutes from '../modules/driver-management/driverManagement.routes';
+import sosManagementRoutes from '../modules/sos-management/sosManagement.routes';
+import webhookRoutes from '../modules/webhooks/webhook.routes';
+import { isServiceAuthenticated } from '../shared/serviceAuthentication';
 import pricingCalculatorRoutes from '../modules/pricing-calculator/pricingCalculator.routes';
 import { sendToSocket } from '../services/socket';
 import tripTransactionManagementRoutes from '../modules/trip-transaction-management/trip-transaction.routes';
 import taxRoutes from '../modules/tax-management/tax.routes';
 import pricingCombinationRoutes from '../modules/pricing-combinations/pricing-combinations.routes';
-import webhookRoutes from '../modules/webhooks/webhook.routes';
 import { openCouponRoutes, adminCouponRoutes } from '../modules/coupon-management/coupon.routes';
 import referralManagementRoutes from '../modules/referral-management/referral.routes';
+import promoRoutes from '../modules/promo-management/promo.routes';
 
 const router = Router();
 
@@ -29,6 +33,8 @@ router.get('/health-check', (req, res) => {
 });
 router.use('/auth', authRoutes);
 
+// Webhook routes (secured with API key as it is called by internal Driver API)
+router.use('/webhooks', isServiceAuthenticated, webhookRoutes);
 // Open endpoint for user-driver backend to fetch all type pricing
 router.use('/pricing', pricingCalculatorRoutes);
 router.use('/webhooks', webhookRoutes);
@@ -42,11 +48,14 @@ router.use('/price-settings', priceSettingsRoutes);
 router.use('/packages', packageRoutes);
 router.use('/admin-users', userRoutes);
 router.use('/users', userManagementRoutes);
+router.use('/drivers', driverManagementRoutes);
 router.use('/trips', tripManagementRoutes);
 router.use('/generate-presigned-url', s3Routes);
 router.use('/driver-reconciliation', driverReconciliationRoutes);
 router.use('/recharge-plans', rechargePlanRoutes);
+router.use('/promos', promoRoutes);
 router.use('/pricing-fare-rules', pricingFareRulesRoutes);
+router.use('/sos', sosManagementRoutes);
 router.use('/triptransactions', tripTransactionManagementRoutes);
 router.use('/taxes', taxRoutes);
 router.use('/pricing-combinations', pricingCombinationRoutes);
@@ -67,3 +76,4 @@ router.get('/internal/trip-alert', (req, res) => {
 });
 
 export default router;
+

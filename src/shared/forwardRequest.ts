@@ -1,29 +1,50 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig, Method } from 'axios';
+import { Request, Response, NextFunction } from 'express';
 import { logger } from './logger';
 import config from '../config';
 
-export const forwardRequest = async (req: any, res: any, next: any, url: string) => {
+/**
+ * Forwards an incoming Express request to another service using Axios.
+ * 
+ * @param req - The original Express Request object.
+ * @param res - The Express Response object.
+ * @param next - The Express NextFunction.
+ * @param url - The base URL of the target service.
+ * @param customPath - Optional path to override the original request path.
+ */
+export const forwardRequest = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+  url: string,
+  customPath?: string
+) => {
   try {
     const { body: data } = req;
-    const axiosConfig = {
-      method: req.method,
-      url: `${url}${req.originalUrl}`,
+    
+    const axiosConfig: AxiosRequestConfig = {
+      method: req.method as Method,
+      url: `${url}${customPath || req.originalUrl}`,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': config.internalServiceApiKey,
-        'x-admin-id': req.user?.id,
-        'Authorization': req.headers.authorization, // Forward the access token
+        'x-admin-id': (req as any).user?.id,
+        // Forward original authorization header if available
+        ...(req.headers.authorization && { Authorization: req.headers.authorization }),
       },
       data,
     };
-    logger.info(`Forwarding Request to URL :${url}  tenant  :${req.tenant} `);
 
+    logger.info(`Forwarding Request to URL: ${url} tenant: ${(req as any).tenant || 'N/A'}`);
+    
     const response = await axios(axiosConfig);
-    logger.info(`Request Processed Successfully :${url}  tenant  :${req.tenant} `);
-
+    
+    logger.info(`Request Processed Successfully: ${url} tenant: ${(req as any).tenant || 'N/A'}`);
+    
     return res.status(response.status).json(response.data);
   } catch (error: any) {
-    logger.error(`Error In  URL: ${url} `);
+    logger.error(`Error In URL: ${url}`);
+
     let responseData = {
       data: {
         message:

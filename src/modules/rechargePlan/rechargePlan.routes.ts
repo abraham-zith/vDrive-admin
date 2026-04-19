@@ -8,12 +8,20 @@ import{ RechargePlanValidation} from './rechargePlan.validator';
 const router = Router();
 
 router.get('/', RechargePlanController.getRechargePlans);
+router.get('/active-subscriptions', RechargePlanController.getAllActiveDriverSubscriptions);
 
 
 router.get(
   '/:id',
   validateParams(RechargePlanValidation.idValidation),
   RechargePlanController.getRechargePlanById
+);
+
+
+router.get(
+  '/history/:id',
+  validateParams(RechargePlanValidation.idValidation),
+  RechargePlanController.getRechargePlanHistory
 );
 
 
