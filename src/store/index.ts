@@ -11,7 +11,6 @@ import pricingCombinationReducer from "./slices/pricingCombinationSlice";
 import sosReducer from "./slices/sosSlice";
 import adminReducer from "./slices/adminSlice";
 import driverReducer from "./slices/driverSlice";
-import sosReducer from "./slices/sosSlice";
 import couponReducer from "./slices/couponSlice";
 import referralReducer from "./slices/referralSlice";
 
@@ -28,7 +27,6 @@ export const store = configureStore({
     pricingCombination: pricingCombinationReducer,
     admin: adminReducer,
     drivers: driverReducer,
-    sos: sosReducer,
     sos: sosReducer,
     coupon: couponReducer,
     referral: referralReducer,
