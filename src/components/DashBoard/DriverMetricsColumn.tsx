@@ -1,8 +1,6 @@
 import React from "react";
-import { Progress, Typography, Divider } from "antd";
-import { Activity, CheckCircle, Clock, MapPin, Navigation, XCircle, Users } from "lucide-react";
-
-const { Text } = Typography;
+import { Progress } from "antd";
+import { Activity, CheckCircle, Clock, Navigation, XCircle, Users } from "lucide-react";
 
 interface DriverMetricsColumnProps {
   stats: {

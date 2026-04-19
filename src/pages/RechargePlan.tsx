@@ -1,21 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import {
   Plus,
   Search,
   Trash2,
   X,
   Zap,
-  Trophy,
-  Crown,
   ChevronDown,
-  ChevronUp,
   Users,
   Edit3,
   Power,
+  Flame,
+  TrendingUp,
+  History,
+  CheckCircle2,
+  Crown,
+  Sparkles,
+  ArrowUpRight,
+  MoreVertical,
+  Filter,
+  CreditCard
 } from 'lucide-react';
 import axios from '../api/axios';
-import { Drawer, Select, Button, Space, Tag, Modal } from 'antd';
-import { ClockCircleOutlined } from '@ant-design/icons';
+import { messageApi, modalApi, notificationApi } from '../utilities/antdStaticHolder';
+import { Checkbox, Select, Drawer, Button, Avatar, Tag, Dropdown } from 'antd';
+import { useNavigate } from 'react-router-dom';
+
+const PromotionsTab = lazy(() => import('./Promotions'));
 
 /* ================= TYPES ================= */
 
@@ -29,21 +39,64 @@ interface RechargePlan {
   monthlyPrice: number;
   features: any;
   isActive: boolean;
+  tag?: string; // New field for badges
 }
+
+/* ================= UTILS ================= */
+
+
+
+const CountdownTimer: React.FC<{ expiryDate: string }> = ({ expiryDate }) => {
+  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const difference = new Date(expiryDate).getTime() - new Date().getTime();
+      if (difference > 0 && difference < 86400000) { // < 24 hours
+        setTimeLeft({
+          hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+          minutes: Math.floor((difference / 1000 / 60) % 60),
+          seconds: Math.floor((difference / 1000) % 60),
+        });
+      } else {
+        setTimeLeft(null);
+      }
+    };
+
+    calculateTime();
+    const timer = setInterval(calculateTime, 1000);
+    return () => clearInterval(timer);
+  }, [expiryDate]);
+
+  if (!timeLeft) return null;
+
+  return (
+    <div className="flex items-center gap-1 bg-rose-600 text-white px-1.5 py-0.5 rounded text-[9px] font-bold font-mono animate-pulse shadow-sm border border-rose-500 whitespace-nowrap">
+      <span>{String(timeLeft.hours).padStart(2, '0')}</span>
+      <span className="opacity-50">:</span>
+      <span>{String(timeLeft.minutes).padStart(2, '0')}</span>
+      <span className="opacity-50">:</span>
+      <span>{String(timeLeft.seconds).padStart(2, '0')}</span>
+    </div>
+  );
+};
 
 /* ================= COMPONENT ================= */
 
 const RechargePlanPage: React.FC = () => {
+  const navigate = useNavigate();
   const [plans, setPlans] = useState<RechargePlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"plans" | "subscriptions">("plans");
+  const [activeTab, setActiveTab] = useState<"plans" | "subscriptions" | "promotions">("plans");
   const [activeSubscriptions, setActiveSubscriptions] = useState<any[]>([]);
   const [loadingActiveSubs, setLoadingActiveSubs] = useState(false);
   const [expandedPlanId, setExpandedPlanId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form State
   const [formData, setFormData] = useState({
@@ -55,9 +108,16 @@ const RechargePlanPage: React.FC = () => {
     monthlyPrice: '',
     features: [] as string[],
     isActive: true,
+    tag: '',
   });
 
   const [subSearchTerm, setSubSearchTerm] = useState("");
+  const [subFilter, setSubFilter] = useState<string>("ALL");
+  const [selectedPlanIds, setSelectedPlanIds] = useState<number[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyPlanName, setHistoryPlanName] = useState("");
 
   /* ---- Fetch Plans ---- */
   const fetchPlans = async () => {
@@ -89,8 +149,8 @@ const RechargePlanPage: React.FC = () => {
       }
 
       // Map database snake_case to frontend CamelCase
-      const mappedPlans = rawData.map((p: any) => ({
-        id: p.id,
+      const mappedPlans = rawData.map((p: any, idx: number) => ({
+        id: p.id || (idx + 1000), // Ensure unique ID even if DB ID is missing to prevent expansion bugs
         planName: p.plan_name || p.planName,
         description: p.description,
         validityDays: p.validity_days || p.validityDays,
@@ -110,6 +170,7 @@ const RechargePlanPage: React.FC = () => {
           }
           return [];
         })(),
+        tag: p.tag || '',
         isActive: p.is_active !== undefined ? p.is_active : p.isActive,
       }));
       setPlans(mappedPlans);
@@ -192,16 +253,7 @@ const RechargePlanPage: React.FC = () => {
       .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
-  const getPlanConfig = (name: string) => {
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes('premium')) {
-      return { icon: <Crown size={24} fill="currentColor" /> };
-    }
-    if (lowerName.includes('elite')) {
-      return { icon: <Trophy size={24} fill="currentColor" /> };
-    }
-    return { icon: <Zap size={24} fill="currentColor" /> };
-  };
+
 
   /* ---- Handlers ---- */
   const handleOpenModal = (plan?: RechargePlan) => {
@@ -215,8 +267,9 @@ const RechargePlanPage: React.FC = () => {
         dailyPrice: plan.dailyPrice.toString(),
         weeklyPrice: plan.weeklyPrice.toString(),
         monthlyPrice: plan.monthlyPrice.toString(),
-        features: Array.isArray(plan.features) ? [...plan.features] : [],
+        features: Array.isArray(plan.features) ? plan.features.map(f => formatFeatureLabel(f)) : [],
         isActive: plan.isActive,
+        tag: plan.tag || '',
       });
     } else {
       setEditingId(null);
@@ -229,55 +282,146 @@ const RechargePlanPage: React.FC = () => {
         monthlyPrice: '',
         features: [],
         isActive: true,
+        tag: '',
       });
     }
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        planName: formData.planName,
-        description: formData.description,
-        validityDays: Number(formData.validityDays),
-        dailyPrice: Number(formData.dailyPrice),
-        weeklyPrice: Number(formData.weeklyPrice),
-        monthlyPrice: Number(formData.monthlyPrice),
-        features: formData.features.filter(f => f.trim()),
-        isActive: formData.isActive,
-      };
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.planName.trim()) newErrors.planName = "Plan name is required";
+    if (!formData.validityDays || Number(formData.validityDays) <= 0) newErrors.validityDays = "Validity must be greater than 0";
+    if (!formData.dailyPrice || Number(formData.dailyPrice) < 0) newErrors.dailyPrice = "Price cannot be negative";
 
-      if (editingId) {
-        await axios.patch(`/api/recharge-plans/update/${editingId}`, payload);
-        alert('Plan updated successfully!');
-      } else {
-        await axios.post('/api/recharge-plans/create', payload);
-        alert('New plan created successfully!');
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    if (!validateForm()) {
+      messageApi.error('Please correct the errors in the form.');
+      return;
+    }
+
+    const action = editingId ? 'update' : 'create';
+
+    modalApi.confirm({
+      title: editingId ? 'Confirm Plan Update' : 'Confirm New Plan',
+      content: `Are you sure you want to ${action} this plan configuration?`,
+      okText: editingId ? 'Update Plan' : 'Create Plan',
+      cancelText: 'Cancel',
+      centered: true,
+      onOk: async () => {
+        try {
+          setIsSubmitting(true);
+          const payload = {
+            planName: formData.planName,
+            description: formData.description,
+            validityDays: Number(formData.validityDays),
+            dailyPrice: Number(formData.dailyPrice),
+            weeklyPrice: Number(formData.weeklyPrice),
+            monthlyPrice: Number(formData.monthlyPrice),
+            features: formData.features.filter(f => f.trim()),
+            isActive: formData.isActive,
+            tag: formData.tag,
+          };
+
+          if (editingId) {
+            await axios.patch(`/api/recharge-plans/update/${editingId}`, payload);
+            notificationApi.success({
+              message: 'Plan Updated',
+              description: `"${formData.planName}" has been successfully updated.`,
+              placement: 'topRight',
+            });
+          } else {
+            await axios.post('/api/recharge-plans/create', payload);
+            notificationApi.success({
+              message: 'Plan Created',
+              description: `"${formData.planName}" has been successfully created.`,
+              placement: 'topRight',
+            });
+          }
+          setIsModalOpen(false);
+          fetchPlans();
+        } catch (err: any) {
+          console.error('Failed to save plan:', err);
+          messageApi.error(err?.response?.data?.message || 'Failed to save plan. Please check all fields.');
+        } finally {
+          setIsSubmitting(false);
+        }
       }
-      setIsModalOpen(false);
-      fetchPlans();
-    } catch (err) {
-      console.error('Failed to save plan:', err);
-      alert('Failed to save plan. Please check all fields.');
+    });
+  };
+
+
+
+  const handleBulkAction = async (action: 'deactivate' | 'increase_price') => {
+    if (selectedPlanIds.length === 0) return;
+
+    modalApi.confirm({
+      title: 'Global Bulk Action',
+      content: `Applying change to ${selectedPlanIds.length} plans. This sequence may take a moment.`,
+      okText: 'Proceed',
+      onOk: async () => {
+        try {
+          setIsSubmitting(true);
+          for (const id of selectedPlanIds) {
+            const plan = plans.find(p => p.id === id);
+            if (!plan) continue;
+
+            if (action === 'deactivate') {
+              await axios.patch(`/api/recharge-plans/status/${id}`, { isActive: false });
+            } else {
+              const payload = {
+                dailyPrice: Math.round(plan.dailyPrice * 1.1),
+                weeklyPrice: Math.round(plan.weeklyPrice * 1.1),
+                monthlyPrice: Math.round(plan.monthlyPrice * 1.1),
+              };
+              await axios.patch(`/api/recharge-plans/update/${id}`, payload);
+            }
+          }
+          notificationApi.success({
+            message: 'Updates Complete',
+            description: `Modified ${selectedPlanIds.length} plans successfully.`,
+          });
+          setSelectedPlanIds([]);
+          fetchPlans();
+        } catch (err) {
+          messageApi.error('Action partially failed. Please check logs.');
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
+    });
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedPlanIds.length === filteredPlans.length) {
+      setSelectedPlanIds([]);
+    } else {
+      setSelectedPlanIds(filteredPlans.map(p => p.id));
     }
   };
 
   const handleDelete = async (id: number) => {
-    Modal.confirm({
+    const plan = plans.find(p => p.id === id);
+    modalApi.confirm({
       title: 'Delete Plan?',
-      content: 'Are you sure you want to delete this plan? This action cannot be undone.',
+      content: `Are you sure you want to delete "${plan?.planName}"? This action cannot be undone.`,
       okText: 'Delete',
       okType: 'danger',
       cancelText: 'Cancel',
       onOk: async () => {
         try {
           await axios.delete(`/api/recharge-plans/delete/${id}`);
-          alert('Plan deleted successfully');
+          messageApi.success('Plan deleted successfully');
           fetchPlans();
         } catch (err) {
           console.error('Failed to delete plan:', err);
-          alert('Failed to delete plan');
+          messageApi.error('Failed to delete plan');
         }
       },
     });
@@ -286,11 +430,26 @@ const RechargePlanPage: React.FC = () => {
   const toggleStatus = async (id: number, currentStatus: boolean) => {
     try {
       await axios.patch(`/api/recharge-plans/status/${id}`, { isActive: !currentStatus });
-      alert(`Plan ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
+      messageApi.success(`Plan ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
       fetchPlans();
     } catch (err) {
       console.error('Failed to update status:', err);
-      alert('Failed to update status');
+      messageApi.error('Failed to update status');
+    }
+  };
+
+  const fetchPlanHistory = async (id: number, name: string) => {
+    try {
+      setHistoryLoading(true);
+      setHistoryPlanName(name);
+      setIsHistoryOpen(true);
+      const res = await axios.get(`/api/recharge-plans/history/${id}`);
+      setHistoryData(res.data.data || []);
+    } catch (err) {
+      console.error('Failed to fetch history:', err);
+      messageApi.error('Failed to fetch plan history');
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -303,64 +462,109 @@ const RechargePlanPage: React.FC = () => {
   });
 
   return (
-    <div className="p-8 bg-[#F5F7FA] min-h-screen font-sans">
+    <div className="flex flex-col h-full overflow-hidden p-3 gap-3 bg-gray-50/50 min-h-screen font-sans">
       {/* Header section */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex items-center space-x-3 shrink-0">
+        <div className="flex items-center justify-center w-10 h-10 bg-indigo-500 rounded-xl shadow-lg shadow-indigo-500/20">
+          <Crown className="text-white text-xl" />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Recharge Plans</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage plans and monitor subscriptions</p>
+          <h1 className="!m-0 text-lg sm:text-xl font-extrabold text-gray-900 tracking-tight">Recharge Plans</h1>
+          <p className="block text-[9px] text-gray-400 font-medium font-outfit uppercase tracking-widest">
+            Configuration & Subscription Management
+          </p>
         </div>
       </div>
 
-      {/* Tabs section */}
-      <div className="flex gap-8 mb-8 border-b border-slate-200">
-        <button
-          onClick={() => setActiveTab("plans")}
-          className={`pb-4 px-1 text-sm font-semibold transition-all relative ${activeTab === "plans"
-              ? "text-indigo-600"
-              : "text-slate-400 hover:text-slate-600"
-            }`}
-        >
-          Manage Plans <span className="ml-1 opacity-60 font-medium">{plans.length}</span>
+      {/* Dashboard-Style Navigation Toolbelt */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-2 rounded-2xl border border-gray-100 shadow-sm shrink-0">
+        <div className="flex gap-1 p-1 bg-gray-50/80 rounded-xl border border-gray-100">
+          <button
+            onClick={() => setActiveTab("plans")}
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "plans" 
+              ? "bg-white text-indigo-600 shadow-sm border border-gray-200" 
+              : "text-gray-500 hover:text-indigo-600"}`}
+          >
+            <Crown size={14} />
+            Manage Plans
+            <span className="ml-1 px-1.5 py-0.5 bg-gray-200/50 text-gray-500 text-[10px] rounded-md">{plans.length}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("subscriptions")}
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "subscriptions" 
+              ? "bg-white text-indigo-600 shadow-sm border border-gray-200" 
+              : "text-gray-500 hover:text-indigo-600"}`}
+          >
+            <Users size={14} />
+            Subscriptions
+            <span className="ml-1 px-1.5 py-0.5 bg-gray-200/50 text-gray-500 text-[10px] rounded-md">{activeSubscriptions.length}</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("promotions")}
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "promotions" 
+              ? "bg-white text-indigo-600 shadow-sm border border-gray-200" 
+              : "text-gray-500 hover:text-indigo-600"}`}
+          >
+            <Zap size={14} />
+            Offers & Promos
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 pr-2">
           {activeTab === "plans" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 bg-white border border-gray-100 hover:border-indigo-100 px-4 py-1.5 rounded-lg transition-all active:scale-95 text-xs font-bold shadow-sm"
+            >
+              <Plus size={14} strokeWidth={3} />
+              <span>Create New Plan</span>
+            </button>
           )}
-        </button>
-        <button
-          onClick={() => setActiveTab("subscriptions")}
-          className={`pb-4 px-1 text-sm font-semibold transition-all relative ${activeTab === "subscriptions"
-              ? "text-indigo-600"
-              : "text-slate-400 hover:text-slate-600"
-            }`}
-        >
-          Active Subscriptions <span className="ml-1 opacity-60 font-medium">{activeSubscriptions.length}</span>
           {activeTab === "subscriptions" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600" />
+            <button
+              onClick={fetchActiveSubscriptions}
+              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
+            >
+              <Zap size={14} className="text-amber-500" />
+              Sync Data
+            </button>
           )}
-        </button>
+        </div>
       </div>
 
       {activeTab === "plans" ? (
         <>
-          {/* Controls Row */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-8 items-center justify-between">
-            <div className="flex flex-1 gap-4 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 py-1 items-center justify-between">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="flex items-center gap-3 px-3 py-1.5 bg-white border border-gray-100 rounded-xl shadow-sm hover:border-indigo-100 transition-all group/selectall">
+                <Checkbox
+                  checked={selectedPlanIds.length === filteredPlans.length && filteredPlans.length > 0}
+                  indeterminate={selectedPlanIds.length > 0 && selectedPlanIds.length < filteredPlans.length}
+                  onChange={toggleAllSelection}
+                  className="custom-card-checkbox"
+                />
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover/selectall:text-indigo-600 transition-colors cursor-default select-none">
+                  {selectedPlanIds.length > 0 ? `${selectedPlanIds.length} Selected` : 'Bulk Selection'}
+                </span>
+              </div>
+
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within/search:text-indigo-500 transition-colors" size={16} />
                 <input
                   type="text"
-                  placeholder="Search plans..."
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                  placeholder="Analyze plans by name..."
+                  className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-100 rounded-xl text-xs focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400 transition-all shadow-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+
               <Select
                 defaultValue="all"
-                style={{ width: 140, height: 40 }}
+                style={{ width: 130, height: 32 }}
                 onChange={setStatusFilter}
-                className="custom-select"
-                suffixIcon={<ChevronDown size={16} className="text-slate-400" />}
+                className="custom-select-dashboard"
+                suffixIcon={<ChevronDown size={14} className="text-gray-400" />}
                 options={[
                   { value: 'all', label: 'All Status' },
                   { value: 'active', label: 'Active' },
@@ -368,98 +572,171 @@ const RechargePlanPage: React.FC = () => {
                 ]}
               />
             </div>
-            <button
-              onClick={() => handleOpenModal()}
-              className="flex items-center gap-2 text-indigo-600 border border-indigo-600 hover:bg-indigo-50 px-5 py-2.5 rounded-lg transition-all active:scale-95 text-sm font-semibold"
-            >
-              <Plus size={18} />
-              Create Plan
-            </button>
+            
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {loading ? (
               [1, 2, 3].map((i: number) => (
                 <div key={i} className="animate-pulse bg-white p-8 rounded-2xl h-80 shadow-sm border border-slate-100" />
               ))
             ) : filteredPlans.length > 0 ? (
-              filteredPlans.map((plan) => {
+              filteredPlans.map((plan, index) => {
                 const isExpanded = expandedPlanId === plan.id;
                 const activeSubCount = activeSubscriptions.filter(s => s.planName?.toLowerCase() === plan.planName?.toLowerCase()).length;
+                
+                const planNameLower = plan.planName?.toLowerCase() || '';
+                let themeConfig = { color: '#0ea5e9', bg: 'bg-sky-500', shadow: 'shadow-sky-500/20', Icon: Zap };
+
+                if (planNameLower.includes('basic')) {
+                  themeConfig = { color: '#0ea5e9', bg: 'bg-sky-500', shadow: 'shadow-sky-500/20', Icon: Zap };
+                } else if (planNameLower.includes('elite')) {
+                  themeConfig = { color: '#a855f7', bg: 'bg-purple-500', shadow: 'shadow-purple-500/20', Icon: Sparkles };
+                } else if (planNameLower.includes('premium')) {
+                  themeConfig = { color: '#f59e0b', bg: 'bg-amber-500', shadow: 'shadow-amber-500/20', Icon: Crown };
+                }
 
                 return (
                   <div
                     key={plan.id}
-                    className={`bg-white rounded-2xl border transition-all duration-300 flex flex-col overflow-hidden ${isExpanded
-                        ? 'shadow-xl border-indigo-200 ring-1 ring-indigo-50/50'
-                        : 'shadow-sm border-slate-200 hover:shadow-md hover:border-slate-300'
+                    className={`bg-white rounded-xl border transition-all duration-300 ease-out flex flex-col overflow-hidden relative group/card ${isExpanded
+                      ? 'border-gray-200 ring-4 ring-gray-50'
+                      : 'border-gray-100 hover:border-gray-200'
                       }`}
                   >
-                    {/* Card Header area */}
-                    <div
-                      className="p-6 cursor-pointer flex-1"
-                      onClick={() => setExpandedPlanId(isExpanded ? null : plan.id)}
-                    >
+                    {/* Top colored border */}
+                    <div 
+                      className="absolute top-0 left-0 right-0 h-[4px] z-20"
+                      style={{ backgroundColor: themeConfig.color }}
+                    />
+
+                    {/* Card Body Area */}
+                    <div className="p-4 pt-6 relative">
                       <div className="flex justify-between items-start mb-6">
-                        <div className="flex flex-col gap-1.5">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-bold text-slate-900 capitalize">{plan.planName}</h3>
-                            <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${plan.isActive
-                                ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
-                                : 'bg-slate-100 border-slate-200 text-slate-400'
-                              }`}>
-                              {plan.isActive ? 'Active' : 'Inactive'}
+                        <div className="flex items-center gap-3">
+                          {/* Selection Checkbox */}
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="shrink-0"
+                          >
+                            <Checkbox
+                              checked={selectedPlanIds.includes(plan.id)}
+                              onChange={() => {
+                                setSelectedPlanIds(prev =>
+                                  prev.includes(plan.id) ? prev.filter(id => id !== plan.id) : [...prev, plan.id]
+                                );
+                              }}
+                              className="custom-card-checkbox-circle"
+                            />
+                          </div>
+
+                          {/* Plan Icon Box */}
+                          <div className={`w-9 h-9 rounded-lg ${themeConfig.bg} flex items-center justify-center text-white shadow-lg ${themeConfig.shadow}`}>
+                            <themeConfig.Icon size={18} fill="currentColor" />
+                          </div>
+
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-xl font-extrabold text-[#111827] tracking-tight">{plan.planName}</h3>
+                              <div className="flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                                <span className="text-[9px] font-black uppercase text-emerald-600 tracking-wider">Live</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              <div className="flex items-center gap-1">
+                                <Users size={12} className="text-gray-400" />
+                                <span className="text-[10px] font-bold text-gray-500">{activeSubCount} Sub</span>
+                              </div>
+                              {index === 1 && (
+                                <div className="flex items-center gap-1">
+                                  <Flame size={12} className="text-orange-500" fill="currentColor" />
+                                  <span className="text-[9px] font-black uppercase text-orange-500 tracking-widest">Hot</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-1.5 text-slate-400" title="Active Subscriptions">
-                              <Users size={14} />
-                              <span className="text-xs font-medium">{activeSubCount}</span>
-                            </div>
+                        </div>
 
-                          </div>
-                        </div>
-                        <button className="text-slate-400 p-1 hover:bg-slate-50 rounded-md transition-colors">
-                          {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
-                      </div>
-
-                      {/* Pricing Blocks */}
-                      <div className="grid grid-cols-3 gap-2 mb-6">
-                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100/50">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Daily</div>
-                          <div className="text-sm font-bold text-slate-900">₹{plan.dailyPrice}</div>
-                        </div>
-                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100/50">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Weekly</div>
-                          <div className="text-sm font-bold text-slate-900">₹{plan.weeklyPrice}</div>
-                        </div>
-                        <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100/50">
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Monthly</div>
-                          <div className="text-sm font-bold text-slate-900">₹{plan.monthlyPrice}</div>
+                        {/* Density Metric */}
+                        <div className="flex flex-col items-end">
+                           <div className="flex items-center gap-1.5 mb-1">
+                             <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest font-outfit">Density</span>
+                             <span className="text-[14px] font-extrabold text-indigo-500">{Math.round((activeSubCount / (activeSubscriptions.length || 1)) * 100)}%</span>
+                           </div>
+                           <div className="w-16 h-1 bg-gray-50 rounded-full overflow-hidden border border-gray-100">
+                             <div 
+                               className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
+                               style={{ width: `${(activeSubCount / (activeSubscriptions.length || 1)) * 100}%` }}
+                             />
+                           </div>
                         </div>
                       </div>
 
-                      {/* Feature List */}
-                      <ul className="space-y-2.5">
-                        {plan.features.slice(0, 4).map((feature: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-2 text-xs text-slate-500 font-medium">
-                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
-                            <span>{formatFeatureLabel(feature)}</span>
-                          </li>
-                        ))}
-                        {plan.features.length > 4 && (
-                          <li className="text-[11px] font-bold text-indigo-600 mt-2 ml-3.5">
-                            +{plan.features.length - 4} more
-                          </li>
-                        )}
-                      </ul>
-                    </div>
+                      {/* Triple Pricing Grid - Exact replication */}
+                      <div className="grid grid-cols-3 gap-2 mb-6 h-28">
+                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-1 group/price cursor-pointer transition-all hover:border-gray-200">
+                           <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Daily</span>
+                           <span className="text-2xl font-black text-[#111827] tracking-tighter">₹{plan.dailyPrice}</span>
+                        </div>
+                        <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-1 group/price cursor-pointer transition-all hover:border-gray-200">
+                           <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Weekly</span>
+                           <span className="text-2xl font-black text-[#111827] tracking-tighter">₹{plan.weeklyPrice}</span>
+                        </div>
+                        <div className={`relative p-3 rounded-xl shadow-lg border-indigo-400/20 flex flex-col items-center justify-center gap-1 group/price cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${index === 0 ? 'bg-indigo-600' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}>
+                           <span className="text-[9px] font-bold text-white/70 uppercase tracking-widest text-center">Monthly</span>
+                           <span className="text-2xl font-black text-white tracking-tighter">₹{plan.monthlyPrice}</span>
+                           <div className="flex items-center gap-1">
+                              <div className="w-1 h-1 bg-white/60 rounded-full"></div>
+                              <span className="text-[8px] font-black text-white uppercase tracking-tighter">Best Ops</span>
+                           </div>
+                        </div>
+                      </div>
 
-                    {/* Expanded Actions area */}
-                    {isExpanded && (
-                      <div className="px-6 py-4 bg-white border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
-                        <div className="flex gap-4">
+                      {/* Plan Configuration with separator */}
+                      <div className="mt-4">
+                         <div className="flex items-center gap-3 mb-4">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Plan Configuration</span>
+                            <div className="h-px flex-1 bg-gray-100"></div>
+                         </div>
+                         <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-1 h-32 overflow-hidden items-start">
+                            {plan.features.slice(0, 6).map((feat: string, i: number) => {
+                              const isNegative = feat.toLowerCase().startsWith('no ') || feat.toLowerCase().includes('not included') || feat.toLowerCase() === 'local bookings only';
+                              return (
+                               <div key={i} className="flex items-center gap-2.5">
+                                  {isNegative ? (
+                                    <div className="shrink-0 w-5 h-5 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500">
+                                      <X size={11} strokeWidth={3} />
+                                    </div>
+                                  ) : (
+                                    <div className="shrink-0 w-5 h-5 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500">
+                                      <CheckCircle2 size={11} strokeWidth={3} />
+                                    </div>
+                                  )}
+                                  <span className={`text-[12px] font-semibold truncate ${isNegative ? 'text-gray-400 line-through' : 'text-gray-600'}`}>{feat}</span>
+                               </div>
+                              )
+                            })}
+                         </div>
+                      </div>
+
+                      {/* Card Footer Metric & Action */}
+                      <div className="mt-8 pt-4 border-t border-gray-50 flex items-center justify-between">
+                         <div className="flex items-center gap-2 text-emerald-500">
+                            <ArrowUpRight size={14} strokeWidth={3} />
+                            <span className="text-[11px] font-bold tracking-tight">Conversion 40%</span>
+                         </div>
+                         <button 
+                           onClick={(e) => { e.stopPropagation(); setExpandedPlanId(isExpanded ? null : plan.id); }}
+                           className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-900 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95"
+                         >
+                           Manage
+                         </button>
+                      </div>
+
+                      {/* Original Expanded Actions area moved inside for consistency */}
+                      {isExpanded && (
+                        <div className="mt-6 flex gap-4 animate-in slide-in-from-top-2 duration-300">
                           <button
                             onClick={(e) => { e.stopPropagation(); handleOpenModal(plan); }}
                             className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 py-2 rounded-lg text-xs font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm"
@@ -472,17 +749,25 @@ const RechargePlanPage: React.FC = () => {
                             className="flex-1 flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-600 py-2 rounded-lg text-xs font-semibold hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm"
                           >
                             <Power size={14} className={plan.isActive ? 'text-rose-500' : 'text-emerald-500'} />
-                            {plan.isActive ? 'Deactivate' : 'Activate'}
+                            {plan.isActive ? 'Off' : 'On'}
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDelete(plan.id); }}
                             className="p-2 bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-100 hover:bg-slate-50 rounded-lg transition-all shadow-sm"
+                            title="Delete Plan"
                           >
                             <Trash2 size={16} />
                           </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); fetchPlanHistory(plan.id, plan.planName); }}
+                            className="p-2 bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-100 hover:bg-slate-50 rounded-lg transition-all shadow-sm"
+                            title="View History"
+                          >
+                            <History size={16} />
+                          </button>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -493,48 +778,56 @@ const RechargePlanPage: React.FC = () => {
             )}
           </div>
         </>
-      ) : (
-        <div className="flex flex-col gap-6">
-          {/* Controls Row for Subscriptions */}
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search by driver name or phone..."
-                className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
-                value={subSearchTerm}
-                onChange={(e) => setSubSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={fetchActiveSubscriptions}
-                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
-              >
-                <Zap size={16} />
-                Refresh
-              </button>
+      ) : activeTab === "subscriptions" ? (
+        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-2 duration-500">
+          {/* Dashboard-Style Controls for Subscriptions */}
+          <div className="flex flex-col sm:flex-row gap-3 py-1 items-center justify-between">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="relative flex-1 max-w-md group/search">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within/search:text-indigo-500 transition-colors" size={16} />
+                <input
+                  type="text"
+                  placeholder="Analyze subscriptions by driver name or phone..."
+                  className="w-full pl-9 pr-4 py-1.5 bg-white border border-gray-100 rounded-xl text-xs focus:outline-none focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400 transition-all shadow-sm"
+                  value={subSearchTerm}
+                  onChange={(e) => setSubSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-1.5 border border-gray-100 rounded-xl p-1 bg-white shadow-sm">
+                <div className="pl-2 pr-1">
+                  <Filter size={14} className="text-gray-400" />
+                </div>
+                {['ALL', 'BASIC', 'ELITE', 'PREMIUM'].map(f => (
+                  <button 
+                    key={f}
+                    onClick={() => setSubFilter(f)}
+                    className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all uppercase tracking-widest ${subFilter === f ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">Active Subscriptions</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Real-time status of all active driver plans</p>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-50 flex justify-between items-center bg-white">
+              <div className="flex items-center gap-3">
+                <div className="p-1 px-2.5 bg-indigo-50 text-indigo-500 rounded-lg font-outfit text-xs font-extrabold tracking-tighter">LIVE FEED</div>
+                <div className="h-4 w-px bg-gray-100"></div>
+                <h2 className="text-sm font-extrabold text-gray-900 tracking-tight uppercase">Active Subscriptions</h2>
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Driver</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Plan</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Cycle</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Start</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Expiry</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.1em]">Remaining</th>
+                  <tr className="bg-gray-50/50">
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Driver Identity</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Plan Config</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Billing Cycle</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Timeline Progress</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest">Ops Delta</th>
+                    <th className="px-6 py-3 text-[9px] font-bold text-gray-400 uppercase tracking-widest w-10"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -546,51 +839,110 @@ const RechargePlanPage: React.FC = () => {
                         </td>
                       </tr>
                     ))
-                  ) : activeSubscriptions.filter(s =>
-                    s.driverName?.toLowerCase().includes(subSearchTerm.toLowerCase()) ||
-                    s.driverPhone?.toLowerCase().includes(subSearchTerm.toLowerCase())
-                  ).length > 0 ? (
+                  ) : activeSubscriptions.filter(s => {
+                    const matchesSearch = s.driverName?.toLowerCase().includes(subSearchTerm.toLowerCase()) || s.driverPhone?.toLowerCase().includes(subSearchTerm.toLowerCase());
+                    const matchesFilter = subFilter === 'ALL' || (s.planName && s.planName.toUpperCase().includes(subFilter));
+                    return matchesSearch && matchesFilter;
+                  }).length > 0 ? (
                     activeSubscriptions
-                      .filter(s =>
-                        s.driverName?.toLowerCase().includes(subSearchTerm.toLowerCase()) ||
-                        s.driverPhone?.toLowerCase().includes(subSearchTerm.toLowerCase())
-                      )
+                      .filter(s => {
+                        const matchesSearch = s.driverName?.toLowerCase().includes(subSearchTerm.toLowerCase()) || s.driverPhone?.toLowerCase().includes(subSearchTerm.toLowerCase());
+                        const matchesFilter = subFilter === 'ALL' || (s.planName && s.planName.toUpperCase().includes(subFilter));
+                        return matchesSearch && matchesFilter;
+                      })
                       .map((sub: any) => {
                         const daysLeft = Math.ceil((new Date(sub.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                         const isExpiring = daysLeft < 3;
+                        const totalDays = Math.ceil((new Date(sub.expiryDate).getTime() - new Date(sub.startDate).getTime()) / (1000 * 60 * 60 * 24));
+                        const daysElapsed = totalDays - daysLeft;
+                        const progress = Math.min(100, Math.max(0, (daysElapsed / (totalDays || 1)) * 100));
+                        
+                        const planNameLower = sub.planName?.toLowerCase() || '';
+                        let badgeClass = 'bg-indigo-50/50 text-indigo-600 border-indigo-100/50';
+                        if (planNameLower.includes('basic')) badgeClass = 'bg-sky-50 text-sky-600 border-sky-100';
+                        else if (planNameLower.includes('elite')) badgeClass = 'bg-purple-50 text-purple-600 border-purple-100';
+                        else if (planNameLower.includes('premium')) badgeClass = 'bg-amber-50 text-amber-600 border-amber-100';
 
                         return (
-                          <tr key={sub.id} className="group hover:bg-slate-50/30 transition-colors">
-                            <td className="px-6 py-5">
-                              <div className="font-bold text-slate-900 text-sm">{sub.driverName}</div>
-                              <div className="text-[11px] font-medium text-slate-400 mt-0.5">{sub.driverPhone}</div>
+                          <tr key={sub.id} className="group hover:bg-gray-50/50 transition-colors">
+                            <td className="px-6 py-3">
+                              <div className="flex items-center gap-3">
+                                <Avatar
+                                  size={32}
+                                  className="bg-indigo-50 text-indigo-500 font-extrabold border border-indigo-100 uppercase text-[10px]"
+                                >
+                                  {sub.driverName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                </Avatar>
+                                <div className="flex flex-col">
+                                  <div className="font-extrabold text-gray-800 text-[12px] tracking-tight">{sub.driverName}</div>
+                                  <div className="text-[10px] font-bold text-gray-300 mt-0.5 tracking-tighter uppercase">{sub.driverPhone}</div>
+                                </div>
+                              </div>
                             </td>
                             <td className="px-6 py-5">
-                              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100/50">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-widest ${badgeClass}`}>
                                 {sub.planName}
                               </span>
                             </td>
-                            <td className="px-6 py-5">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2 py-0.5 rounded-md">
-                                {sub.billingCycle}
-                              </span>
-                            </td>
-                            <td className="px-6 py-5 text-xs font-semibold text-slate-500">
-                              {sub.startDate ? new Date(sub.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                            </td>
-                            <td className="px-6 py-5">
-                              <div className="text-xs font-bold text-slate-700">
-                                {sub.expiryDate ? new Date(sub.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                              </div>
-                            </td>
-                            <td className="px-6 py-5">
-                              <div className={`flex items-center gap-1.5 text-xs font-bold ${isExpiring ? 'text-rose-600' : 'text-emerald-600'
-                                }`}>
-                                {isNaN(daysLeft) ? 'N/A' : `${daysLeft}d`}
-                                {isExpiring && !isNaN(daysLeft) && (
-                                  <span className="text-[9px] bg-rose-50 text-rose-500 px-1.5 py-0.5 rounded uppercase tracking-tighter">Soon</span>
+                            <td className="px-6 py-3">
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-gray-50/80 px-2 py-0.5 rounded border border-gray-100 transition-colors group-hover:bg-white">
+                                  {sub.billingCycle}
+                                </span>
+                                {(sub.amountPaid || sub.price) && (
+                                   <div className="flex items-center gap-1 mt-0.5 text-slate-400">
+                                      <CreditCard size={10} />
+                                      <span className="text-[9px] font-bold">₹{sub.amountPaid || sub.price || '---'}</span>
+                                   </div>
                                 )}
                               </div>
+                            </td>
+                            <td className="px-6 py-3 w-48">
+                               <div className="flex flex-col gap-1.5 w-full">
+                                  <div className="flex items-center justify-between text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                    <span>{sub.startDate ? new Date(sub.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '---'}</span>
+                                    <span>{sub.expiryDate ? new Date(sub.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '---'}</span>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full transition-all duration-500 ${isExpiring ? 'bg-rose-500' : 'bg-emerald-400'}`}
+                                      style={{ width: `${progress}%` }}
+                                    />
+                                  </div>
+                               </div>
+                            </td>
+                            <td className="px-6 py-3">
+                              <div className="flex flex-col gap-1 items-start">
+                                <div className={`flex items-center gap-1.5 text-[11px] font-black tracking-tight ${isExpiring ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                  {isNaN(daysLeft) ? 'N/A' : `${daysLeft}D REMAINING`}
+                                  {isExpiring && !isNaN(daysLeft) && daysLeft >= 1 && (
+                                    <span className="relative flex h-1.5 w-1.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-rose-500"></span>
+                                    </span>
+                                  )}
+                                </div>
+                                <CountdownTimer expiryDate={sub.expiryDate} />
+                              </div>
+                            </td>
+                            <td className="px-6 py-3 text-right">
+                              <Dropdown
+                                trigger={['click']}
+                                menu={{
+                                  items: [
+                                    { 
+                                      key: '1', 
+                                      label: <span className="text-xs font-semibold text-gray-700">View Driver Profile</span>,
+                                      onClick: () => navigate('/drivers') // Or `/drivers/${sub.driverId}` if you have the ID.
+                                    }
+                                  ]
+                                }}
+                                placement="bottomRight"
+                              >
+                                <button className="p-1.5 text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors">
+                                  <MoreVertical size={16} />
+                                </button>
+                              </Dropdown>
                             </td>
                           </tr>
                         );
@@ -609,6 +961,62 @@ const RechargePlanPage: React.FC = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
+          <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+             <div className="flex items-center gap-3">
+                <Zap size={16} className="text-indigo-500" />
+                <span className="text-xs font-extrabold text-gray-900 tracking-tight uppercase">Promotion Systems</span>
+             </div>
+          </div>
+          <div className="flex-1 bg-gray-50/30">
+            <Suspense fallback={<div className="flex items-center justify-center p-20 animate-pulse text-indigo-500 font-extrabold text-xs">INITIALIZING OPS ENGINE...</div>}>
+              <PromotionsTab />
+            </Suspense>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedPlanIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-8 duration-500">
+          <div className="bg-[#1a1a1a] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-6 border border-white/5 backdrop-blur-xl">
+            <div className="flex items-center gap-3 pr-6 border-r border-white/10 select-none">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500 flex items-center justify-center font-black text-xs shadow-lg shadow-indigo-500/40 ring-4 ring-indigo-500/10">
+                {selectedPlanIds.length}
+              </div>
+              <div className="flex flex-col">
+                 <span className="text-[11px] font-black tracking-tight uppercase">Operational Units</span>
+                 <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-0.5">Selected focus</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleBulkAction('deactivate')}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold transition-all disabled:opacity-50 border border-white/5"
+              >
+                <Power size={12} />
+                STOP OPS
+              </button>
+              <button
+                onClick={() => handleBulkAction('increase_price')}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] font-extrabold transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/20"
+              >
+                <TrendingUp size={12} />
+                INCREASE PRICE (+10%)
+              </button>
+              <button
+                onClick={() => setSelectedPlanIds([])}
+                className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-[10px] font-bold text-gray-400 transition-all uppercase"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -667,14 +1075,17 @@ const RechargePlanPage: React.FC = () => {
         footer={
           <div className="flex justify-end gap-3">
             <Button
+              disabled={isSubmitting}
               onClick={() => setIsModalOpen(false)}
               className="px-6 h-10 rounded-lg border-slate-200 text-slate-600 font-semibold"
             >
               Cancel
             </Button>
             <Button
-              onClick={handleSubmit}
-              className="px-8 h-10 rounded-lg text-indigo-600 border-indigo-600 hover:bg-indigo-50 font-semibold"
+              loading={isSubmitting}
+              type="primary"
+              onClick={() => handleSubmit()}
+              className="px-8 h-10 rounded-lg font-semibold"
             >
               {editingId ? 'Save Changes' : 'Create Plan'}
             </Button>
@@ -682,9 +1093,9 @@ const RechargePlanPage: React.FC = () => {
         }
       >
         <div className="space-y-6">
-          {/* Plan Name & Status */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2 space-y-2">
+          {/* Plan Name, Status & Tag */}
+          <div className="grid grid-cols-6 gap-4">
+            <div className="col-span-3 space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Plan Name</label>
               <input
                 type="text"
@@ -692,6 +1103,24 @@ const RechargePlanPage: React.FC = () => {
                 placeholder="e.g. Starter"
                 value={formData.planName}
                 onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
+              />
+            </div>
+            <div className="col-span-2 space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Badge Tag</label>
+              <Select
+                className="w-full h-[42px]"
+                value={formData.tag || ''}
+                onChange={(val) => setFormData({ ...formData, tag: val })}
+                options={[
+                  { value: '', label: 'No Badge' },
+                  { value: 'MOST POPULAR', label: 'Most Popular' },
+                  { value: 'BEST VALUE', label: 'Best Value' },
+                  { value: 'RECOMMENDED', label: 'Recommended' },
+                  { value: 'LIMITED OFFER', label: 'Limited Offer' },
+                  { value: 'PREMIUM CHOICE', label: 'Premium Choice' },
+                  { value: 'ESSENTIAL', label: 'Essential' },
+                  { value: 'PRO', label: 'Pro' }
+                ]}
               />
             </div>
             <div className="space-y-2">
@@ -724,10 +1153,14 @@ const RechargePlanPage: React.FC = () => {
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Validity (Days)</label>
             <input
               type="number"
-              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-bold text-slate-900 shadow-sm"
+              className={`w-full px-4 py-2.5 bg-white border ${errors.validityDays ? 'border-rose-400 focus:ring-rose-500/10' : 'border-slate-200 focus:ring-indigo-500/10'} rounded-lg focus:outline-none focus:ring-2 focus:border-indigo-500 transition-all font-bold text-slate-900 shadow-sm`}
               value={formData.validityDays}
-              onChange={(e) => setFormData({ ...formData, validityDays: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, validityDays: e.target.value });
+                if (errors.validityDays) setErrors({ ...errors, validityDays: '' });
+              }}
             />
+            {errors.validityDays && <p className="text-[10px] text-rose-500 font-bold ml-1">{errors.validityDays}</p>}
           </div>
 
           {/* Pricing Row */}
@@ -771,23 +1204,43 @@ const RechargePlanPage: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    const suggestions = ["Zero commission", "Outstation trips", "Scheduled rides", "Priority support"];
-                    const current = [...formData.features];
-                    suggestions.forEach(s => { if (!current.includes(s)) current.push(s); });
-                    setFormData({ ...formData, features: current });
-                  }}
-                  className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded hover:bg-indigo-100"
-                >
-                  Suggestions
-                </button>
-                <button
-                  type="button"
                   onClick={() => setFormData({ ...formData, features: [...formData.features, ''] })}
                   className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded hover:bg-slate-200 flex items-center gap-1"
                 >
-                  <Plus size={10} /> Add
+                  <Plus size={10} /> Add Feature
                 </button>
+              </div>
+            </div>
+
+            <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Quick Suggestions</span>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "Unlimited Ride Requests", "Keep 100% of Earnings", "Local Rides Enabled",
+                  "Scheduled Rides Enabled", "One-Way Trips", "Round Trips Enabled",
+                  "Outstation Booking Access", "Premium Rider Match", "Airport Pickups Enabled",
+                  "Zero Hidden Fees", "Zero Cancellation Penalty", "Direct Customer Payments",
+                  "Priority 24/7 Helpline", "Advanced Area Heatmap", "Top Rated Driver Badge",
+                  "Auto-Accept Next Ride", "Instant Withdrawal", "Flexible Working Hours"
+                ].map(sug => {
+                  const isAdded = formData.features.includes(sug);
+                  return (
+                    <Tag.CheckableTag
+                      key={sug}
+                      checked={isAdded}
+                      onChange={(checked) => {
+                        if (checked) {
+                          setFormData({ ...formData, features: [...formData.features, sug] });
+                        } else {
+                          setFormData({ ...formData, features: formData.features.filter(f => f !== sug) });
+                        }
+                      }}
+                      className={`px-3 py-1 rounded-full border transition-all ${isAdded ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-200'}`}
+                    >
+                      {sug}
+                    </Tag.CheckableTag>
+                  );
+                })}
               </div>
             </div>
             <div className="space-y-2.5 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
@@ -822,6 +1275,160 @@ const RechargePlanPage: React.FC = () => {
           </div>
         </div>
       </Drawer>
+
+      {/* Version History Drawer */}
+      <Drawer
+        title={
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <History size={18} className="text-indigo-600 drop-shadow-sm" />
+              <span className="text-lg font-bold text-slate-900 tracking-tight">Plan History</span>
+            </div>
+            <span className="text-xs text-slate-500 font-normal mt-0.5">{historyPlanName}</span>
+          </div>
+        }
+        placement="right"
+        width={480}
+        onClose={() => setIsHistoryOpen(false)}
+        open={isHistoryOpen}
+        closeIcon={<X size={20} className="text-slate-400 hover:text-rose-500 transition-colors" />}
+        styles={{
+          header: { borderBottom: '1px solid #f1f5f9', padding: '24px', backgroundColor: '#ffffff' },
+          body: { padding: '24px', backgroundColor: '#ffffff' }
+        }}
+        className="history-drawer"
+      >
+        <div className="space-y-8 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px before:h-full before:w-[2px] before:bg-slate-100">
+          {historyLoading ? (
+            [1, 2, 3].map(i => (
+              <div key={i} className="animate-pulse bg-white p-4 h-24 ml-8" />
+            ))
+          ) : historyData.length > 0 ? (
+            historyData.map((item, idx) => (
+              <div
+                key={item.id}
+                className="relative pl-8 group animate-in slide-in-from-right-4 duration-500 fill-mode-both"
+                style={{ animationDelay: `${idx * 150}ms` }}
+              >
+                {/* Connector Dot */}
+                <div className="absolute left-[7px] top-1.5 h-2.5 w-2.5 rounded-full border-[2px] border-indigo-500 bg-white z-10" />
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                       <span className="text-[12px] font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
+                         <Avatar size={20} className="bg-slate-100 text-slate-600 text-[10px] font-bold">
+                           {(item.admin_name || 'A')[0].toUpperCase()}
+                         </Avatar>
+                         {item.admin_name || "Admin"}
+                       </span>
+                       <span className="text-slate-300">•</span>
+                       <Tag color={
+                          item.action === 'CREATE' ? 'blue' :
+                            item.action === 'UPDATE' ? 'orange' : 'purple'
+                        } className="m-0 text-[10px] uppercase font-bold border-0 px-2 py-0.5 rounded-md">
+                         {item.action === 'TOGGLE_STATUS' ? 'STATUS CHANGE' : item.action}
+                       </Tag>
+                    </div>
+                    <span className="text-[11px] font-medium text-slate-400/80 tabular-nums">
+                      {new Date(item.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </span>
+                  </div>
+
+                  {item.action === 'UPDATE' && item.previous_data && item.new_data && (
+                    <div className="flex flex-col gap-2 mt-1">
+                      {Object.keys(item.new_data || {}).map(field => {
+                        if (['updated_at', 'created_at', 'id'].includes(field)) return null;
+                        
+                        const oldVal = item.previous_data ? item.previous_data[field] : undefined;
+                        const newVal = item.new_data[field];
+
+                        if (oldVal !== undefined && JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                          const formatValue = (val: any) => {
+                             if (val === null || val === undefined) return 'None';
+                             if (typeof val === 'boolean') return val ? 'Active' : 'Inactive';
+                             if (Array.isArray(val)) return val.join(', ');
+                             if (typeof val === 'object') return JSON.stringify(val);
+                             return String(val);
+                          };
+
+                          return (
+                            <div key={field} className="flex items-start gap-3 w-full">
+                              <span className="text-[10px] font-bold text-slate-400 w-28 shrink-0 uppercase tracking-wider pt-0.5">{field.replace(/_/g, ' ')}:</span>
+                              <div className="flex items-start gap-2 text-[11px] font-medium text-slate-700 flex-1">
+                                <span className="line-through text-slate-400 break-words max-w-[120px]">
+                                  {formatValue(oldVal)}
+                                </span>
+                                <span className="text-slate-300 mt-0.5">→</span>
+                                <span className={typeof newVal === 'boolean' ? (newVal ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold') : 'text-indigo-600 font-bold break-words max-w-[120px]'}>
+                                  {formatValue(newVal)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })}
+                    </div>
+                  )}
+
+                  {item.action === 'CREATE' && (
+                    <div className="mt-1">
+                      <p className="text-xs text-slate-500">Plan initialized with base configuration and live status.</p>
+                    </div>
+                  )}
+
+                  {item.action === 'TOGGLE_STATUS' && (
+                    <div className="flex items-center gap-3 mt-1 text-xs">
+                      <span className="text-slate-500 font-medium w-28 shrink-0">Status change:</span>
+                      <span className={item.new_data.is_active ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold'}>
+                        {item.new_data.is_active ? 'Activated' : 'Deactivated'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200 ml-10 shadow-inner">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <History size={32} className="text-slate-200" />
+              </div>
+              <p className="text-slate-400 text-sm font-bold tracking-tight">No history records found</p>
+              <p className="text-slate-300 text-[11px] mt-1">Audit logs will appear as soon as changes are made.</p>
+            </div>
+          )}
+        </div>
+      </Drawer>
+      <style>{`
+        .history-drawer .ant-drawer-content-wrapper {
+          border-radius: 32px 0 0 32px !important;
+          overflow: hidden !important;
+        }
+        .custom-card-checkbox .ant-checkbox-inner {
+          border-radius: 6px !important;
+          border-color: #e2e8f0 !important;
+        }
+        .custom-card-checkbox .ant-checkbox-checked .ant-checkbox-inner {
+          background-color: #4f46e5 !important;
+          border-color: #4f46e5 !important;
+        }
+        .custom-card-checkbox-circle .ant-checkbox-inner {
+          border-radius: 50% !important;
+          border-color: #d1d5db !important;
+          width: 18px !important;
+          height: 18px !important;
+        }
+        .custom-card-checkbox-circle .ant-checkbox-checked .ant-checkbox-inner {
+          background-color: transparent !important;
+          border-color: #4f46e5 !important;
+        }
+        .custom-card-checkbox-circle .ant-checkbox-checked .ant-checkbox-inner::after {
+          border-color: #4f46e5 !important;
+          width: 5px !important;
+          height: 9px !important;
+        }
+      `}</style>
     </div>
   );
 };

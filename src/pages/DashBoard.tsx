@@ -67,6 +67,8 @@ const Dashboard = () => {
   useEffect(() => {
     if (!socket) return;
 
+    socket.emit("JOIN_ADMIN_ROOM");
+
     const handleDriverEvent = () => {
       // Refresh stats when any driver event occurs (online/offline/trip)
       fetchStats();
