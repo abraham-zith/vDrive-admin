@@ -360,7 +360,7 @@ const DriverReconciliation: React.FC = () => {
               type="default"
               icon={<DownloadOutlined />}
               onClick={exportTemplate}
-              className="rounded-xl font-bold h-10 border-indigo-100 hover:border-indigo-600 hover:text-indigo-600 shadow-sm transition-all"
+              className="rounded-full h-11 px-10 font-bold !bg-gradient-to-r !from-amber-500 !to-orange-500 border-none flex items-center gap-2"
             >
               Export Template
             </Button>
@@ -376,7 +376,7 @@ const DriverReconciliation: React.FC = () => {
                 type="primary"
                 icon={<UploadOutlined />}
                 loading={importing}
-                className="rounded-xl font-bold h-10 bg-indigo-600 hover:bg-indigo-700 border-none shadow-md transition-all px-6"
+                className="rounded-xl h-12 px-6 font-bold border-none !bg-gradient-to-r !from-indigo-600 !to-blue-500 hover:scale-[1.02] transition-transform flex items-center"
               >
                 Import Data
               </Button>
