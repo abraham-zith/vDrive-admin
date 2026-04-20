@@ -99,6 +99,7 @@ const Login = lazy(() => import("./login/Login"));
 const ResetPassword = lazy(() => import("./login/ResetPassword"));
 const PricingCombinations = lazy(() => import("./pages/PricingCombinations"));
 const Coupons = lazy(() => import("./pages/Coupons"));
+const DriverReconciliation = lazy(() => import("./pages/DriverReconciliation"));
 
 // RBAC: Higher-order component to protect sensitive routes
 const RoleProtectedRoute = ({
@@ -395,6 +396,7 @@ const RootLayout: React.FC = () => {
       { label: <Link to="/customers">Customers</Link>, key: "/customers", icon: <UserOutlined /> },
       { label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>, key: "/PricingAndFareRules", icon: <DollarOutlined /> },
       { label: <Link to="/drivers">Drivers</Link>, key: "/drivers", icon: <PiSteeringWheel /> },
+      { label: <Link to="/driver-reconciliation">Driver Reconciliation</Link>, key: "/driver-reconciliation", icon: <TableOutlined /> },
     ];
 
     // RBAC: Only super_admin can manage other admins
@@ -757,6 +759,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <Coupons />
+          </Suspense>
+        ),
+      },
+      {
+        path: "driver-reconciliation",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <DriverReconciliation />
           </Suspense>
         ),
       },
