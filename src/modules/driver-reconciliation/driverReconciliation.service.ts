@@ -8,6 +8,21 @@ import {
 } from './driverReconciliation.model';
 
 export class DriverReconciliationService {
+  // Sync all reconciliation records
+  static async syncReconciliationData(): Promise<{ success: boolean; message: string; rows_synced: number }> {
+    try {
+      const rowsSynced = await DriverReconciliationRepository.syncAllRows();
+      return {
+        success: true,
+        message: `Successfully synced ${rowsSynced} driver records`,
+        rows_synced: rowsSynced
+      };
+    } catch (error: any) {
+      console.error('❌ Error syncing reconciliation data:', error);
+      throw new Error(`Failed to sync reconciliation data: ${error.message}`);
+    }
+  }
+
   // Process driver reconciliation payload
   static async processReconciliationData(
     adminId: string | undefined,
@@ -92,6 +107,7 @@ export class DriverReconciliationService {
             status: row.status || 'pending',
             has_account: matchResult.has_account,
             is_onboarded: matchResult.is_onboarded,
+            onboarding_status: matchResult.onboarding_status || 'NOT_REGISTERED',
             match_confidence: matchResult.match_confidence,
             error_message: undefined,
             whatsapp_sent: false,

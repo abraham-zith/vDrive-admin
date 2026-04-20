@@ -26,6 +26,7 @@ export interface DriverReconciliationRow {
   state?: string;
   country?: string;
   status: string;
+  onboarding_status?: string;
   has_account: boolean;
   is_onboarded: boolean;
   match_confidence: number; // 0-3: 1=phone, 2=mail, 3=both
@@ -70,6 +71,7 @@ export interface ProcessingResult {
 export interface MatchResult {
   has_account: boolean;
   is_onboarded: boolean;
+  onboarding_status?: string;
   match_confidence: number; // 0-3
   existing_user_id?: string;
   existing_driver_id?: string;
