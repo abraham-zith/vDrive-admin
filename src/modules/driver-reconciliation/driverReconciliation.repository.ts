@@ -48,31 +48,54 @@ export class DriverReconciliationRepository {
       .map(
         (row) => `(
       ${row.upload_id},
-      ${row.driver_name ? `'${row.driver_name.replace(/'/g, "''")}'` : 'NULL'},
+      ${row.driver_name ? `'${String(row.driver_name).replace(/'/g, "''")}'` : 'NULL'},
       ${row.phone ? `'${row.phone}'` : 'NULL'},
       ${row.mail ? `'${row.mail}'` : 'NULL'},
       ${row.pincode ? `'${row.pincode}'` : 'NULL'},
       ${row.dob ? `'${row.dob.toISOString()}'` : 'NULL'},
       ${row.area ? `'${row.area.replace(/'/g, "''")}'` : 'NULL'},
       ${row.street ? `'${row.street.replace(/'/g, "''")}'` : 'NULL'},
-      ${row.district ? `'${row.district.replace(/'/g, "''")}'` : 'NULL'},
-      ${row.state ? `'${row.state.replace(/'/g, "''")}'` : 'NULL'},
-      ${row.country ? `'${row.country.replace(/'/g, "''")}'` : 'NULL'},
+      ${row.address ? `'${String(row.address).replace(/'/g, "''")}'` : 'NULL'},
+      ${row.district ? `'${String(row.district).replace(/'/g, "''")}'` : 'NULL'},
+      ${row.state ? `'${String(row.state).replace(/'/g, "''")}'` : 'NULL'},
+      ${row.country ? `'${String(row.country).replace(/'/g, "''")}'` : 'NULL'},
+      ${row.status ? `'${row.status}'` : "'pending'"},
       ${row.has_account || false},
       ${row.is_onboarded || false},
       ${row.match_confidence || 0},
       ${row.error_message ? `'${row.error_message.replace(/'/g, "''")}'` : 'NULL'},
-      ${row.whatsapp_sent || false}
+      ${row.whatsapp_sent || false},
+      ${row.joined_date ? `'${row.joined_date.toISOString()}'` : 'NULL'}
     )`
       )
       .join(', ');
 
     await query(`
       INSERT INTO driver_reconciliation_rows (
-        upload_id, driver_name, phone, mail, pincode, dob, area, street,
-        district, state, country, has_account, is_onboarded, match_confidence,
-        error_message, whatsapp_sent
+        upload_id, driver_name, phone, mail, pincode, dob, area, street, address,
+        district, state, country, status, has_account, is_onboarded, match_confidence,
+        error_message, whatsapp_sent, joined_date
       ) VALUES ${values}
+      ON CONFLICT (phone) DO UPDATE SET
+        upload_id = EXCLUDED.upload_id,
+        driver_name = EXCLUDED.driver_name,
+        mail = EXCLUDED.mail,
+        pincode = EXCLUDED.pincode,
+        dob = EXCLUDED.dob,
+        area = EXCLUDED.area,
+        street = EXCLUDED.street,
+        address = EXCLUDED.address,
+        district = EXCLUDED.district,
+        state = EXCLUDED.state,
+        country = EXCLUDED.country,
+        status = EXCLUDED.status,
+        has_account = EXCLUDED.has_account,
+        is_onboarded = EXCLUDED.is_onboarded,
+        match_confidence = EXCLUDED.match_confidence,
+        error_message = EXCLUDED.error_message,
+        whatsapp_sent = EXCLUDED.whatsapp_sent,
+        joined_date = EXCLUDED.joined_date,
+        updated_at = NOW()
     `);
   }
 
