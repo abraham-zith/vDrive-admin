@@ -17,6 +17,10 @@ import {
   CheckCircleFilled,
   ExclamationCircleFilled,
   TableOutlined,
+  SyncOutlined,
+  CloudUploadOutlined,
+  SafetyCertificateOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import * as XLSX from "xlsx";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
@@ -39,6 +43,9 @@ interface DriverData {
   state: string;
   country: string;
   status: string;
+  onboarding_status?: string;
+  has_account?: boolean;
+  is_onboarded?: boolean;
   created_at: string;
   updated_at: string;
   joined_date: string;
@@ -61,6 +68,10 @@ const DriverReconciliation: React.FC = () => {
     active_drivers: 0,
     pending_drivers: 0
   });
+  const [syncing, setSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState(15);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -70,24 +81,43 @@ const DriverReconciliation: React.FC = () => {
       const rows = rowsResponse.data?.data?.rows || [];
       setDrivers(rows);
 
-      // Derive stats from rows or fetch from summary if backend supports it
-      // For now, let's derive to ensure consistency with the table
+      // Find the most recent update as "last synced" if not manually synced yet
+      if (rows.length > 0 && !lastSyncedAt) {
+        const latestUpdate = rows.reduce((max: string, r: any) =>
+          (r.updated_at > max ? r.updated_at : max), rows[0].updated_at);
+        setLastSyncedAt(latestUpdate);
+      }
+
+      // Derive stats from rows
       setSummaryStats({
         total_processed_rows: rows.length,
         active_drivers: rows.filter((d: any) => d.status?.toLowerCase() === 'active' || d.status?.toLowerCase() === 'verified').length,
         pending_drivers: rows.filter((d: any) => d.status?.toLowerCase() === 'pending').length
       });
-
-      // Optionally fetch real summary if needed for scale
-      // const summaryResponse = await axiosIns.get("/api/driver-reconciliation/summary");
-      // setSummaryStats(summaryResponse.data?.data);
     } catch (err: any) {
       console.error("Failed to load reconciliation data:", err);
       message.error("Failed to load driver data");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [lastSyncedAt]);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const response = await axiosIns.post("/api/driver-reconciliation/sync");
+      if (response.data.success) {
+        message.success(response.data.message);
+        setLastSyncedAt(dayjs().toISOString());
+        loadData();
+      }
+    } catch (err: any) {
+      console.error("Sync failed:", err);
+      message.error("Failed to sync driver records");
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Initial load
   useEffect(() => {
@@ -205,7 +235,7 @@ const DriverReconciliation: React.FC = () => {
 
     const sampleRow = {
       "Driver Name": "John Doe",
-      Phone: "+91 9876543210",
+      Phone: "9876543210",
       Email: "john@example.com",
       Address: "123 Main St",
       Pincode: "110001",
@@ -285,9 +315,10 @@ const DriverReconciliation: React.FC = () => {
       title: "Contact Info",
       key: "contact",
       render: (_: any, record: DriverData) => (
-        <div className="flex flex-col">
-          <Text className="text-indigo-600 text-[12px] font-medium">{record.phone}</Text>
-          <Text type="secondary" className="text-[11px]">{record.mail}</Text>
+        <div className="flex items-center gap-2">
+          <Text className="text-xs font-semibold text-slate-600">{record.phone}</Text>
+          <div className="h-3 w-[1.5px] bg-indigo-200/60 rounded-full mx-1" />
+          <Text className="text-[11px] font-medium text-slate-400">{record.mail}</Text>
         </div>
       ),
     },
@@ -297,10 +328,40 @@ const DriverReconciliation: React.FC = () => {
       render: (_: any, record: DriverData) => (
         <Tooltip title={`${record.address}, ${record.district}, ${record.state}, ${record.pincode}`}>
           <div className="max-w-[200px] truncate text-[12px] text-slate-500">
-            {record.district}, {record.state}
+            {record.address}, {record.state}
           </div>
         </Tooltip>
       ),
+    },
+    {
+      title: "District",
+      dataIndex: "district",
+      key: "district",
+      render: (text: string) => <Text className="text-[12px] text-slate-600 font-medium">{text}</Text>,
+    },
+    {
+      title: "Onboarding Status",
+      key: "onboarding",
+      render: (_: any, record: DriverData) => {
+        if (!record.has_account) {
+          return <Tag color="default" className="rounded-full px-3 text-[10px] font-bold uppercase">Not Registered</Tag>;
+        }
+
+        const status = record.onboarding_status || 'PHONE_VERIFIED';
+        let color = 'cyan';
+
+        if (['ACTIVE', 'SUBSCRIPTION_ACTIVE'].includes(status)) color = 'green';
+        else if (['DOCUMENTS_APPROVED', 'DOCS_SUBMITTED'].includes(status)) color = 'blue';
+        else if (status === 'DOCS_REJECTED') color = 'red';
+        else if (['PROFILE_COMPLETED', 'ADDRESS_COMPLETED'].includes(status)) color = 'cyan';
+        else color = 'geekblue';
+
+        return (
+          <Tag color={color} className="rounded-full px-3 text-[10px] font-bold uppercase border-none">
+            {status.replace(/_/g, ' ')}
+          </Tag>
+        );
+      },
     },
     {
       title: "Status",
@@ -349,12 +410,25 @@ const DriverReconciliation: React.FC = () => {
 
   return (
     <TitleBar
-      title="Driver Reconciliation"
+      title="Driver Outreach"
       description="Streamline driver onboarding and data management through bulk import/export."
       icon={<TableOutlined />}
       iconBgColor="bg-indigo-600"
       extraContent={
         <Space size="middle">
+          {lastSyncedAt && (
+            <Text type="secondary" className="text-[11px] font-medium mr-1">
+              Last Synced: {dayjs(lastSyncedAt).format("MMM DD, hh:mm A")}
+            </Text>
+          )}
+          <Button
+            icon={<SyncOutlined spin={syncing} />}
+            onClick={handleSync}
+            loading={syncing}
+            className="flex items-center gap-2 font-bold shadow-sm border-slate-200 text-slate-600 h-9"
+          >
+            Sync
+          </Button>
           <Tooltip title="Shortcut: Alt + E">
             <Button
               type="default"
@@ -388,22 +462,48 @@ const DriverReconciliation: React.FC = () => {
       <div className="w-full h-full flex flex-col gap-6 animate-in fade-in duration-500">
         {/* Stats Summary Style Card (Optional but looks premium) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-          <Card className="rounded-2xl border-none shadow-sm bg-gradient-to-br from-indigo-50 to-white">
-            <div className="flex flex-col">
-              <Text className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Total Imported</Text>
-              <Text className="text-2xl font-black text-indigo-900 leading-tight">{summaryStats.total_processed_rows}</Text>
+          <Card size="small" className="rounded-xl border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-md group">
+            <div className="flex justify-between items-center py-1 px-1">
+              <div className="flex flex-col">
+                <Text className="text-[9px] font-black uppercase text-slate-400 tracking-wider leading-none">Total Imported</Text>
+                <Text className="text-[9px] text-slate-400 font-medium leading-none mt-1.5 italic">Overall records processed</Text>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xl font-black text-slate-900 tracking-tight leading-none">{summaryStats.total_processed_rows}</span>
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-500 flex items-center justify-center transition-all duration-300 group-hover:scale-105 border border-indigo-100/50">
+                  <CloudUploadOutlined className="text-sm" />
+                </div>
+              </div>
             </div>
           </Card>
-          <Card className="rounded-2xl border-none shadow-sm bg-gradient-to-br from-green-50 to-white">
-            <div className="flex flex-col">
-              <Text className="text-[10px] font-black uppercase text-green-400 tracking-widest">Active Drivers</Text>
-              <Text className="text-2xl font-black text-green-900 leading-tight">{summaryStats.active_drivers}</Text>
+
+          <Card size="small" className="rounded-xl border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-md group">
+            <div className="flex justify-between items-center py-1 px-1">
+              <div className="flex flex-col">
+                <Text className="text-[9px] font-black uppercase text-slate-400 tracking-wider leading-none">Active Drivers</Text>
+                <Text className="text-[9px] text-slate-400 font-medium leading-none mt-1.5 italic">Verified and operational</Text>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xl font-black text-emerald-600 tracking-tight leading-none">{summaryStats.active_drivers}</span>
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center transition-all duration-300 group-hover:scale-105 border border-emerald-100/50">
+                  <SafetyCertificateOutlined className="text-sm" />
+                </div>
+              </div>
             </div>
           </Card>
-          <Card className="rounded-2xl border-none shadow-sm bg-gradient-to-br from-amber-50 to-white">
-            <div className="flex flex-col">
-              <Text className="text-[10px] font-black uppercase text-amber-400 tracking-widest">Pending Review</Text>
-              <Text className="text-2xl font-black text-amber-900 leading-tight">{summaryStats.pending_drivers}</Text>
+
+          <Card size="small" className="rounded-xl border border-slate-100 shadow-sm transition-all duration-300 hover:shadow-md group">
+            <div className="flex justify-between items-center py-1 px-1">
+              <div className="flex flex-col">
+                <Text className="text-[9px] font-black uppercase text-slate-400 tracking-wider leading-none">Pending Review</Text>
+                <Text className="text-[9px] text-slate-400 font-medium leading-none mt-1.5 italic">Awaiting verification</Text>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xl font-black text-amber-500 tracking-tight leading-none">{summaryStats.pending_drivers}</span>
+                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center transition-all duration-300 group-hover:scale-105 border border-amber-100/50">
+                  <ClockCircleOutlined className="text-sm" />
+                </div>
+              </div>
             </div>
           </Card>
         </div>
@@ -430,15 +530,21 @@ const DriverReconciliation: React.FC = () => {
             dataSource={filteredDrivers}
             loading={importing || loading}
             pagination={{
-              pageSize: 10,
+              current: currentPage,
+              pageSize: pageSize,
               total: filteredDrivers.length,
               className: "px-6 py-4",
               showSizeChanger: true,
               size: "small",
               position: ["bottomRight"],
-              showTotal: (total) => total > 0 ? `Total ${total} drivers` : ""
+              showTotal: (total) => total > 0 ? `Total ${total} drivers` : "",
+              onChange: (page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              }
             }}
-            scroll={{ x: 'max-content', y: 'calc(100vh - 480px)' }}
+            size="small"
+            scroll={{ x: 'max-content', y: 'calc(100vh - 440px)' }}
             sticky
             rowKey={(record, index) => (record?.phone || index || 0).toString() + (index || 0)}
             rowClassName={(_, index) =>

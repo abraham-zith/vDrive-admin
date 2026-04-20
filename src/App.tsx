@@ -396,7 +396,7 @@ const RootLayout: React.FC = () => {
       { label: <Link to="/customers">Customers</Link>, key: "/customers", icon: <UserOutlined /> },
       { label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>, key: "/PricingAndFareRules", icon: <DollarOutlined /> },
       { label: <Link to="/drivers">Drivers</Link>, key: "/drivers", icon: <PiSteeringWheel /> },
-      { label: <Link to="/driver-reconciliation">Driver Reconciliation</Link>, key: "/driver-reconciliation", icon: <TableOutlined /> },
+      { label: <Link to="/driver-reconciliation">Driver Outreach</Link>, key: "/driver-reconciliation", icon: <TableOutlined /> },
     ];
 
     // RBAC: Only super_admin can manage other admins
