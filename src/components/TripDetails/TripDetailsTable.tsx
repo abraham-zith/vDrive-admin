@@ -37,6 +37,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../../store";
 import TripDetailsDrawer from "./TripDetailsDrawer";
+import axiosIns from "../../api/axios";
 
 interface Props {
   data: TripDetailsType[];
@@ -135,26 +136,40 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
   }, [trip]);
 
   useEffect(() => {
-    if (!trip) return;
+    const fetchDrivers = async () => {
+      try {
+        setDriverLoading(true);
+        const response = await axiosIns.get("/api/drivers/");
+        const driverData = response.data?.data?.drivers || [];
 
-    // later API call
-    setDrivers(mockDrivers); // remove this later
-  }, [trip]);
+        const mappedDrivers: Driver[] = driverData.map((d: any) => ({
+          id: d.id,
+          name: `${d.first_name || ''} ${d.last_name || ''}`.trim() || d.vdrive_id || 'Unknown Driver',
+          status: d.status?.toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
+          location: d.address?.city || d.address?.state || 'Unknown',
+          distanceKm: 0, // Not available in general list
+          etaMinutes: 0, // Not available in general list
+          phonenumber: d.phone_number || 'N/A'
+        }));
+
+        setDrivers(mappedDrivers);
+      } catch (error) {
+        console.error("Error fetching drivers:", error);
+        notification.error({
+          message: "Error",
+          description: "Failed to fetch drivers for assignment."
+        });
+      } finally {
+        setDriverLoading(false);
+      }
+    };
+
+    fetchDrivers();
+  }, []);
 
   const handleDriverChange = (driverId: string) => {
-    // 1️⃣ start loading
-    setDriverLoading(true);
-
-    // 2️⃣ clear old data
-    setSelectedDriver(null);
-
-    // 3️⃣ simulate API delay (2 seconds)
-    setTimeout(() => {
-      const driver = drivers.find((d) => d.id === driverId) || null;
-
-      setSelectedDriver(driver);
-      setDriverLoading(false);
-    }, 2000);
+    const driver = drivers.find((d) => d.id === driverId) || null;
+    setSelectedDriver(driver);
   };
 
   // tabl actions menu
@@ -172,7 +187,7 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
       );
 
     const items = [];
-    
+
     if (isSuperAdmin) {
       items.push(
         {
