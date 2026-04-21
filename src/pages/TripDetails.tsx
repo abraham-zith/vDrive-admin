@@ -376,11 +376,11 @@ const TripDetails = () => {
                   },
                   {
                     label: (
-                      <span className={`px-2 font-bold tracking-tight ${filters.status === "mid-cancelled" ? "text-rose-600" : "text-black"}`}>
-                        Mid-Cancelled ({getStatusCount("mid-cancelled")})
+                      <span className={`px-2 font-bold tracking-tight ${filters.status === "mid_cancelled" ? "text-rose-600" : "text-black"}`}>
+                        Mid-Cancelled ({getStatusCount("mid_cancelled")})
                       </span>
                     ),
-                    value: "mid-cancelled",
+                    value: "mid_cancelled",
                   },
                 ]}
                 className="premium-segmented-alt-enlarged !bg-transparent"

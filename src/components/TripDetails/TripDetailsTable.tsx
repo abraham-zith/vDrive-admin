@@ -16,6 +16,7 @@ import {
 import type { TableColumnsType } from "antd";
 
 import { GrPhone } from "react-icons/gr";
+import { IoCarOutline } from "react-icons/io5";
 
 import {
   UserOutlined,
@@ -26,6 +27,12 @@ import {
   MoreOutlined,
   StopOutlined,
   EyeOutlined,
+  RadarChartOutlined,
+  CheckOutlined,
+  EnvironmentOutlined,
+  UserDeleteOutlined,
+  VerticalAlignTopOutlined,
+  CloudSyncOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -61,6 +68,15 @@ export type ActionType =
   | "TRIGGER_DRIVER"
   | null;
 
+const ADMIN_CANCEL_REASONS = [
+  { label: "Technical Issue", value: "TECHNICAL_ISSUE" },
+  { label: "Passenger No-Show", value: "NO_SHOW" },
+  { label: "Payment Issue", value: "PAYMENT_ISSUE" },
+  { label: "Accident / Emergency", value: "ACCIDENT" },
+  { label: "Admin Cancelled", value: "ADMIN_CANCELLED" },
+  { label: "Other", value: "OTHER" },
+];
+
 const okTextMap = {
   ASSIGN_DRIVER: "Assign",
   CANCEL_TRIP: "Cancel Trip",
@@ -75,35 +91,35 @@ const titleMap = {
   TRIGGER_DRIVER: "Trigger Broadcast Alert",
 };
 
-const mockDrivers: Driver[] = [
-  {
-    id: "driver_1",
-    name: "Sathish",
-    status: "ACTIVE",
-    location: "Anna Nagar",
-    distanceKm: 3.2,
-    etaMinutes: 8,
-    phonenumber: "8825857024",
-  },
-  {
-    id: "driver_2",
-    name: "Senthil",
-    status: "ACTIVE",
-    location: "Velachery",
-    distanceKm: 6.5,
-    etaMinutes: 18,
-    phonenumber: "8825857026",
-  },
-  {
-    id: "driver_3",
-    name: "Karthik",
-    status: "INACTIVE",
-    location: "KK Nagar",
-    distanceKm: 4.1,
-    etaMinutes: 12,
-    phonenumber: "8855857024",
-  },
-];
+// const mockDrivers: Driver[] = [
+//   {
+//     id: "driver_1",
+//     name: "Sathish",
+//     status: "ACTIVE",
+//     location: "Anna Nagar",
+//     distanceKm: 3.2,
+//     etaMinutes: 8,
+//     phonenumber: "8825857024",
+//   },
+//   {
+//     id: "driver_2",
+//     name: "Senthil",
+//     status: "ACTIVE",
+//     location: "Velachery",
+//     distanceKm: 6.5,
+//     etaMinutes: 18,
+//     phonenumber: "8825857026",
+//   },
+//   {
+//     id: "driver_3",
+//     name: "Karthik",
+//     status: "INACTIVE",
+//     location: "KK Nagar",
+//     distanceKm: 4.1,
+//     etaMinutes: 12,
+//     phonenumber: "8855857024",
+//   },
+// ];
 
 const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
   const dispatch = useDispatch();
@@ -127,6 +143,11 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
 
   const [adjustedFare, setAdjustedFare] = useState<string>("");
   const adjustedFareNumber = Number(adjustedFare || 0);
+
+  // Cancellation States
+  const [cancelStep, setCancelStep] = useState<0 | 1>(0);
+  const [cancelReason, setCancelReason] = useState<string | null>(null);
+  const [cancelNotes, setCancelNotes] = useState<string>("");
 
   console.log("activeAction", activeAction, trip);
 
@@ -184,11 +205,11 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
   };
 
   const menuItems = (r: TripDetailsType) => {
-    const completed = isTripCompleted(r);
+    const actionRestricted = isActionRestricted(r);
 
     const withTooltip = (label: string) =>
-      completed ? (
-        <Tooltip title="Trip already completed">
+      actionRestricted ? (
+        <Tooltip title={`Trip state is ${r.trip_status?.toLowerCase()}. No further actions allowed.`}>
           <span>{label}</span>
         </Tooltip>
       ) : (
@@ -205,26 +226,26 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
             isDriverAssigned(r) ? "Reassign Driver" : "Assign Driver",
           ),
           icon: <UserAddOutlined />,
-          disabled: completed,
+          disabled: actionRestricted,
         },
         {
           key: "fare",
           label: withTooltip("Adjust Fare"),
           icon: <DollarOutlined />,
-          disabled: completed,
+          disabled: actionRestricted,
         },
         {
           key: "cancel",
           label: withTooltip("Cancel Trip"),
           icon: <StopOutlined />,
           danger: true,
-          disabled: completed,
+          disabled: actionRestricted,
         },
         {
           key: "trigger",
           label: withTooltip("Trigger to Drivers"),
           icon: <BellOutlined />,
-          disabled: completed,
+          disabled: actionRestricted,
         }
       );
     }
@@ -235,8 +256,10 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
   const isDriverAssigned = (trip: TripDetailsType | null) =>
     Boolean(trip?.driver_id && trip?.driver_name?.trim());
 
-  const isTripCompleted = (trip: TripDetailsType | null) =>
-    trip?.trip_status === "COMPLETED";
+  const isActionRestricted = (trip: TripDetailsType | null) => {
+    const status = trip?.trip_status;
+    return status === "COMPLETED" || status === "CANCELLED" || status === "MID_CANCELLED";
+  };
 
   const columns: TableColumnsType<TripDetailsType> = [
     {
@@ -417,187 +440,155 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
   // ASSIGN DRIVER CONTENT
   // ============================================
 
+  // ============================================
+  // ASSIGN DRIVER CONTENT
+  // ============================================
+
   const AssignDriverContent = (
-    <div style={{ width: 280 }}>
-      {/* Radius Selector */}
-      <div className="mb-3">
-        <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-1.5 flex justify-between">
-          Search Radius <span>{searchRadius >= 1000 ? `${searchRadius / 1000}km` : `${searchRadius}m`}</span>
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {[500, 1000, 2000, 5000].map(r => (
-            <Tag.CheckableTag
-              key={r}
-              checked={searchRadius === r}
-              onChange={() => setSearchRadius(r)}
-              className={`text-[10px] m-0 px-2 py-0.5 border rounded-lg transition-all
-                ${searchRadius === r ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-indigo-200'}`}
-            >
-              {r >= 1000 ? `${r / 1000}km` : `${r}m`}
-            </Tag.CheckableTag>
-          ))}
-          <Select
-            size="small"
-            placeholder="More"
-            className="text-[10px] min-w-[60px]"
-            onChange={(val) => setSearchRadius(val)}
-            value={searchRadius > 5000 ? searchRadius : undefined}
-          >
-            <Select.Option value={10000}>10km</Select.Option>
-            <Select.Option value={20000}>20km</Select.Option>
-            <Select.Option value={50000}>50km</Select.Option>
-          </Select>
+    <div className="flex gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Left Column: Trip Context */}
+      <div className="w-72 shrink-0 flex flex-col">
+        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm h-full flex flex-col justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
+              <IoCarOutline className="text-indigo-500" /> Trip Context
+            </p>
+
+            <div className="relative pl-6 space-y-8 before:content-[''] before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:via-gray-100 before:to-rose-500">
+              <div className="relative">
+                <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-50 shadow-sm" />
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight mb-1">Pick up</p>
+                <p className="text-[11px] text-gray-700 font-extrabold leading-relaxed line-clamp-2">{trip?.pickup_address}</p>
+              </div>
+
+              <div className="relative">
+                <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-rose-500 ring-4 ring-rose-50 shadow-sm" />
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight mb-1 font-mono">Drop off</p>
+                <p className="text-[11px] text-gray-700 font-extrabold leading-relaxed line-clamp-2">{trip?.drop_address}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-dashed border-gray-100 space-y-4 bg-slate-50/50 -mx-6 -mb-6 p-6 rounded-b-3xl">
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] text-gray-400 font-bold uppercase tracking-tight">Est. Distance</span>
+              <span className="text-xs font-black text-gray-800 italic">{trip?.distance_km} KM</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] text-gray-400 font-bold uppercase tracking-tight">Gross Revenue</span>
+              <span className="text-base font-black text-indigo-600 tabular-nums">₹{trip?.total_fare}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Driver Select */}
-      <Select
-        showSearch
-        placeholder="Type driver name"
-        style={{ width: "100%" }}
-        value={selectedDriver?.id}
-        optionLabelProp="label"
-        optionFilterProp="label"
-        loading={driverLoading}
-        onChange={handleDriverChange}
-        dropdownRender={(menu) => (
-          <>
-            {menu}
-            {drivers.length === 0 && !driverLoading && (
-              <div className="p-4 text-center border-t border-gray-50">
-                <p className="text-xs text-gray-400 mb-2 font-medium italic">
-                  No online drivers within {searchRadius >= 1000 ? `${searchRadius / 1000}km` : `${searchRadius}m`}
-                </p>
-                <Button
-                  size="small"
-                  type="primary"
-                  ghost
-                  className="text-[10px] h-7 rounded-lg font-bold"
-                  onMouseDown={(e) => {
-                    e.preventDefault(); // ✅ Prevent default behavior
-                    e.stopPropagation(); // ✅ Prevent event bubbling
-                    console.log(`[ExpandSearch] Expanding from ${searchRadius}m`);
-                    const nextRadii = [500, 1000, 2000, 5000, 10000, 20000, 50000];
-                    const currentIndex = nextRadii.indexOf(searchRadius);
-                    if (currentIndex < nextRadii.length - 1) {
-                      console.log(`[ExpandSearch] Setting radius to ${nextRadii[currentIndex + 1]}m`);
-                      setSearchRadius(nextRadii[currentIndex + 1]);
-                    }
-                  }}
-                >
-                  Expand Search to {
-                    (() => {
-                      const nextRadii = [500, 1000, 2000, 5000, 10000, 20000, 50000];
-                      const currentIndex = nextRadii.indexOf(searchRadius);
-                      const next = nextRadii[currentIndex + 1] || searchRadius;
-                      return next >= 1000 ? `${next / 1000}km` : `${next}m`;
-                    })()
-                  }
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      >
-        {drivers.map((driver) => (
-          <Select.Option
-            key={driver.id}
-            value={driver.id}
-            label={driver.name}
-            disabled={driver.status !== "ACTIVE"}
-          >
-            <div className="flex justify-between items-center py-1">
-              <div>
-                <div className="font-bold text-gray-800 text-[11px] leading-tight">{driver.name}</div>
-                <div className="text-[9px] text-gray-400 mt-0.5">{driver.distanceKm}km away • ~{driver.etaMinutes} min</div>
-              </div>
-              <Tag color="green" className="m-0 text-[8px] px-1 line-height-[1.4]">
-                ONLINE
-              </Tag>
-            </div>
-          </Select.Option>
-        ))}
-      </Select>
-
-      {driverLoading && (
-        <div className="mt-4 flex items-center justify-center rounded-xl border bg-white p-6">
-          <Spin size="large" />
-        </div>
-      )}
-
-      {drivers.length === 0 && !driverLoading && (
-        <div className="mt-3 bg-amber-50 border border-amber-100 rounded-lg p-3 text-center">
-          <p className="text-[10px] text-amber-600 font-bold uppercase tracking-tight mb-2">No drivers in vicinity</p>
-          <Button
-            block
-            size="small"
-            type="primary"
-            className="bg-amber-500 hover:bg-amber-600 border-none h-8 text-[11px] font-bold shadow-sm"
-            onMouseDown={(e) => {
-              e.preventDefault(); // ✅ Prevent default behavior
-              e.stopPropagation(); // ✅ Prevent event bubbling
-              console.log(`[ExpandSearch2] Expanding from ${searchRadius}m`);
-              const nextRadii = [500, 1000, 2000, 5000, 10000, 20000, 50000];
-              const currentIndex = nextRadii.indexOf(searchRadius);
-              if (currentIndex < nextRadii.length - 1) {
-                console.log(`[ExpandSearch2] Setting radius to ${nextRadii[currentIndex + 1]}m`);
-                setSearchRadius(nextRadii[currentIndex + 1]);
-              }
-            }}
-          >
-            Expand Search under {
-              (() => {
-                const nextRadii = [500, 1000, 2000, 5000, 10000, 20000, 50000];
-                const currentIndex = nextRadii.indexOf(searchRadius);
-                const next = nextRadii[currentIndex + 1] || searchRadius;
-                return next >= 1000 ? `${next / 1000}km` : `${next}m`;
-              })()
-            }
-          </Button>
-        </div>
-      )}
-
-      {!driverLoading && selectedDriver && (
-        <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm text-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <p className="text-[10px] uppercase tracking-wide text-gray-400">
-                Driver
-              </p>
-              <p className="font-semibold text-gray-900 leading-tight">
-                {selectedDriver.name}
-              </p>
-            </div>
-
-            <Tag color="green">
-              ONLINE
-            </Tag>
-          </div>
-
-          <div className="mb-2">
-            <p className="text-gray-400 text-[11px]">Last Known Location</p>
-            <p className="font-medium text-gray-900 leading-tight truncate">
-              {selectedDriver.location}
+      {/* Right Column: Driver Selection */}
+      <div className="flex-grow flex flex-col min-h-[450px]">
+        {/* Radius Header */}
+        <div className="bg-gray-50/50 border border-gray-100 rounded-3xl p-5 mb-5 shadow-inner">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[11px] font-black uppercase tracking-widest text-indigo-400 flex items-center gap-2">
+              <RadarChartOutlined /> Search Proximity
             </p>
+            <div className="bg-indigo-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+              Scanning: {searchRadius >= 1000 ? `${searchRadius / 1000}km` : `${searchRadius}m`}
+            </div>
           </div>
-
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-gray-400 text-[11px]">Distance</p>
-              <p className="font-medium text-indigo-600 leading-tight">
-                {selectedDriver.distanceKm} km
-              </p>
-            </div>
-
-            <div className="text-right">
-              <p className="text-gray-400 text-[11px]">ETA</p>
-              <p className="font-medium text-emerald-600 leading-tight">
-                ~{selectedDriver.etaMinutes} mins
-              </p>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {[500, 1000, 2000, 5000, 10000, 20000].map(r => (
+              <button
+                key={r}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSearchRadius(r);
+                }}
+                className={`px-4 py-2 rounded-2xl text-[10px] font-black transition-all border duration-300
+                    ${searchRadius === r
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200 transform scale-105'
+                    : 'bg-white border-gray-100 text-gray-400 hover:border-indigo-300 hover:text-indigo-500'}`}
+              >
+                {r >= 1000 ? `${r / 1000}km` : `${r}m`}
+              </button>
+            ))}
           </div>
         </div>
-      )}
+
+        {/* Driver List */}
+        <div className="flex-grow max-h-[350px] overflow-y-auto pr-2 no-scrollbar space-y-4">
+          {driverLoading ? (
+            <div className="h-64 flex flex-col items-center justify-center text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-indigo-500/20 blur-2xl animate-pulse rounded-full" />
+                <Spin size="large" className="relative" />
+              </div>
+              <p className="text-[11px] text-indigo-400 font-bold uppercase tracking-[0.2em] animate-pulse">Filtering Elite Partners...</p>
+            </div>
+          ) : drivers.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3">
+              {drivers.map((driver) => (
+                <div
+                  key={driver.id}
+                  onClick={() => handleDriverChange(driver.id)}
+                  className={`group p-4 rounded-3xl border-2 cursor-pointer transition-all duration-300
+                        ${selectedDriver?.id === driver.id
+                      ? 'border-indigo-600 bg-indigo-50/50 shadow-xl shadow-indigo-100/50 transform scale-[1.02]'
+                      : 'border-gray-50 bg-white hover:border-indigo-200 hover:shadow-md'}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <Avatar
+                        shape="square"
+                        size={48}
+                        className={`rounded-2xl border-2 border-white shadow-sm transition-colors duration-300 ${selectedDriver?.id === driver.id ? 'bg-indigo-600' : 'bg-slate-100'}`}
+                        icon={<UserOutlined className={selectedDriver?.id === driver.id ? 'text-white' : 'text-slate-400'} />}
+                      />
+                      <div>
+                        <div className="font-bold text-slate-800 text-sm leading-tight mb-1">{driver.name}</div>
+                        <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold uppercase tracking-tight italic mb-3">
+                          <EnvironmentOutlined /> {driver.location}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black shadow-sm ring-1 ring-emerald-100">
+                            ETA: {driver.etaMinutes} MINS
+                          </div>
+                          <div className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black shadow-sm ring-1 ring-indigo-100 text-transform uppercase">
+                            {driver.distanceKm} KM AWAY
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-500
+                          ${selectedDriver?.id === driver.id ? 'border-indigo-600 bg-indigo-600 text-white rotate-[360deg]' : 'border-slate-100'}`}>
+                      {selectedDriver?.id === driver.id && <CheckOutlined className="text-xs" />}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-16 text-center bg-gray-50/30 rounded-[2.5rem] border-2 border-dashed border-gray-100">
+              <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <UserDeleteOutlined className="text-2xl text-slate-200" />
+              </div>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">No partners discovered in vicinity</p>
+              <Button
+                type="primary"
+                size="large"
+                icon={<VerticalAlignTopOutlined className="rotate-180" />}
+                className="bg-slate-800 h-12 font-black px-10 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const nextRadii = [500, 1000, 2000, 5000, 10000, 20000, 50000];
+                  const next = nextRadii[nextRadii.indexOf(searchRadius) + 1] || 50000;
+                  setSearchRadius(next);
+                }}
+              >
+                Expand Scan Zone
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 
@@ -605,96 +596,96 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
   // TRIGGER BROADCAST CONTENT
   // ============================================
 
+  // ============================================
+  // TRIGGER BROADCAST CONTENT
+  // ============================================
+
   const TriggerBroadcastContent = (
-    <div style={{ width: 280 }}>
-      {/* Radius Selector */}
-      <div className="mb-4">
-        <p className="text-[10px] uppercase tracking-wide text-gray-400 mb-2 flex justify-between">
-          Broadcast Radius <span>{searchRadius >= 1000 ? `${searchRadius / 1000}km` : `${searchRadius}m`}</span>
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {[500, 1000, 2000, 5000].map(r => (
-            <Tag.CheckableTag
-              key={r}
-              checked={searchRadius === r}
-              onChange={() => setSearchRadius(r)}
-              className={`text-[10px] m-0 px-2 py-0.5 border rounded-lg transition-all
-                ${searchRadius === r ? 'bg-amber-600 text-white border-amber-600 shadow-sm' : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-amber-200'}`}
-            >
-              {r >= 1000 ? `${r / 1000}km` : `${r}m`}
-            </Tag.CheckableTag>
-          ))}
-          <Select
-            size="small"
-            placeholder="More"
-            className="text-[10px] min-w-[60px]"
-            onChange={(val) => setSearchRadius(val)}
-            value={searchRadius > 5000 ? searchRadius : undefined}
-          >
-            <Select.Option value={10000}>10km</Select.Option>
-            <Select.Option value={20000}>20km</Select.Option>
-            <Select.Option value={50000}>50km</Select.Option>
-          </Select>
+    <div className="text-center py-2 animate-in fade-in zoom-in-95 duration-500">
+      {/* 📍 Detailed Route Card */}
+      <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm mb-8 text-left relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full translate-x-16 -translate-y-16 opacity-50 group-hover:scale-110 transition-transform duration-700" />
+
+        <div className="relative z-10">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+            <EnvironmentOutlined className="text-indigo-500" /> Route Logistics
+          </p>
+
+          <div className="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-emerald-500 before:via-slate-100 before:to-rose-500">
+            <div className="relative">
+              <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-50 shadow-sm" />
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mb-0.5">Pick up</p>
+              <p className="text-xs text-slate-700 font-extrabold leading-relaxed">{trip?.pickup_address}</p>
+            </div>
+
+            <div className="relative">
+              <div className="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-rose-500 ring-4 ring-rose-50 shadow-sm" />
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mb-0.5">Drop off</p>
+              <p className="text-xs text-slate-700 font-extrabold leading-relaxed">{trip?.drop_address}</p>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-dashed border-slate-100 flex justify-between items-center">
+            <div>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Gross Revenue</p>
+              <p className="text-xl font-black text-indigo-600 tabular-nums italic">₹{trip?.total_fare}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Trip Code</p>
+              <p className="text-xs font-black text-slate-800 italic">{trip?.trip_code}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {driverLoading ? (
-        <div className="py-8 flex flex-col items-center justify-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-          <Spin size="small" className="mb-2" />
-          <p className="text-[10px] text-gray-400 font-medium animate-pulse">Scanning for nearby partners...</p>
-        </div>
-      ) : (
-        <div className={`p-4 rounded-2xl border ${drivers.length > 0 ? 'bg-emerald-50/30 border-emerald-100' : 'bg-amber-50/30 border-amber-100'} text-center`}>
-          <div className="flex justify-center mb-2">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${drivers.length > 0 ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
-              <BellOutlined className={`text-lg ${drivers.length > 0 ? 'animate-bounce' : ''}`} />
-            </div>
+      {/* Settings Bar */}
+      <div className="grid grid-cols-2 gap-5 mb-8 text-left">
+        <div className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm group hover:border-indigo-200 transition-colors">
+          <div className="flex justify-between items-start mb-3">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <RadarChartOutlined className="text-amber-500 text-xs" /> Radius scan
+            </p>
+            {driverLoading ? (
+              <Spin size="small" />
+            ) : (
+              null
+              //  <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100 italic">
+              //     {drivers.length} FOUND
+              //  </span>
+            )}
           </div>
-          <h4 className={`text-xs font-black uppercase tracking-tight mb-1 ${drivers.length > 0 ? 'text-emerald-700' : 'text-amber-700'}`}>
-            {drivers.length} Partners Found
-          </h4>
-          <p className="text-[10px] text-gray-500 leading-tight">
-            {drivers.length > 0 
-              ? `Ready to broadcast "NEW_TRIP_REQUEST" alert to all ${drivers.length} partners in this range.`
-              : `No online partners found within ${searchRadius >= 1000 ? `${searchRadius / 1000}km` : `${searchRadius}m`}. Try expanding the radius.`}
-          </p>
-
-          {drivers.length === 0 && (
-            <Button
-              block
-              size="small"
-              type="primary"
-              className="mt-3 bg-amber-500 hover:bg-amber-600 border-none h-8 text-[11px] font-bold shadow-sm"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const nextRadii = [500, 1000, 2000, 5000, 10000, 20000, 50000];
-                const currentIndex = nextRadii.indexOf(searchRadius);
-                if (currentIndex < nextRadii.length - 1) {
-                  setSearchRadius(nextRadii[currentIndex + 1]);
-                }
-              }}
-            >
-              Expand Search to {
-                (() => {
-                  const nextRadii = [500, 1000, 2000, 5000, 10000, 20000, 50000];
-                  const currentIndex = nextRadii.indexOf(searchRadius);
-                  const next = nextRadii[currentIndex + 1] || searchRadius;
-                  return next >= 1000 ? `${next / 1000}km` : `${next}m`;
-                })()
-              }
-            </Button>
-          )}
+          <Select
+            className="w-full text-xs font-black custom-minimal-select"
+            value={searchRadius}
+            onChange={setSearchRadius}
+            bordered={false}
+            dropdownClassName="rounded-2xl border-none shadow-2xl"
+          >
+            {[500, 1000, 2000, 5000, 10000, 20000, 50000].map(r => (
+              <Select.Option key={r} value={r}>
+                <span className="font-black italic pr-1">{r >= 1000 ? `${r / 1000}KM` : `${r}M`}</span> range
+              </Select.Option>
+            ))}
+          </Select>
         </div>
-      )}
+        <div className="bg-gradient-to-tr from-slate-900 to-indigo-900 p-5 rounded-[2rem] border-none shadow-xl">
+          <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-3 flex items-center gap-1.5 opacity-80">
+            <CloudSyncOutlined className="text-indigo-400 text-xs" /> Active Protocol
+          </p>
+          <p className="text-[12px] font-black text-white italic mt-1 font-mono tracking-tight">NEW_TRIP_BROADCAST</p>
+        </div>
+      </div>
 
-      <div className="mt-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
-        <p className="text-[9px] text-indigo-600 font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
-          <EyeOutlined className="text-[11px]" /> Pro Tip
-        </p>
-        <p className="text-[10px] text-indigo-500/80 leading-relaxed italic">
-          Broadcasting starts a 15-second response window for all notified drivers.
-        </p>
+      <div className="bg-indigo-600/5 p-5 rounded-[2.5rem] border border-indigo-100/50 flex items-start gap-5 text-left group hover:bg-white transition-all duration-300">
+        <div className="w-10 h-10 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-100">
+          <EyeOutlined className="text-lg" />
+        </div>
+        <div>
+          <p className="text-xs font-black text-indigo-900 italic tracking-tight mb-1.5 uppercase">Network Procedure</p>
+          <p className="text-[10px] text-indigo-500/80 leading-relaxed font-bold italic">
+            Initiating this protocol will emit real-time ride alerts to discovered partners. Partners have a <span className="text-indigo-600 underline underline-offset-4">15-second response window</span> to secure the trip.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -761,22 +752,41 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
   // ============================================
 
   const AdjustFareContent = (
-    <div style={{ width: 260 }}>
-      <div className="mb-2 text-xs text-gray-500">
-        Current Fare: <b>₹{trip?.total_fare ?? 0}</b>
+    <div className="animate-in fade-in zoom-in-95 duration-500 px-2 pb-2">
+      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-6 flex justify-between items-center shadow-inner">
+        <div>
+          <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Current Fare</p>
+          <p className="text-lg font-black text-slate-700 tabular-nums">₹{trip?.total_fare ?? 0}</p>
+        </div>
+        <div className="h-8 w-px bg-slate-200" />
+        <div className="text-right">
+          <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Currency</p>
+          <p className="text-lg font-black text-slate-700">INR</p>
+        </div>
       </div>
 
-      <Input
-        type="number"
-        prefix="₹"
-        placeholder="Enter new total fare"
-        value={adjustedFare}
-        onChange={(e) => setAdjustedFare(e.target.value)}
-      />
+      <div className="mb-8">
+        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-3 ml-1">Proposed adjustment</p>
+        <Input
+          type="number"
+          size="large"
+          prefix={<span className="text-indigo-600 font-black italic mr-2 text-xl">₹</span>}
+          placeholder="0.00"
+          value={adjustedFare}
+          onChange={(e) => setAdjustedFare(e.target.value)}
+          className="rounded-[1.25rem] h-14 text-xl font-black italic border-2 border-slate-100 focus:border-indigo-600 focus:ring-indigo-100 transition-all shadow-sm"
+        />
+      </div>
 
       {adjustedFare && (
-        <div className="mt-2 text-xs text-green-600">
-          New Total Fare: <b>₹{adjustedFareNumber}</b>
+        <div className="bg-indigo-50 rounded-2xl p-4 border border-indigo-100 flex items-center gap-4 animate-in slide-in-from-top-2">
+          <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-100/50">
+            <DollarOutlined className="text-lg" />
+          </div>
+          <div>
+            <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest mb-0.5">Finalized Total</p>
+            <p className="text-xl font-black text-indigo-600 tabular-nums italic">₹{adjustedFareNumber}</p>
+          </div>
         </div>
       )}
     </div>
@@ -810,33 +820,105 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
 
   const CancelTripContent = (
     <div className="text-sm">
-      <p className="font-medium text-red-600">
-        Are you sure you want to cancel this trip?
-      </p>
-      <p className="text-gray-500 mt-1">This action cannot be undone.</p>
+      {actionTrip?.trip_status === 'LIVE' && (
+        <div className="mb-4 p-2.5 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2.5 animate-pulse">
+          <div className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0">
+            <StopOutlined className="text-xs" />
+          </div>
+          <p className="text-[10px] text-red-700 font-bold leading-tight">
+            CRITICAL: This trip is currently LIVE (In Progress). Terminating it will interrupt the active journey.
+          </p>
+        </div>
+      )}
+      {cancelStep === 0 ? (
+        <div className="py-2 text-center">
+          <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
+            <StopOutlined style={{ fontSize: 24 }} />
+          </div>
+          <p className="font-bold text-gray-900 text-sm">
+            Terminate Trip Session
+          </p>
+          <p className="text-gray-500 mt-1.5 leading-relaxed">
+            Are you sure you want to cancel trip <span className="font-mono text-red-600 bg-red-50 px-1.5 py-0.5 rounded">{actionTrip?.trip_code}</span>? This action is irreversible.
+          </p>
+        </div>
+      ) : (
+        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-3 font-bold flex items-center gap-1.5">
+            <EyeOutlined className="text-xs" /> Select Cancellation Reason
+          </p>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {ADMIN_CANCEL_REASONS.map((r) => (
+              <Tag.CheckableTag
+                key={r.value}
+                checked={cancelReason === r.value}
+                onChange={() => setCancelReason(r.value)}
+                className={`text-[10px] m-0 px-3 py-2 border rounded-xl transition-all text-center flex items-center justify-center h-10 font-medium
+                  ${cancelReason === r.value
+                    ? 'bg-red-600 text-white border-red-600 shadow-md transform scale-[1.02]'
+                    : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-red-200 hover:bg-red-50/30'}`}
+              >
+                {r.label}
+              </Tag.CheckableTag>
+            ))}
+          </div>
+
+          {cancelReason === "OTHER" && (
+            <div className="animate-in zoom-in-95 duration-200">
+              <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-2 font-bold">Specify Reason</p>
+              <Input.TextArea
+                rows={3}
+                placeholder="Internal notes for tracking this cancellation..."
+                value={cancelNotes}
+                onChange={(e) => setCancelNotes(e.target.value)}
+                className="text-xs rounded-2xl border-gray-100 focus:border-red-300 focus:ring-red-200"
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 
-  const handleCancelTrip = async (trip: TripDetailsType | null) => {
-    console.log(`[CancelTrip] Cancelling trip ${trip?.trip_code}`);
-    if (!trip) return;
+  const confirmCancelTrip = async (trip: TripDetailsType | null) => {
+    console.log(`[CancelTrip] Confirming termination for ${trip?.trip_code}. Reason: ${cancelReason}`);
+    if (!trip || !cancelReason) return;
+
+    const key = `cancel-trip-${trip.trip_id}`;
+    notification.open({
+      key,
+      message: "Terminating Trip",
+      description: "Processing cancellation request...",
+      placement: "topRight",
+      duration: 0,
+    });
 
     try {
-      // later API: await api.post(`/trips/${trip.trip_id}/cancel`)
-
-      notification.success({
-        message: "Trip Cancelled",
-        description: `Trip ${trip.trip_code} has been cancelled`,
-        placement: "topRight",
-        duration: 2,
+      // 🚀 REAL API CALL
+      await axiosIns.post(`/api/trips/cancel/${trip.trip_id}`, {
+        cancel_reason: cancelReason,
+        cancel_by: 'ADMIN',
+        notes: cancelReason === 'OTHER' ? cancelNotes : `Cancelled by admin: ${cancelReason}`,
       });
 
-      setActiveAction(null); // ✅ Only close after confirmation
-    } catch (error) {
-      console.error("Failed to cancel trip:", error);
+      notification.success({
+        key,
+        message: "Trip Cancelled",
+        description: `Trip ${trip.trip_code} has been successfully terminated by Admin.`,
+        placement: "topRight",
+        duration: 4,
+      });
+
+      setActiveAction(null);
+      setCancelStep(0);
+      setCancelReason(null);
+      setCancelNotes("");
+    } catch (error: any) {
+      console.error("[CancelTrip] Failed:", error);
       notification.error({
-        message: "Error",
-        description: "Failed to cancel trip",
+        key,
+        message: "Cancellation Failed",
+        description: error.response?.data?.message || "Could not cancel trip. Please try again.",
         placement: "topRight",
       });
     }
@@ -903,7 +985,11 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
         confirmAdjustFare(actionTrip);
         break;
       case "CANCEL_TRIP":
-        handleCancelTrip(actionTrip);
+        if (cancelStep === 0) {
+          setCancelStep(1);
+        } else {
+          confirmCancelTrip(actionTrip);
+        }
         break;
       case "TRIGGER_DRIVER":
         confirmTriggerBroadcast(actionTrip);
@@ -957,36 +1043,78 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
           console.log("[DrawerCallback] Setting activeAction to TRIGGER_DRIVER");
           setActiveAction("TRIGGER_DRIVER");
         }}
-        isTripCompleted={isTripCompleted}
+        isTripCompleted={isActionRestricted}
         isDriverAssigned={isDriverAssigned}
       />
 
-      {/* Modal */}
+      {/* Modal Overhaul */}
       <Modal
         open={activeAction !== null}
+        width={
+          activeAction === "ASSIGN_DRIVER" ? 850 :
+            activeAction === "TRIGGER_DRIVER" ? 650 :
+              activeAction === "ADJUST_FARE" ? 480 :
+                500
+        }
+        centered
         onCancel={() => {
           console.log(`[Modal] Cancelled action: ${activeAction}`);
           setActiveAction(null);
           setSelectedDriver(null);
           setAdjustedFare("");
           setSearchRadius(500);
+          setCancelStep(0);
+          setCancelReason(null);
+          setCancelNotes("");
         }}
         onOk={handleModalOk}
+        styles={{
+          mask: { backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.4)' },
+          header: { marginBottom: '24px', borderBottom: 'none' },
+          body: { padding: '12px 0' }
+        }}
+        style={{ borderRadius: '2.5rem', overflow: 'hidden' }}
         title={
-          activeAction === "ASSIGN_DRIVER"
-            ? trip?.driver_name
-              ? "Reassign Driver"
-              : "Assign Driver"
-            : activeAction
-              ? titleMap[activeAction]
-              : ""
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg
+               ${activeAction === "ASSIGN_DRIVER" ? 'bg-indigo-600' : activeAction === "TRIGGER_DRIVER" ? 'bg-amber-500' : 'bg-slate-800'}`}>
+              {activeAction === "ASSIGN_DRIVER" ? <UserAddOutlined /> : activeAction === "TRIGGER_DRIVER" ? <BellOutlined /> : <DollarOutlined />}
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-800 leading-none">
+                {activeAction === "ASSIGN_DRIVER"
+                  ? trip?.driver_name
+                    ? "Reassign Partner"
+                    : "Assign Partner"
+                  : activeAction
+                    ? titleMap[activeAction]
+                    : ""}
+              </p>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Platform Operations Protocol</p>
+            </div>
+          </div>
         }
         okButtonProps={{
           disabled:
             (activeAction === "ASSIGN_DRIVER" && !selectedDriver) ||
-            (activeAction === "ADJUST_FARE" && !adjustedFare),
+            (activeAction === "ADJUST_FARE" && !adjustedFare) ||
+            (activeAction === "CANCEL_TRIP" && cancelStep === 1 && !cancelReason) ||
+            (activeAction === "CANCEL_TRIP" && cancelStep === 1 && cancelReason === "OTHER" && !cancelNotes.trim()),
+          loading: driverLoading,
+          className: "premium-ok-button h-11 px-8 rounded-2xl font-black italic text-xs tracking-tight shadow-xl"
         }}
-        okText={activeAction ? okTextMap[activeAction] : "OK"}
+        cancelButtonProps={{
+          className: "premium-cancel-button h-11 px-6 rounded-2xl font-bold text-xs border-none bg-slate-50 text-slate-400 hover:bg-slate-100 transition-all"
+        }}
+        okText={
+          activeAction === "CANCEL_TRIP"
+            ? cancelStep === 0
+              ? "Confirm Termination"
+              : "End Trip Session"
+            : activeAction
+              ? okTextMap[activeAction]
+              : "OK"
+        }
       >
         {activeAction === "ASSIGN_DRIVER" && AssignDriverContent}
         {activeAction === "ADJUST_FARE" && AdjustFareContent}

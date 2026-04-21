@@ -35,7 +35,6 @@ const TripDetailsDrawer: React.FC<Props> = ({
   open,
   trip,
   onClose,
-  activeAction,
   onAssignDriverClick,
   onAdjustFareClick,
   onCancelTripClick,
@@ -80,7 +79,7 @@ const TripDetailsDrawer: React.FC<Props> = ({
             {/* Action Toolbar */}
             <div className="flex items-center gap-2 mr-4 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
               {/* Assign Driver Button */}
-              <Tooltip title={isTripCompleted(trip) ? "Trip already completed" : "Open driver assignment modal"}>
+              <Tooltip title={isTripCompleted(trip) ? `Trip session in ${trip?.trip_status?.toLowerCase()} state` : "Open driver assignment modal"}>
                 <Button
                   size="small"
                   disabled={isTripCompleted(trip)}
@@ -97,7 +96,7 @@ const TripDetailsDrawer: React.FC<Props> = ({
               </Tooltip>
 
               {/* Adjust Fare Button */}
-              <Tooltip title={isTripCompleted(trip) ? "Trip already completed" : "Open fare adjustment modal"}>
+              <Tooltip title={isTripCompleted(trip) ? `Trip session in ${trip?.trip_status?.toLowerCase()} state` : "Open fare adjustment modal"}>
                 <Button
                   size="small"
                   disabled={isTripCompleted(trip)}
@@ -113,7 +112,7 @@ const TripDetailsDrawer: React.FC<Props> = ({
               </Tooltip>
 
               {/* Trigger Drivers Button */}
-              <Tooltip title={isTripCompleted(trip) ? "Trip already completed" : "Notify nearby drivers"}>
+              <Tooltip title={isTripCompleted(trip) ? `Trip session in ${trip?.trip_status?.toLowerCase()} state` : "Notify nearby drivers"}>
                 <Button
                   size="small"
                   disabled={isTripCompleted(trip)}
@@ -129,7 +128,7 @@ const TripDetailsDrawer: React.FC<Props> = ({
               </Tooltip>
 
               {/* Cancel Trip Button */}
-              <Tooltip title={isTripCompleted(trip) ? "Trip already completed" : "Cancel this trip"}>
+              <Tooltip title={isTripCompleted(trip) ? `Trip session in ${trip?.trip_status?.toLowerCase()} state` : "Cancel this trip"}>
                 <Button
                   size="small"
                   disabled={isTripCompleted(trip)}
