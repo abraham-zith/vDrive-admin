@@ -526,9 +526,16 @@ const TripDetailsMasonry: React.FC<Props> = ({ trip }) => {
 
             {/* Driver */}
             <div className="pl-2">
-              <div className="text-xs font-semibold mb-2">
-                <CarOutlined className="text-green-500 bg-green-200 rounded px-2 py-1 mr-1" />
-                DRIVER
+              <div className="text-xs font-semibold mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <CarOutlined className="text-green-500 bg-green-200 rounded px-2 py-1" />
+                  <span>DRIVER</span>
+                </div>
+                {trip?.trip_status === "ASSIGNED" && (
+                  <span className="bg-amber-100 text-amber-600 px-2 py-0.5 rounded text-[9px] font-bold animate-pulse uppercase tracking-wider border border-amber-200">
+                    Acceptance Pending
+                  </span>
+                )}
               </div>
               {trip?.driver_name ? (
                 <>

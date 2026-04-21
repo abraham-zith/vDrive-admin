@@ -328,6 +328,14 @@ const TripDetails = () => {
                   },
                   {
                     label: (
+                      <span className={`px-2 font-bold tracking-tight ${filters.status === "assigned" ? "text-cyan-600" : "text-black"}`}>
+                        Assigned ({getStatusCount("assigned")})
+                      </span>
+                    ),
+                    value: "assigned",
+                  },
+                  {
+                    label: (
                       <span className={`px-2 font-bold tracking-tight ${filters.status === "accepted" ? "text-emerald-600" : "text-black"}`}>
                         Accepted ({getStatusCount("accepted")})
                       </span>
