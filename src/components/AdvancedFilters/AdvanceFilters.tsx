@@ -191,7 +191,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
     >
       <Row gutter={[16, 16]} align="bottom">
         {filterFields.map((field) => (
-          <Col xs={24} sm={12} md={5} key={field.name}>
+          <Col xs={24} sm={12} md={4} key={field.name}>
             <Form.Item
               name={field.type === "range" ? undefined : field.name}
               label={<span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{field.label}</span>}
