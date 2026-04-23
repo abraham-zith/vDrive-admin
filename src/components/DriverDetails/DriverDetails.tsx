@@ -904,6 +904,30 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
       </div>
 
       <div className="py-6 h-full overflow-y-auto custom-scrollbar" style={{ background: "#f8fafc" }}>
+        
+        {(driver?.status === "blocked" || driver?.status === "suspended") && (
+          <div className="mx-6 mb-6">
+            <div className={`p-4 rounded-xl border flex items-start gap-4 ${driver.status === "blocked" ? "bg-red-50 border-red-200" : "bg-orange-50 border-orange-200"}`}>
+              <div className={`text-2xl mt-1 ${driver.status === "blocked" ? "text-red-500" : "text-orange-500"}`}>
+                {driver.status === "blocked" ? <StopOutlined /> : <ClockCircleOutlined />}
+              </div>
+              <div>
+                <h3 className={`font-bold m-0 text-lg ${driver.status === "blocked" ? "text-red-700" : "text-orange-700"}`}>
+                  Account {driver.status === "blocked" ? "Blocked" : "Suspended"}
+                </h3>
+                <p className={`mt-1 mb-0 text-sm ${driver.status === "blocked" ? "text-red-600" : "text-orange-600"}`}>
+                  <strong>Reason: </strong> {(driver as any).status_reason || "No specific reason provided."}
+                </p>
+                {(driver as any).status_updated_at && (
+                  <p className={`mt-1 mb-0 text-xs ${driver.status === "blocked" ? "text-red-400" : "text-orange-400"}`}>
+                    Applied on: {dayjs((driver as any).status_updated_at).format("MMM D, YYYY • hh:mm A")}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="custom-navigation mb-8">
           {segments.map(({ key }) => (
             <div
