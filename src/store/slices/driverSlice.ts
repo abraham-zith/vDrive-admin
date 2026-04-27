@@ -34,6 +34,8 @@ export interface Driver {
   };
   role: DriverRole;
   status: DriverStatus;
+  status_reason?: string;
+  status_updated_at?: string;
   rating: number;
   total_trips: number;
   availability: {
@@ -165,12 +167,13 @@ export const fetchDrivers = createAsyncThunk(
 export const updateDriverStatus = createAsyncThunk(
   "drivers/updateDriverStatus",
   async (
-    { driver_id, status }: { driver_id: string; status: DriverStatus },
+    { driver_id, status, status_reason }: { driver_id: string; status: DriverStatus; status_reason?: string },
     { rejectWithValue },
   ) => {
     try {
-      const response = await axiosIns.patch(`/api/drivers/${driver_id}/status`, {
+      const response = await axiosIns.patch(`/api/drivers/${driver_id}`, {
         status,
+        ...(status_reason ? { status_reason } : {}),
       });
       return response.data?.data || response.data;
     } catch (err: any) {
