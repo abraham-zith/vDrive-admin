@@ -5,14 +5,11 @@ import {
   Trash2,
   Edit2,
   Users,
-  Trophy,
-  Filter,
   Ticket,
   BarChart3,
   Percent,
   IndianRupee,
-  Clock,
-  ArrowRight
+  Clock
 } from 'lucide-react';
 import axios from '../api/axios';
 import { 
@@ -23,8 +20,7 @@ import {
   DatePicker, 
   Switch, 
   Form,
-  InputNumber,
-  Empty
+  InputNumber
 } from 'antd';
 import { messageApi, modalApi, notificationApi } from '../utilities/antdStaticHolder';
 import dayjs from 'dayjs';
@@ -286,7 +282,6 @@ const PromotionsPage: React.FC = () => {
             filteredPromos.map(promo => {
               const usageRate = Math.round((promo.usage_count / (promo.max_uses || 100)) * 100);
               const isPercentage = promo.discount_type === 'percentage';
-              const themeColor = isPercentage ? '#4f46e5' : '#10b981';
               const themeBg = isPercentage ? 'bg-indigo-600' : 'bg-emerald-600';
               const shadowColor = isPercentage ? 'shadow-indigo-500/20' : 'shadow-emerald-500/20';
 
