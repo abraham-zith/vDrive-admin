@@ -481,8 +481,8 @@ const RechargePlanPage: React.FC = () => {
         <div className="flex gap-1 p-1 bg-gray-50/80 rounded-xl border border-gray-100">
           <button
             onClick={() => setActiveTab("plans")}
-            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "plans" 
-              ? "bg-white text-indigo-600 shadow-sm border border-gray-200" 
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "plans"
+              ? "bg-white text-indigo-600 shadow-sm border border-gray-200"
               : "text-gray-500 hover:text-indigo-600"}`}
           >
             <Crown size={14} />
@@ -491,8 +491,8 @@ const RechargePlanPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab("subscriptions")}
-            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "subscriptions" 
-              ? "bg-white text-indigo-600 shadow-sm border border-gray-200" 
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "subscriptions"
+              ? "bg-white text-indigo-600 shadow-sm border border-gray-200"
               : "text-gray-500 hover:text-indigo-600"}`}
           >
             <Users size={14} />
@@ -501,8 +501,8 @@ const RechargePlanPage: React.FC = () => {
           </button>
           <button
             onClick={() => setActiveTab("promotions")}
-            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "promotions" 
-              ? "bg-white text-indigo-600 shadow-sm border border-gray-200" 
+            className={`px-4 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center gap-2 ${activeTab === "promotions"
+              ? "bg-white text-indigo-600 shadow-sm border border-gray-200"
               : "text-gray-500 hover:text-indigo-600"}`}
           >
             <Zap size={14} />
@@ -572,7 +572,7 @@ const RechargePlanPage: React.FC = () => {
                 ]}
               />
             </div>
-            
+
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
@@ -584,7 +584,7 @@ const RechargePlanPage: React.FC = () => {
               filteredPlans.map((plan, index) => {
                 const isExpanded = expandedPlanId === plan.id;
                 const activeSubCount = activeSubscriptions.filter(s => s.planName?.toLowerCase() === plan.planName?.toLowerCase()).length;
-                
+
                 const planNameLower = plan.planName?.toLowerCase() || '';
                 let themeConfig = { color: '#0ea5e9', bg: 'bg-sky-500', shadow: 'shadow-sky-500/20', Icon: Zap };
 
@@ -605,7 +605,7 @@ const RechargePlanPage: React.FC = () => {
                       }`}
                   >
                     {/* Top colored border */}
-                    <div 
+                    <div
                       className="absolute top-0 left-0 right-0 h-[4px] z-20"
                       style={{ backgroundColor: themeConfig.color }}
                     />
@@ -660,78 +660,78 @@ const RechargePlanPage: React.FC = () => {
 
                         {/* Density Metric */}
                         <div className="flex flex-col items-end">
-                           <div className="flex items-center gap-1.5 mb-1">
-                             <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest font-outfit">Density</span>
-                             <span className="text-[14px] font-extrabold text-indigo-500">{Math.round((activeSubCount / (activeSubscriptions.length || 1)) * 100)}%</span>
-                           </div>
-                           <div className="w-16 h-1 bg-gray-50 rounded-full overflow-hidden border border-gray-100">
-                             <div 
-                               className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
-                               style={{ width: `${(activeSubCount / (activeSubscriptions.length || 1)) * 100}%` }}
-                             />
-                           </div>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest font-outfit">Density</span>
+                            <span className="text-[14px] font-extrabold text-indigo-500">{Math.round((activeSubCount / (activeSubscriptions.length || 1)) * 100)}%</span>
+                          </div>
+                          <div className="w-16 h-1 bg-gray-50 rounded-full overflow-hidden border border-gray-100">
+                            <div
+                              className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
+                              style={{ width: `${(activeSubCount / (activeSubscriptions.length || 1)) * 100}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
 
                       {/* Triple Pricing Grid - Exact replication */}
                       <div className="grid grid-cols-3 gap-2 mb-6 h-28">
                         <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-1 group/price cursor-pointer transition-all hover:border-gray-200">
-                           <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Daily</span>
-                           <span className="text-2xl font-black text-[#111827] tracking-tighter">₹{plan.dailyPrice}</span>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Daily</span>
+                          <span className="text-2xl font-black text-[#111827] tracking-tighter">₹{plan.dailyPrice}</span>
                         </div>
                         <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center gap-1 group/price cursor-pointer transition-all hover:border-gray-200">
-                           <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Weekly</span>
-                           <span className="text-2xl font-black text-[#111827] tracking-tighter">₹{plan.weeklyPrice}</span>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Weekly</span>
+                          <span className="text-2xl font-black text-[#111827] tracking-tighter">₹{plan.weeklyPrice}</span>
                         </div>
                         <div className={`relative p-3 rounded-xl shadow-lg border-indigo-400/20 flex flex-col items-center justify-center gap-1 group/price cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] ${index === 0 ? 'bg-indigo-600' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}>
-                           <span className="text-[9px] font-bold text-white/70 uppercase tracking-widest text-center">Monthly</span>
-                           <span className="text-2xl font-black text-white tracking-tighter">₹{plan.monthlyPrice}</span>
-                           <div className="flex items-center gap-1">
-                              <div className="w-1 h-1 bg-white/60 rounded-full"></div>
-                              <span className="text-[8px] font-black text-white uppercase tracking-tighter">Best Ops</span>
-                           </div>
+                          <span className="text-[9px] font-bold text-white/70 uppercase tracking-widest text-center">Monthly</span>
+                          <span className="text-2xl font-black text-white tracking-tighter">₹{plan.monthlyPrice}</span>
+                          <div className="flex items-center gap-1">
+                            <div className="w-1 h-1 bg-white/60 rounded-full"></div>
+                            <span className="text-[8px] font-black text-white uppercase tracking-tighter">Best Ops</span>
+                          </div>
                         </div>
                       </div>
 
                       {/* Plan Configuration with separator */}
                       <div className="mt-4">
-                         <div className="flex items-center gap-3 mb-4">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Plan Configuration</span>
-                            <div className="h-px flex-1 bg-gray-100"></div>
-                         </div>
-                         <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-1 h-32 overflow-hidden items-start">
-                            {plan.features.slice(0, 6).map((feat: string, i: number) => {
-                              const isNegative = feat.toLowerCase().startsWith('no ') || feat.toLowerCase().includes('not included') || feat.toLowerCase() === 'local bookings only';
-                              return (
-                               <div key={i} className="flex items-center gap-2.5">
-                                  {isNegative ? (
-                                    <div className="shrink-0 w-5 h-5 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500">
-                                      <X size={11} strokeWidth={3} />
-                                    </div>
-                                  ) : (
-                                    <div className="shrink-0 w-5 h-5 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500">
-                                      <CheckCircle2 size={11} strokeWidth={3} />
-                                    </div>
-                                  )}
-                                  <span className={`text-[12px] font-semibold truncate ${isNegative ? 'text-gray-400 line-through' : 'text-gray-600'}`}>{feat}</span>
-                               </div>
-                              )
-                            })}
-                         </div>
+                        <div className="flex items-center gap-3 mb-4">
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Plan Configuration</span>
+                          <div className="h-px flex-1 bg-gray-100"></div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3 px-1 h-32 overflow-hidden items-start">
+                          {plan.features.slice(0, 6).map((feat: string, i: number) => {
+                            const isNegative = feat.toLowerCase().startsWith('no ') || feat.toLowerCase().includes('not included') || feat.toLowerCase() === 'local bookings only';
+                            return (
+                              <div key={i} className="flex items-center gap-2.5">
+                                {isNegative ? (
+                                  <div className="shrink-0 w-5 h-5 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500">
+                                    <X size={11} strokeWidth={3} />
+                                  </div>
+                                ) : (
+                                  <div className="shrink-0 w-5 h-5 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500">
+                                    <CheckCircle2 size={11} strokeWidth={3} />
+                                  </div>
+                                )}
+                                <span className={`text-[12px] font-semibold truncate ${isNegative ? 'text-gray-400 line-through' : 'text-gray-600'}`}>{feat}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
                       </div>
 
                       {/* Card Footer Metric & Action */}
                       <div className="mt-8 pt-4 border-t border-gray-50 flex items-center justify-between">
-                         <div className="flex items-center gap-2 text-emerald-500">
-                            <ArrowUpRight size={14} strokeWidth={3} />
-                            <span className="text-[11px] font-bold tracking-tight">Conversion 40%</span>
-                         </div>
-                         <button 
-                           onClick={(e) => { e.stopPropagation(); setExpandedPlanId(isExpanded ? null : plan.id); }}
-                           className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-900 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95"
-                         >
-                           Manage
-                         </button>
+                        <div className="flex items-center gap-2 text-emerald-500">
+                          <ArrowUpRight size={14} strokeWidth={3} />
+                          <span className="text-[11px] font-bold tracking-tight">Conversion 40%</span>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setExpandedPlanId(isExpanded ? null : plan.id); }}
+                          className="px-4 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-900 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-95"
+                        >
+                          Manage
+                        </button>
                       </div>
 
                       {/* Original Expanded Actions area moved inside for consistency */}
@@ -798,7 +798,7 @@ const RechargePlanPage: React.FC = () => {
                   <Filter size={14} className="text-gray-400" />
                 </div>
                 {['ALL', 'BASIC', 'ELITE', 'PREMIUM'].map(f => (
-                  <button 
+                  <button
                     key={f}
                     onClick={() => setSubFilter(f)}
                     className={`px-3 py-1 rounded-lg text-[10px] font-extrabold transition-all uppercase tracking-widest ${subFilter === f ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
@@ -856,7 +856,7 @@ const RechargePlanPage: React.FC = () => {
                         const totalDays = Math.ceil((new Date(sub.expiryDate).getTime() - new Date(sub.startDate).getTime()) / (1000 * 60 * 60 * 24));
                         const daysElapsed = totalDays - daysLeft;
                         const progress = Math.min(100, Math.max(0, (daysElapsed / (totalDays || 1)) * 100));
-                        
+
                         const planNameLower = sub.planName?.toLowerCase() || '';
                         let badgeClass = 'bg-indigo-50/50 text-indigo-600 border-indigo-100/50';
                         if (planNameLower.includes('basic')) badgeClass = 'bg-sky-50 text-sky-600 border-sky-100';
@@ -890,26 +890,26 @@ const RechargePlanPage: React.FC = () => {
                                   {sub.billingCycle}
                                 </span>
                                 {(sub.amountPaid || sub.price) && (
-                                   <div className="flex items-center gap-1 mt-0.5 text-slate-400">
-                                      <CreditCard size={10} />
-                                      <span className="text-[9px] font-bold">₹{sub.amountPaid || sub.price || '---'}</span>
-                                   </div>
+                                  <div className="flex items-center gap-1 mt-0.5 text-slate-400">
+                                    <CreditCard size={10} />
+                                    <span className="text-[9px] font-bold">₹{sub.amountPaid || sub.price || '---'}</span>
+                                  </div>
                                 )}
                               </div>
                             </td>
                             <td className="px-6 py-3 w-48">
-                               <div className="flex flex-col gap-1.5 w-full">
-                                  <div className="flex items-center justify-between text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                                    <span>{sub.startDate ? new Date(sub.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '---'}</span>
-                                    <span>{sub.expiryDate ? new Date(sub.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '---'}</span>
-                                  </div>
-                                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                    <div 
-                                      className={`h-full rounded-full transition-all duration-500 ${isExpiring ? 'bg-rose-500' : 'bg-emerald-400'}`}
-                                      style={{ width: `${progress}%` }}
-                                    />
-                                  </div>
-                               </div>
+                              <div className="flex flex-col gap-1.5 w-full">
+                                <div className="flex items-center justify-between text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                                  <span>{sub.startDate ? new Date(sub.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '---'}</span>
+                                  <span>{sub.expiryDate ? new Date(sub.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '---'}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${isExpiring ? 'bg-rose-500' : 'bg-emerald-400'}`}
+                                    style={{ width: `${progress}%` }}
+                                  />
+                                </div>
+                              </div>
                             </td>
                             <td className="px-6 py-3">
                               <div className="flex flex-col gap-1 items-start">
@@ -930,8 +930,8 @@ const RechargePlanPage: React.FC = () => {
                                 trigger={['click']}
                                 menu={{
                                   items: [
-                                    { 
-                                      key: '1', 
+                                    {
+                                      key: '1',
                                       label: <span className="text-xs font-semibold text-gray-700">View Driver Profile</span>,
                                       onClick: () => navigate('/drivers') // Or `/drivers/${sub.driverId}` if you have the ID.
                                     }
@@ -967,10 +967,10 @@ const RechargePlanPage: React.FC = () => {
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
           <div className="p-4 border-b border-gray-50 flex items-center justify-between">
-             <div className="flex items-center gap-3">
-                <Zap size={16} className="text-indigo-500" />
-                <span className="text-xs font-extrabold text-gray-900 tracking-tight uppercase">Promotion Systems</span>
-             </div>
+            <div className="flex items-center gap-3">
+              <Zap size={16} className="text-indigo-500" />
+              <span className="text-xs font-extrabold text-gray-900 tracking-tight uppercase">Promotion Systems</span>
+            </div>
           </div>
           <div className="flex-1 bg-gray-50/30">
             <Suspense fallback={<div className="flex items-center justify-center p-20 animate-pulse text-indigo-500 font-extrabold text-xs">INITIALIZING OPS ENGINE...</div>}>
@@ -989,8 +989,8 @@ const RechargePlanPage: React.FC = () => {
                 {selectedPlanIds.length}
               </div>
               <div className="flex flex-col">
-                 <span className="text-[11px] font-black tracking-tight uppercase">Operational Units</span>
-                 <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-0.5">Selected focus</span>
+                <span className="text-[11px] font-black tracking-tight uppercase">Operational Units</span>
+                <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest leading-none mt-0.5">Selected focus</span>
               </div>
             </div>
 
@@ -1316,19 +1316,19 @@ const RechargePlanPage: React.FC = () => {
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                       <span className="text-[12px] font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
-                         <Avatar size={20} className="bg-slate-100 text-slate-600 text-[10px] font-bold">
-                           {(item.admin_name || 'A')[0].toUpperCase()}
-                         </Avatar>
-                         {item.admin_name || "Admin"}
-                       </span>
-                       <span className="text-slate-300">•</span>
-                       <Tag color={
-                          item.action === 'CREATE' ? 'blue' :
-                            item.action === 'UPDATE' ? 'orange' : 'purple'
-                        } className="m-0 text-[10px] uppercase font-bold border-0 px-2 py-0.5 rounded-md">
-                         {item.action === 'TOGGLE_STATUS' ? 'STATUS CHANGE' : item.action}
-                       </Tag>
+                      <span className="text-[12px] font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
+                        <Avatar size={20} className="bg-slate-100 text-slate-600 text-[10px] font-bold">
+                          {(item.admin_name || 'A')[0].toUpperCase()}
+                        </Avatar>
+                        {item.admin_name || "Admin"}
+                      </span>
+                      <span className="text-slate-300">•</span>
+                      <Tag color={
+                        item.action === 'CREATE' ? 'blue' :
+                          item.action === 'UPDATE' ? 'orange' : 'purple'
+                      } className="m-0 text-[10px] uppercase font-bold border-0 px-2 py-0.5 rounded-md">
+                        {item.action === 'TOGGLE_STATUS' ? 'STATUS CHANGE' : item.action}
+                      </Tag>
                     </div>
                     <span className="text-[11px] font-medium text-slate-400/80 tabular-nums">
                       {new Date(item.created_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
@@ -1339,17 +1339,17 @@ const RechargePlanPage: React.FC = () => {
                     <div className="flex flex-col gap-2 mt-1">
                       {Object.keys(item.new_data || {}).map(field => {
                         if (['updated_at', 'created_at', 'id'].includes(field)) return null;
-                        
+
                         const oldVal = item.previous_data ? item.previous_data[field] : undefined;
                         const newVal = item.new_data[field];
 
                         if (oldVal !== undefined && JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
                           const formatValue = (val: any) => {
-                             if (val === null || val === undefined) return 'None';
-                             if (typeof val === 'boolean') return val ? 'Active' : 'Inactive';
-                             if (Array.isArray(val)) return val.join(', ');
-                             if (typeof val === 'object') return JSON.stringify(val);
-                             return String(val);
+                            if (val === null || val === undefined) return 'None';
+                            if (typeof val === 'boolean') return val ? 'Active' : 'Inactive';
+                            if (Array.isArray(val)) return val.join(', ');
+                            if (typeof val === 'object') return JSON.stringify(val);
+                            return String(val);
                           };
 
                           return (
