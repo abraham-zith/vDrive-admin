@@ -33,7 +33,7 @@ const TitleBar: React.FC<TitleBarProps> = ({
           <div className="flex flex-col gap-0.5">
             <h1 className="font-black text-xl text-slate-800 tracking-tight leading-none">{title}</h1>
             {description && (
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{description}</p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">{description}</p>
             )}
           </div>
         </div>

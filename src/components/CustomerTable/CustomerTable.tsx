@@ -29,6 +29,8 @@ const CustomerTable = ({ data, isSuperAdmin = false }: CustomerTableProps) => {
     const [searchText, setSearchText] = useState("");
     const [searchedColumn, setSearchedColumn] = useState("");
     const searchInput = useRef<InputRef>(null);
+    const [pageSize, setPageSize] = useState(15);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const openDrawer = (customer: Customer) => {
         setSelectedCustomer(customer);
@@ -138,10 +140,10 @@ const CustomerTable = ({ data, isSuperAdmin = false }: CustomerTableProps) => {
                 sorter: (a: Customer, b: Customer) => a.full_name.localeCompare(b.full_name),
                 ...getColumnSearchProps("full_name"),
                 render: (_, record) => (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         <Avatar
                             icon={<UserOutlined />}
-                            size={42}
+                            size={32}
                             style={{
                                 background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
                                 boxShadow: "0 4px 12px rgba(99, 102, 241, 0.2)"
@@ -334,38 +336,56 @@ const CustomerTable = ({ data, isSuperAdmin = false }: CustomerTableProps) => {
                 {`
                     .premium-table-flat .ant-table-thead > tr > th {
                         background: #f8fafc !important;
-                        border-bottom: 1px solid #e2e8f0 !important;
-                        font-weight: 800 !important;
-                        text-transform: uppercase !important;
-                        letter-spacing: 0.05em !important;
-                        font-size: 10px !important;
                         color: #64748b !important;
-                        padding: 12px 16px !important;
+                        font-weight: 700 !important;
+                        text-transform: uppercase !important;
+                        font-size: 11px !important;
+                        letter-spacing: 0.05em !important;
+                        border-bottom: 2px solid #f1f5f9 !important;
+                        padding: 10px 24px !important;
+                    }
+                    .premium-table-flat .ant-table-tbody > tr > td {
+                        padding: 8px 24px !important;
+                        border-bottom: 1px solid #f8fafc !important;
                     }
                     .premium-table-flat .ant-table-row {
                         cursor: pointer;
                         transition: all 0.2s ease;
-                    }
-                    .premium-table-flat .ant-table-row:hover > td {
-                        background: #f1f5f9 !important;
                     }
                     .premium-table-flat .ant-table {
                         background: transparent !important;
                     }
                 `}
             </style>
-            <div ref={contentRef} className="h-full w-full bg-white">
+            <div ref={contentRef} className="flex-grow bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-0 pb-2">
                 <Table
                     key={tableHeight}
                     columns={columns}
                     dataSource={data}
                     rowKey="id"
-                    pagination={false}
+                    pagination={{
+                        current: currentPage,
+                        pageSize: pageSize,
+                        total: data.length,
+                        className: "px-6 py-4",
+                        showSizeChanger: true,
+                        size: "small",
+                        position: ["bottomRight"],
+                        showTotal: (total) => total > 0 ? `Total ${total} customers` : "",
+                        onChange: (page, size) => {
+                            setCurrentPage(page);
+                            setPageSize(size);
+                        }
+                    }}
                     showSorterTooltip={false}
                     tableLayout="auto"
-                    size="middle"
-                    scroll={{ y: Math.floor(tableHeight || 0) }}
+                    size="small"
+                    scroll={{ x: 'max-content', y: 'calc(100vh - 440px)' }}
+                    sticky
                     className="premium-table-flat"
+                    rowClassName={(_, index) =>
+                        (index || 0) % 2 === 0 ? "bg-slate-50/50 hover:bg-indigo-50/30 transition-colors" : "bg-white hover:bg-indigo-50/30 transition-colors"
+                    }
                     onRow={(record) => ({
                         onClick: (event) => {
                             const isActionClick = (event.target as HTMLElement).closest(

@@ -412,7 +412,11 @@ const DriverReconciliation: React.FC = () => {
     <TitleBar
       title="Driver Outreach"
       description="Streamline driver onboarding and data management through bulk import/export."
-      icon={<TableOutlined />}
+      icon={
+        <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-blue-500 rounded-2xl flex items-center justify-center">
+          <TableOutlined className="text-white" />
+        </div>
+      }
       iconBgColor="bg-indigo-600"
       extraContent={
         <Space size="middle">
