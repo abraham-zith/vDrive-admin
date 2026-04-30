@@ -33,7 +33,7 @@ export interface TripDetailsType {
   ride_type: "ONE_WAY" | "ROUND_TRIP" | "DAILY" | "OUTSTATION";
   service_type: "DRIVER_ONLY" | "CAB+DRIVER";
   booking_type: "SCHEDULED" | "LIVE";
-  trip_status: "LIVE" | "COMPLETED" | "CANCELLED" | "UPCOMING" | "REQUESTED" | "MID-CANCELLED";
+  trip_status: "LIVE" | "COMPLETED" | "CANCELLED" | "UPCOMING" | "REQUESTED" | "MID_CANCELLED" | "ASSIGNED";
   original_scheduled_start_time: string;
   scheduled_start_time: string;
   actual_pickup_time: string | null;

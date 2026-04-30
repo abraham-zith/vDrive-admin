@@ -328,6 +328,14 @@ const TripDetails = () => {
                   },
                   {
                     label: (
+                      <span className={`px-2 font-bold tracking-tight ${filters.status === "assigned" ? "text-cyan-600" : "text-black"}`}>
+                        Assigned ({getStatusCount("assigned")})
+                      </span>
+                    ),
+                    value: "assigned",
+                  },
+                  {
+                    label: (
                       <span className={`px-2 font-bold tracking-tight ${filters.status === "accepted" ? "text-emerald-600" : "text-black"}`}>
                         Accepted ({getStatusCount("accepted")})
                       </span>
@@ -368,11 +376,11 @@ const TripDetails = () => {
                   },
                   {
                     label: (
-                      <span className={`px-2 font-bold tracking-tight ${filters.status === "mid-cancelled" ? "text-rose-600" : "text-black"}`}>
-                        Mid-Cancelled ({getStatusCount("mid-cancelled")})
+                      <span className={`px-2 font-bold tracking-tight ${filters.status === "mid_cancelled" ? "text-rose-600" : "text-black"}`}>
+                        Mid-Cancelled ({getStatusCount("mid_cancelled")})
                       </span>
                     ),
-                    value: "mid-cancelled",
+                    value: "mid_cancelled",
                   },
                 ]}
                 className="premium-segmented-alt-enlarged !bg-transparent"
