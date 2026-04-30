@@ -10,7 +10,6 @@ import {
   updateCouponStatus,
   deleteCoupon,
   type Coupon,
-  type CouponPayload,
 } from "../store/slices/couponSlice";
 import {
   fetchReferralConfigs,
@@ -26,14 +25,14 @@ import ReferralTable from "../components/Referrals/ReferralTable";
 import ReferralFormDrawer from "../components/Referrals/ReferralFormDrawer";
 import PromoDrawer from "../components/Promos/PromoDrawer";
 import axios from "../api/axios";
-import { fetchPromos, deletePromo, updatePromoStatus, addPromo, updatePromo } from "../store/slices/promoSlice";
+import { fetchPromos, updatePromoStatus, addPromo, updatePromo } from "../store/slices/promoSlice";
 
 const { confirm } = Modal;
 
 const CouponsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { coupons, isLoading: couponsLoading } = useAppSelector((state) => state.coupon);
-  const { promos, isLoading: promosLoading } = useAppSelector((state) => state.promo);
+  const { promos } = useAppSelector((state) => state.promo);
   const { configs, isLoading: referralsLoading } = useAppSelector((state) => state.referral);
   const { role } = useAppSelector((state) => state.auth);
   const isSuperAdmin = role === 'super_admin';
@@ -86,8 +85,8 @@ const CouponsPage: React.FC = () => {
     confirm({
       title: mainTab === "CUSTOMER" ? "Delete Coupon?" : "Delete Promotion?",
       icon: <ExclamationCircleOutlined />,
-      content: mainTab === "CUSTOMER" 
-        ? "This action cannot be undone." 
+      content: mainTab === "CUSTOMER"
+        ? "This action cannot be undone."
         : `Are you sure you want to delete this promotion? This will remove all history and cannot be undone.`,
       okText: mainTab === "CUSTOMER" ? "Yes, Delete" : "Delete",
       okType: "danger",
@@ -230,8 +229,8 @@ const CouponsPage: React.FC = () => {
             onClick={handleCreateNew}
             className="rounded-xl h-12 px-6 font-bold border-none !bg-gradient-to-r !from-indigo-600 !to-blue-500 hover:scale-[1.02] transition-transform flex items-center"
           >
-            {subTab === "COUPONS" 
-              ? (mainTab === "CUSTOMER" ? "Create Coupon" : "Create New Offer") 
+            {subTab === "COUPONS"
+              ? (mainTab === "CUSTOMER" ? "Create Coupon" : "Create New Offer")
               : "Create Referral Rule"}
           </Button>
         )

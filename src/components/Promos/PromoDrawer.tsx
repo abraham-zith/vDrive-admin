@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Drawer, 
-  Select, 
-  Button, 
-  Input, 
-  DatePicker, 
-  Switch, 
+import {
+  Drawer,
+  Select,
+  Button,
+  Input,
+  DatePicker,
+  Switch,
   Form,
   InputNumber,
   message
 } from 'antd';
-import { 
-  Ticket, 
-  Users, 
-  Clock, 
-  Percent, 
-  IndianRupee 
+import {
+  Ticket,
+  Users,
+  Clock,
+  // Percent, 
+  // IndianRupee 
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
@@ -76,7 +76,7 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
         await axios.post('/api/promos', payload);
         message.success('Promotion launched successfully');
       }
-      
+
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -105,15 +105,15 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
       className="custom-drawer"
       footer={
         <div className="flex gap-4 p-4">
-           <Button onClick={onClose} className="flex-1 rounded-xl h-12 font-bold">Cancel</Button>
-           <Button 
-             type="primary" 
-             loading={isSubmitting}
-             onClick={() => form.submit()}
-             className="flex-1 rounded-xl h-12 font-bold bg-indigo-600 border-none shadow-lg shadow-indigo-100"
-           >
-             {promo ? 'Update Offer' : 'Launch Offer'}
-           </Button>
+          <Button onClick={onClose} className="flex-1 rounded-xl h-12 font-bold">Cancel</Button>
+          <Button
+            type="primary"
+            loading={isSubmitting}
+            onClick={() => form.submit()}
+            className="flex-1 rounded-xl h-12 font-bold bg-indigo-600 border-none shadow-lg shadow-indigo-100"
+          >
+            {promo ? 'Update Offer' : 'Launch Offer'}
+          </Button>
         </div>
       }
     >
@@ -135,7 +135,7 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
             </Select>
           </Form.Item>
 
-          <Form.Item 
+          <Form.Item
             noStyle
             shouldUpdate={(prev, curr) => prev.discount_type !== curr.discount_type}
           >
@@ -143,9 +143,9 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
               const type = getFieldValue('discount_type');
               return (
                 <Form.Item name="discount_value" label="Discount Value" rules={[{ required: true }]}>
-                  <InputNumber 
-                    className="w-full rounded-xl h-11 flex items-center border-slate-200" 
-                    min={1} 
+                  <InputNumber
+                    className="w-full rounded-xl h-11 flex items-center border-slate-200"
+                    min={1}
                     placeholder="Enter value"
                     prefix={type === 'fixed' ? <span className="text-gray-400 font-medium mr-1 border-r pr-2 border-gray-200">₹</span> : undefined}
                     suffix={type === 'percentage' ? <span className="text-gray-400 font-medium ml-1 border-l pl-2 border-gray-200">%</span> : undefined}
@@ -160,14 +160,14 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
           <Form.Item name="description" label="Internal Description" className="mb-0">
             <Input.TextArea placeholder="Describe this offer for admin records..." rows={3} className="rounded-xl border-slate-200" />
           </Form.Item>
-          
+
           <div className="flex flex-wrap gap-2">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 mr-1">Quick Picks:</span>
             {[
-              "Weekend Special Drive", 
-              "New Driver Welcome Bonus", 
-              "High Demand Area Multiplier", 
-              "Festival Season Offer", 
+              "Weekend Special Drive",
+              "New Driver Welcome Bonus",
+              "High Demand Area Multiplier",
+              "Festival Season Offer",
               "VIP Driver Loyalty Reward"
             ].map(sug => (
               <button
@@ -175,8 +175,8 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
                 key={sug}
                 onClick={() => {
                   const currentDesc = form.getFieldValue('description') || '';
-                  form.setFieldsValue({ 
-                    description: currentDesc ? `${currentDesc}. ${sug}` : sug 
+                  form.setFieldsValue({
+                    description: currentDesc ? `${currentDesc}. ${sug}` : sug
                   });
                 }}
                 className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 text-[10px] font-bold text-slate-500 transition-colors"
@@ -191,7 +191,7 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
           <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
             <Users size={14} /> Audience Targeting
           </h4>
-          
+
           <Form.Item name="target_type" label="Target Audience" rules={[{ required: true }]}>
             <Select className="h-11 custom-select-main" onChange={() => form.setFieldsValue({ target_driver_id: undefined, min_rides_required: 0 })}>
               <Option value="global">Global (All Drivers)</Option>
@@ -200,7 +200,7 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
             </Select>
           </Form.Item>
 
-          <Form.Item 
+          <Form.Item
             noStyle
             shouldUpdate={(prev, curr) => prev.target_type !== curr.target_type}
           >
@@ -208,8 +208,8 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
               <>
                 {getFieldValue('target_type') === 'specific_driver' && (
                   <Form.Item name="target_driver_id" label="Search Driver" rules={[{ required: true }]}>
-                    <Select 
-                      showSearch 
+                    <Select
+                      showSearch
                       placeholder="Search by name or phone"
                       className="h-11 custom-select-main"
                       optionFilterProp="children"
@@ -231,7 +231,7 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
         </div>
 
         <div className="bg-indigo-50/30 p-6 rounded-2xl border border-indigo-100/30 space-y-4">
-           <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+          <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
             <Clock size={14} /> Validity & Limits
           </h4>
 
@@ -240,17 +240,17 @@ const PromoDrawer: React.FC<PromoDrawerProps> = ({ visible, onClose, onSuccess, 
           </Form.Item>
 
           <div className="grid grid-cols-2 gap-4">
-             <Form.Item name="max_uses" label="Total Usage Limit">
-                <InputNumber className="w-full rounded-xl h-11 flex items-center" placeholder="Infinite" min={1} />
-             </Form.Item>
-             <Form.Item name="max_uses_per_driver" label="Limit Per Driver">
-                <InputNumber className="w-full rounded-xl h-11 flex items-center" min={1} />
-             </Form.Item>
+            <Form.Item name="max_uses" label="Total Usage Limit">
+              <InputNumber className="w-full rounded-xl h-11 flex items-center" placeholder="Infinite" min={1} />
+            </Form.Item>
+            <Form.Item name="max_uses_per_driver" label="Limit Per Driver">
+              <InputNumber className="w-full rounded-xl h-11 flex items-center" min={1} />
+            </Form.Item>
           </div>
         </div>
 
         <Form.Item name="is_active" label="Status" valuePropName="checked">
-           <Switch checkedChildren="Active" unCheckedChildren="Inactive" className="custom-switch-lg" />
+          <Switch checkedChildren="Active" unCheckedChildren="Inactive" className="custom-switch-lg" />
         </Form.Item>
       </Form>
       <style>{`
