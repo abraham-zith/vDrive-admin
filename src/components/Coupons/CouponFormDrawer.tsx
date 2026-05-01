@@ -19,7 +19,8 @@ import {
   CloseOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { type Coupon, type CouponPayload } from "../../store/slices/couponSlice";
+import type { CouponPayload } from "../../store/slices/couponSlice";
+import type { PromoPayload } from "../../store/slices/promoSlice";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -27,8 +28,8 @@ const { Title, Text } = Typography;
 interface CouponFormDrawerProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (values: CouponPayload) => void;
-  initialValues?: Coupon | null;
+  onSubmit: (values: any) => void;
+  initialValues?: any | null;
   defaultTarget?: "CUSTOMER" | "DRIVER";
   loading?: boolean;
 }
@@ -47,13 +48,17 @@ const CouponFormDrawer: React.FC<CouponFormDrawerProps> = ({
   useEffect(() => {
     if (visible) {
       if (initialValues) {
-        setDiscountType(initialValues.discount_type);
+        setDiscountType(initialValues.discount_type?.toUpperCase() || "PERCENTAGE");
+        const fromDate = initialValues.valid_from || initialValues.start_date;
+        const untilDate = initialValues.valid_until || initialValues.expiry_date;
         form.setFieldsValue({
           ...initialValues,
-          dateRange: [
-            dayjs(initialValues.valid_from),
-            dayjs(initialValues.valid_until),
-          ],
+          discount_type: initialValues.discount_type?.toUpperCase() || "PERCENTAGE",
+          dateRange: fromDate && untilDate ? [
+            dayjs(fromDate),
+            dayjs(untilDate),
+          ] : [],
+          applicable_to: initialValues.applicable_to || (defaultTarget === 'DRIVER' ? 'DRIVER' : 'CUSTOMER'),
         });
       } else {
         setDiscountType("PERCENTAGE");
@@ -76,12 +81,23 @@ const CouponFormDrawer: React.FC<CouponFormDrawerProps> = ({
 
   const handleFinish = (values: any) => {
     const { dateRange, ...rest } = values;
-    const payload: CouponPayload = {
-      ...rest,
-      valid_from: dateRange[0].toISOString(),
-      valid_until: dateRange[1].toISOString(),
-    };
-    onSubmit(payload);
+    if (defaultTarget === "CUSTOMER") {
+      const payload: CouponPayload = {
+        ...rest,
+        valid_from: dateRange[0].toISOString(),
+        valid_until: dateRange[1].toISOString(),
+      };
+      onSubmit(payload);
+    } else {
+      const payload: PromoPayload = {
+        ...rest,
+        discount_type: rest.discount_type.toLowerCase(),
+        start_date: dateRange[0].toISOString(),
+        expiry_date: dateRange[1].toISOString(),
+        target_type: rest.user_eligibility === 'ALL' ? 'global' : 'specific_driver',
+      };
+      onSubmit(payload);
+    }
   };
 
   const getDiscountIcon = () => {
@@ -274,6 +290,7 @@ const CouponFormDrawer: React.FC<CouponFormDrawerProps> = ({
             >
               <Select size="large" className="rounded-2xl w-full">
                 <Select.Option value="CUSTOMER">Customers Only</Select.Option>
+                <Select.Option value="DRIVER">Drivers Only</Select.Option>
               </Select>
             </Form.Item>
 

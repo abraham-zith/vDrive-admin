@@ -32,6 +32,7 @@ export interface Customer {
     role?: string;
     emergency_contacts?: EmergencyContact[];
     user_code?: string;
+    total_trips?: number;
 }
 
 // Remove dummy DATA array

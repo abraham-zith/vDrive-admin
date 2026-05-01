@@ -102,9 +102,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
         try {
           await dispatch(blockCustomer({ id: customer.id, reason: reason! })).unwrap();
           message.success("Customer has been blocked.");
+          onClose();
         } catch (error: any) {
           console.log("block error:", error);
           message.error("Failed to block customer.");
+          onClose();
         }
       },
     });
@@ -120,9 +122,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
         try {
           await dispatch(unblockCustomer(customer.id)).unwrap();
           message.success("Customer has been unblocked.");
+          onClose();
         } catch (error: any) {
           console.log("unblock error:", error);
           message.error("Failed to unblock customer.");
+          onClose();
         }
       },
     });
@@ -140,9 +144,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
         try {
           await dispatch(disableCustomer({ id: customer.id, reason: reason! })).unwrap();
           message.success("Customer has been suspended.");
+          onClose();
         } catch (error: any) {
           console.log("disable error:", error);
           message.error("Failed to suspend customer.");
+          onClose();
         }
       },
     });
@@ -158,9 +164,11 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
         try {
           await dispatch(enableCustomer(customer.id)).unwrap();
           message.success("Customer has been activated.");
+          onClose();
         } catch (error: any) {
           console.log("enable error:", error);
           message.error("Failed to activate customer.");
+          onClose();
         }
       },
     });
@@ -412,10 +420,10 @@ const CustomerDetails: React.FC<CustomerDetailsProps> = ({ customer, onClose, op
 
         <div className="flex flex-col items-center justify-center flex-grow py-3 border-2 border-dashed border-slate-50 rounded-3xl">
           <div className="text-[9px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1">Total Rides</div>
-          <div className="text-4xl font-black text-slate-900 tracking-tighter leading-none mb-1.5">124</div>
-          <div className="px-2 py-0.5 bg-emerald-100 rounded-full text-[8px] font-black text-emerald-600 uppercase tracking-widest">
+          <div className="text-4xl font-black text-slate-900 tracking-tighter leading-none mb-1.5">{customer.total_trips || 0}</div>
+          {/* <div className="px-2 py-0.5 bg-emerald-100 rounded-full text-[8px] font-black text-emerald-600 uppercase tracking-widest">
             +18% this month
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

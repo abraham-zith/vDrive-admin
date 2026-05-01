@@ -1,6 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import {
-  TeamOutlined,
+  // TeamOutlined,
   UserOutlined,
   HomeOutlined,
   LogoutOutlined,
@@ -42,7 +42,10 @@ import { useSocket } from "./hooks/useSocket";
 import { notification } from "antd";
 import { useAdminTripAlert } from "./hooks/useAdminTripAlert";
 import { useUserAlert } from "./hooks/useUserAlert";
-import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
+import {
+  // IoReceiptOutline, 
+  IoCarOutline
+} from "react-icons/io5";
 import { MdOutlineAccountBalanceWallet } from "react-icons/md";
 import SosMonitor from "./components/SosMonitor/SosMonitor";
 
@@ -392,7 +395,7 @@ const RootLayout: React.FC = () => {
   const menuItems = React.useMemo(() => {
     const items: MenuProps["items"] = [
       { label: <Link to="/">Dashboard</Link>, key: "/", icon: <HomeOutlined /> },
-      { label: <Link to="/users">Users</Link>, key: "/users", icon: <TeamOutlined /> },
+      // { label: <Link to="/users">Users</Link>, key: "/users", icon: <TeamOutlined /> },
       { label: <Link to="/customers">Customers</Link>, key: "/customers", icon: <UserOutlined /> },
       { label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>, key: "/PricingAndFareRules", icon: <DollarOutlined /> },
       { label: <Link to="/drivers">Drivers</Link>, key: "/drivers", icon: <PiSteeringWheel /> },
@@ -405,13 +408,13 @@ const RootLayout: React.FC = () => {
     }
 
     items.push(
-      { label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>, key: "/InvoiceTemplates", icon: <IoReceiptOutline /> },
-      { label: <Link to="/TripDetails">TripDetails</Link>, key: "/TripDetails", icon: <IoCarOutline /> },
+      // { label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>, key: "/InvoiceTemplates", icon: <IoReceiptOutline /> },
+      { label: <Link to="/TripDetails">Trip Details</Link>, key: "/TripDetails", icon: <IoCarOutline /> },
       { label: <Link to="/trip-transactions">Trip Transactions</Link>, key: "/trip-transactions", icon: <EnvironmentOutlined /> },
       { label: <Link to="/Deductions">Deduction Management</Link>, key: "/Deductions", icon: <MdOutlineMoneyOff /> },
       { label: <Link to="/RechargePlan">Recharge Plan</Link>, key: "/RechargePlan", icon: <MdOutlineAccountBalanceWallet /> },
       { label: <Link to="/taxes">Tax Management</Link>, key: "/taxes", icon: <DollarOutlined /> },
-      { label: <Link to="/pricing-combinations">Pricing Combinations</Link>, key: "/pricing-combinations", icon: <TableOutlined /> },
+      // { label: <Link to="/pricing-combinations">Pricing Combinations</Link>, key: "/pricing-combinations", icon: <TableOutlined /> },
       { label: <Link to="/coupons">Coupons</Link>, key: "/coupons", icon: <DollarOutlined /> }
     );
 
