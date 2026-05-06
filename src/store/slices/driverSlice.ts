@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axiosIns from "../../api/axios";
+import { logger } from "../../utils/logger";
+
 
 export type DriverStatus =
   | "active"
@@ -127,7 +129,7 @@ export const fetchDrivers = createAsyncThunk(
     try {
       const response = await axiosIns.get("/api/drivers");
       const respData = response.data;
-      console.log("DRIVER API RESPONSE:", respData);
+      logger.debug("DRIVER API RESPONSE:", respData);
       let extractedData: any[] = [];
 
       // Attempt to extract the array from various common response structures

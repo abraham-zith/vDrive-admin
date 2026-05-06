@@ -1,4 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense, useCallback } from "react";
+import { logger } from "./utils/logger";
+
 import {
   TeamOutlined,
   UserOutlined,
@@ -138,15 +140,7 @@ const RoleProtectedRoute = ({
   return <>{children}</>;
 };
 
-// const PlaceholderContent: React.FC<{
-// title: string;
-// children?: React.ReactNode;
-// }> = ({ title, children }) => (
-// <div>
-// <h2 className="text-2xl font-semibold mb-4">{title}</h2>
-// {children || <p>Content for the {title.toLowerCase()} page.</p>}
-// </div>
-// );
+
 
 const { Content, Sider, Header } = Layout;
 
@@ -222,7 +216,7 @@ const RootLayout: React.FC = () => {
 
 
   const handleNewTrip = useCallback((newTrip: any) => {
-    console.log("New trip received", newTrip);
+    logger.info("New trip received", newTrip);
 
     const key = `trip-${newTrip.id}`; // unique key per notification
 
@@ -291,7 +285,7 @@ const RootLayout: React.FC = () => {
   useAdminTripAlert(handleNewTrip);
 
   const handleNewUser = useCallback((newUser: any) => {
-    console.log("New user registered", newUser);
+    logger.info("New user registered", newUser);
 
     const key = `user-${newUser.id || Date.now()}`;
 
@@ -351,7 +345,7 @@ const RootLayout: React.FC = () => {
   useUserAlert(handleNewUser);
 
   const handleNewVerification = useCallback((data: any) => {
-    console.log("New trip verification requested", data);
+    logger.info("New trip verification requested", data);
 
     const key = `verify-${data.tripId || Date.now()}`;
 
