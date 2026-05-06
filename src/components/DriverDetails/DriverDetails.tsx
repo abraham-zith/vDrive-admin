@@ -16,6 +16,7 @@ import {
   DatePicker,
   Radio,
   message,
+  Spin,
 } from "antd";
 import dayjs from "dayjs";
 import type { Driver, DriverStatus } from "../../store/slices/driverSlice";
@@ -24,7 +25,10 @@ import {
   updateDriverStatus,
   updateDriverProfile,
   updateDocumentStatus,
+  bulkVerifyDocuments,
+  fetchDocumentHistory,
   resetDriverPassword,
+  verifyDriverAccount,
 } from "../../store/slices/driverSlice";
 const { Text, Title } = Typography;
 import {
@@ -46,12 +50,22 @@ import {
   SendOutlined,
   SafetyCertificateOutlined,
   CalendarOutlined,
-  GlobalOutlined,
+  EnvironmentOutlined,
   WalletOutlined,
   RocketOutlined,
+  ExclamationCircleOutlined,
+  HistoryOutlined,
 } from "@ant-design/icons";
 import { capitalize } from "../../utilities/capitalize";
 import "./DriverDetails.css";
+
+export const getMediaUrl = (path: string | undefined | null) => {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) return path;
+  const baseUrl = import.meta.env.VITE_MEDIA_URL || "http://localhost:1234";
+  return `${baseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
+};
+
 interface DriverDetailsProps {
   driver: Driver | null;
   onClose: () => void;
@@ -84,7 +98,21 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
     type: string;
   } | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [historyModalDoc, setHistoryModalDoc] = useState<{ id: string; type: string } | null>(null);
+  const [documentHistory, setDocumentHistory] = useState<any[]>([]);
+
+  const REJECTION_TEMPLATES = [
+    { label: "Image is blurry or unreadable", value: "The uploaded image is blurry, too dark, or unreadable. Please upload a clear, well-lit photo." },
+    { label: "Expired Document", value: "The document provided has expired. Please upload a valid and current document." },
+    { label: "Wrong Side Uploaded", value: "You have uploaded the wrong side of the document. Please ensure you upload the front/back as requested." },
+    { label: "Name/Details Mismatch", value: "The name or details on the document do not match your profile information. Please verify your profile details." },
+    { label: "Document Cut Off", value: "Part of the document is not visible in the photo. Please ensure all four corners are visible." },
+    { label: "Invalid Document Type", value: "The document uploaded is not the correct type (e.g., uploaded Pan Card instead of License). Please upload the correct document." },
+    { label: "Watermark/Overlays", value: "The document has watermarks or overlays that block critical information. Please upload a clean photo." },
+    { label: "Other (Custom)", value: "" },
+  ];
 
   if (!driver) {
     return (
@@ -115,19 +143,73 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
   }
   const handleStatusUpdate = (status: DriverStatus) => {
     if (!driver) return;
-    Modal.confirm({
-      title: `${capitalize(status)} Driver`,
-      content: `Are you sure you want to change this driver's status to ${status}?`,
-      onOk: async () => {
-        setLoadingAction(status);
-        try {
-          await dispatch(
-            updateDriverStatus({ driver_id: driver.driverId || driver.driver_id || driver.id || "", status }),
-          ).unwrap();
+    
+    const onConfirm = async (reason?: string) => {
+      if ((status === "rejected" || status === "blocked") && !reason?.trim()) {
+        message.error("Please provide a reason for this action");
+        return;
+      }
 
-          message.success(`Driver ${status} successfully`);
+      setLoadingAction(status);
+      try {
+        await dispatch(
+          updateDriverStatus({ 
+            driver_id: driver.driverId || driver.driver_id || driver.id || "", 
+            status,
+            status_reason: reason 
+          }),
+        ).unwrap();
+
+        message.success(`Driver ${status} successfully`);
+      } catch (err: any) {
+        message.error(err || `Failed to ${status} driver`);
+      } finally {
+        setLoadingAction(null);
+      }
+    };
+
+    if (status === "rejected" || status === "blocked") {
+      let reason = "";
+      Modal.confirm({
+        title: `${capitalize(status)} Driver Profile`,
+        icon: <ExclamationCircleOutlined />,
+        content: (
+          <div className="mt-4">
+            <p className="text-slate-600 mb-2">Please provide a mandatory reason for this action. This will be visible to the driver.</p>
+            <Input.TextArea 
+              rows={4} 
+              onChange={(e) => { reason = e.target.value }}
+              placeholder="e.g., Documents are unclear, background check failed, etc."
+              className="mt-2 rounded-xl"
+            />
+          </div>
+        ),
+        okText: "Confirm Action",
+        okButtonProps: { danger: true, className: "rounded-lg" },
+        cancelButtonProps: { className: "rounded-lg" },
+        onOk: () => onConfirm(reason),
+      });
+    } else {
+      Modal.confirm({
+        title: `${capitalize(status)} Driver`,
+        content: `Are you sure you want to change this driver's status to ${status}?`,
+        onOk: () => onConfirm(),
+      });
+    }
+  };
+
+  const handleApproveAccount = () => {
+    if (!driver) return;
+    Modal.confirm({
+      title: "Approve Driver Account",
+      content: "This will verify all documents and activate the driver account. Continue?",
+      onOk: async () => {
+        setLoadingAction("approve-account");
+        try {
+          await dispatch(verifyDriverAccount(driver.driverId || driver.driver_id || driver.id || "")).unwrap();
+          message.success("Driver account approved and activated");
         } catch (err: any) {
-          message.error(err || `Failed to ${status} driver`);
+          message.error(err || "Failed to approve account");
         } finally {
           setLoadingAction(null);
         }
@@ -241,6 +323,7 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
       case "verified":
         return "success";
       case "pending":
+      case "pending_verification":
         return "warning";
       case "blocked":
       case "rejected":
@@ -359,7 +442,7 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
 
           <div className="info-item">
             <div className="info-icon-wrapper">
-              <GlobalOutlined />
+              <EnvironmentOutlined />
             </div>
             <div className="info-content">
               <span className="info-label">Address</span>
@@ -392,8 +475,55 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
 
 
 
+  const handleBulkVerify = () => {
+    if (!driver) return;
+    Modal.confirm({
+      title: "Bulk Approve Documents",
+      content: "Are you sure you want to approve all pending documents for this driver?",
+      okText: "Approve All",
+      okButtonProps: { className: "bg-green-600 hover:bg-green-700 border-none shadow-sm rounded-xl px-6" },
+      onOk: async () => {
+        setLoadingAction("bulk-verify");
+        try {
+          await dispatch(bulkVerifyDocuments(driver.driverId || driver.driver_id || driver.id || "")).unwrap();
+          message.success("All documents verified successfully");
+        } catch (err: any) {
+          message.error(err || "Failed to bulk verify documents");
+        } finally {
+          setLoadingAction(null);
+        }
+      },
+    });
+  };
+
+  const handleShowHistory = async (docId: string, type: string) => {
+    setHistoryModalDoc({ id: docId, type });
+    setLoadingAction(`history-${docId}`);
+    try {
+      const result = await dispatch(fetchDocumentHistory(docId)).unwrap();
+      setDocumentHistory(result);
+    } catch (err: any) {
+      message.error(err || "Failed to fetch history");
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
   const documents = (
     <div className="grid grid-cols-1 gap-6">
+      {driver?.documents && driver.documents.some((d: any) => d.license_status !== 'verified') && (
+        <div className="flex justify-end mb-2">
+          <Button 
+            type="primary" 
+            icon={<CheckCircleOutlined />} 
+            onClick={handleBulkVerify}
+            loading={loadingAction === 'bulk-verify'}
+            className="bg-green-600 hover:bg-green-700 border-none shadow-md rounded-xl px-6 h-10 font-bold"
+          >
+            Verify All Documents
+          </Button>
+        </div>
+      )}
       {(driver?.documents)?.map((doc: any) => (
         <div key={doc?.document_id} className="content-card p-6 document-preview-card">
           <div className="flex justify-between items-start mb-6">
@@ -410,35 +540,93 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
                 </Text>
               </div>
             </div>
-            <Tag color={getStatusColor(doc?.license_status)} className="status-badge">
-              {capitalize(doc?.license_status)}
-            </Tag>
+            <div className="flex flex-col items-end gap-2">
+              <Tag color={getStatusColor(doc?.license_status)} className="status-badge m-0">
+                {capitalize(doc?.license_status)}
+              </Tag>
+              <Button 
+                type="link" 
+                size="small" 
+                icon={<HistoryOutlined />} 
+                onClick={() => handleShowHistory(doc.document_id || doc.id, doc.document_type)}
+                className="text-[10px] h-auto p-0 flex items-center gap-1 opacity-70 hover:opacity-100"
+              >
+                View History
+              </Button>
+            </div>
           </div>
 
           <div className="flex items-center gap-8 mb-6">
-            <div className="bg-gray-50 p-4 rounded-2xl flex items-center justify-center border border-dashed border-gray-200 w-48 h-32 overflow-hidden shadow-inner group relative">
+            <div className="flex gap-4">
               {doc?.document_url ? (
                 <>
-                  <img
-                    src={doc?.document_url}
-                    alt={doc?.document_type}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div 
-                    className="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                    onClick={() => {
-                      setPreviewDoc({
-                        url: doc?.document_url || doc?.url,
-                        type: doc?.document_type || doc?.type,
-                      });
-                      setIsPreviewModalOpen(true);
-                    }}
-                  >
-                    <EyeOutlined className="text-white text-2xl" />
-                  </div>
+                  {(typeof doc.document_url === 'object' && doc.document_url !== null && (doc.document_url.front || doc.document_url.back)) ? (
+                    <>
+                      {doc.document_url.front && (
+                        <div className="bg-gray-50 p-1.5 rounded-xl flex flex-col items-center justify-center border border-dashed border-gray-200 w-36 h-28 overflow-hidden shadow-inner group relative">
+                          <img
+                            src={getMediaUrl(doc.document_url.front)}
+                            alt={`${doc?.document_type} Front`}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 rounded-lg"
+                          />
+                          <div 
+                            className="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-xl"
+                            onClick={() => {
+                              setPreviewDoc({ url: getMediaUrl(doc.document_url.front), type: `${doc?.document_type} (Front)` });
+                              setIsPreviewModalOpen(true);
+                            }}
+                          >
+                            <EyeOutlined className="text-white text-xl" />
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] text-center py-0.5 z-10">Front</div>
+                        </div>
+                      )}
+                      {doc.document_url.back && (
+                        <div className="bg-gray-50 p-1.5 rounded-xl flex flex-col items-center justify-center border border-dashed border-gray-200 w-36 h-28 overflow-hidden shadow-inner group relative">
+                          <img
+                            src={getMediaUrl(doc.document_url.back)}
+                            alt={`${doc?.document_type} Back`}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 rounded-lg"
+                          />
+                          <div 
+                            className="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-xl"
+                            onClick={() => {
+                              setPreviewDoc({ url: getMediaUrl(doc.document_url.back), type: `${doc?.document_type} (Back)` });
+                              setIsPreviewModalOpen(true);
+                            }}
+                          >
+                            <EyeOutlined className="text-white text-xl" />
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] text-center py-0.5 z-10">Back</div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="bg-gray-50 p-4 rounded-2xl flex items-center justify-center border border-dashed border-gray-200 w-48 h-32 overflow-hidden shadow-inner group relative">
+                      <img
+                        src={getMediaUrl(typeof doc.document_url === 'string' ? doc.document_url : doc.document_url?.url)}
+                        alt={doc?.document_type}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 rounded-lg"
+                      />
+                      <div 
+                        className="absolute inset-0 bg-blue-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-2xl"
+                        onClick={() => {
+                          setPreviewDoc({
+                            url: getMediaUrl(typeof doc.document_url === 'string' ? doc.document_url : doc.document_url?.url),
+                            type: doc?.document_type,
+                          });
+                          setIsPreviewModalOpen(true);
+                        }}
+                      >
+                        <EyeOutlined className="text-white text-2xl" />
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
-                <FileTextOutlined className="text-4xl text-gray-200" />
+                <div className="bg-gray-50 p-4 rounded-2xl flex items-center justify-center border border-dashed border-gray-200 w-48 h-32 overflow-hidden shadow-inner">
+                  <FileTextOutlined className="text-4xl text-gray-200" />
+                </div>
               )}
             </div>
             <div className="flex-grow space-y-4">
@@ -446,14 +634,21 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
                 <CalendarOutlined className="text-red-400" />
                 <div>
                   <Text type="secondary" className="text-[10px] uppercase font-bold tracking-tighter block">Expiry Date</Text>
-                  <Text strong className="text-lg">{dayjs(doc?.expiry_date).format("MMM D, YYYY")}</Text>
+                  <Text strong className="text-lg">{doc?.expiry_date ? dayjs(doc.expiry_date).format("MMM D, YYYY") : "N/A"}</Text>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button
                   type="default"
                   icon={<DownloadOutlined />}
-                  onClick={() => window.open(doc?.document_url, "_blank")}
+                  onClick={() => {
+                    if (typeof doc?.document_url === 'object' && doc.document_url !== null) {
+                       if (doc.document_url.front) window.open(getMediaUrl(doc.document_url.front), "_blank");
+                       if (doc.document_url.back) window.open(getMediaUrl(doc.document_url.back), "_blank");
+                    } else {
+                       window.open(getMediaUrl(typeof doc?.document_url === 'string' ? doc.document_url : doc?.document_url?.url), "_blank");
+                    }
+                  }}
                   className="rounded-lg h-9"
                 >
                   Download
@@ -760,33 +955,37 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
   ];
 
   const renderStatusActions = () => {
+    const isAwaitingVerification = driver?.onboarding_status === 'DOCS_SUBMITTED' || driver?.onboarding_status === 'DOCS_REJECTED';
+    
+    if (driver?.status === "pending" || driver?.status === "pending_verification" || isAwaitingVerification) {
+      return (
+        <Space wrap size="middle">
+          <Button
+            type="primary"
+            icon={<CheckCircleOutlined />}
+            loading={loadingAction === "approve-account"}
+            onClick={handleApproveAccount}
+            className="bg-green-600 hover:bg-green-700 border-none shadow-md h-10 px-6 rounded-xl"
+          >
+            Approve Driver
+          </Button>
+          <Button
+            danger
+            icon={<CloseCircleOutlined />}
+            loading={loadingAction === "rejected"}
+            onClick={() => handleStatusUpdate('rejected')}
+            className="h-10 px-6 rounded-xl shadow-sm"
+          >
+            Reject Profile
+          </Button>
+          <Button icon={<SendOutlined />} onClick={handleResetPassword} className="h-10 px-6 rounded-xl">
+            Reset Password
+          </Button>
+        </Space>
+      );
+    }
+
     switch (driver?.status) {
-      case "pending":
-        return (
-          <Space wrap size="middle">
-            <Button
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              loading={loadingAction === "active"}
-              onClick={() => handleStatusUpdate("active")}
-              className="bg-green-600 hover:bg-green-700 border-none shadow-md h-10 px-6 rounded-xl"
-            >
-              Approve Driver
-            </Button>
-            <Button
-              danger
-              icon={<CloseCircleOutlined />}
-              loading={loadingAction === "blocked"}
-              onClick={() => handleStatusUpdate("blocked")}
-              className="h-10 px-6 rounded-xl shadow-sm"
-            >
-              Reject Driver
-            </Button>
-            <Button icon={<SendOutlined />} onClick={handleResetPassword} className="h-10 px-6 rounded-xl">
-              Reset Password
-            </Button>
-          </Space>
-        );
       case "blocked":
       case "suspended":
         return (
@@ -859,7 +1058,7 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
             <div className="driver-avatar-wrapper">
               <Avatar
                 size={100}
-                src={driver?.profilePicUrl || driver?.profile_pic_url}
+                src={getMediaUrl(driver?.profilePicUrl || driver?.profile_pic_url)}
                 icon={<UserOutlined />}
                 className="border-2 border-white/50"
               />
@@ -1031,20 +1230,20 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
 
           <Divider orientation={"left" as any} className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Address Information</Divider>
           <Form.Item name={["address", "street"]} label="Street">
-            <Input prefix={<GlobalOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="123 Main St" />
+            <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="123 Main St" />
           </Form.Item>
           <div className="grid grid-cols-2 gap-x-6">
             <Form.Item name={["address", "city"]} label="City">
-              <Input prefix={<GlobalOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="New York" />
+              <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="New York" />
             </Form.Item>
             <Form.Item name={["address", "state"]} label="State">
-              <Input prefix={<GlobalOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="NY" />
+              <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="NY" />
             </Form.Item>
             <Form.Item name={["address", "pincode"]} label="Pincode">
-              <Input prefix={<GlobalOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="10001" />
+              <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="10001" />
             </Form.Item>
             <Form.Item name={["address", "country"]} label="Country">
-              <Input prefix={<GlobalOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="USA" />
+              <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="USA" />
             </Form.Item>
           </div>
         </Form>
@@ -1077,13 +1276,13 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
         </div>
       </Modal>
 
-      {/* Rejection Reason Modal */}
       <Modal
         title={`Reject ${capitalize(rejectModalDoc?.type || "")} Document`}
         open={!!rejectModalDoc}
         onCancel={() => {
           setRejectModalDoc(null);
           setRejectionReason("");
+          setSelectedTemplate(null);
         }}
         onOk={handleDocumentReject}
         confirmLoading={loadingAction === `reject-${rejectModalDoc?.id}`}
@@ -1099,28 +1298,103 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
           </Text>
         </div>
         <Form layout="vertical">
-          <Form.Item label="Rejection Reason" required className="mb-0">
+          <Form.Item label="Select Template" className="mb-4">
             <Select
-              placeholder="Select a common reason"
-              onChange={(value) => setRejectionReason(value)}
-              className="mb-3 rounded-xl"
+              placeholder="Select a common reason to populate"
+              onChange={(value) => {
+                setSelectedTemplate(value);
+                if (value) setRejectionReason(value);
+              }}
+              value={selectedTemplate}
+              className="premium-select rounded-xl"
               size="large"
+              allowClear
             >
-              <Select.Option value="Blurry/Unreadable">Blurry/Unreadable</Select.Option>
-              <Select.Option value="Incorrect Document Type">Incorrect Document Type</Select.Option>
-              <Select.Option value="Expired Document">Expired Document</Select.Option>
-              <Select.Option value="Information Mismatch">Information Mismatch</Select.Option>
-              <Select.Option value="Other">Other</Select.Option>
+              {REJECTION_TEMPLATES.map((tpl) => (
+                <Select.Option key={tpl.label} value={tpl.value}>
+                  {tpl.label}
+                </Select.Option>
+              ))}
             </Select>
+          </Form.Item>
+          
+          <Form.Item 
+            label="Detailed Reason (Sent to Driver)" 
+            required 
+            help="You can edit the template text above to be more specific."
+            className="mb-0"
+          >
             <Input.TextArea
-              placeholder="Provide more specific details if needed..."
+              placeholder="Provide more specific details or select a template above..."
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              rows={4}
-              className="rounded-xl"
+              rows={5}
+              className="rounded-xl premium-textarea"
             />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Document History Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <HistoryOutlined className="text-indigo-600" />
+            <span>Document History: {capitalize(historyModalDoc?.type || "")}</span>
+          </div>
+        }
+        open={!!historyModalDoc}
+        onCancel={() => {
+          setHistoryModalDoc(null);
+          setDocumentHistory([]);
+        }}
+        footer={null}
+        width={500}
+        className="premium-modal"
+      >
+        <div className="py-4">
+          {loadingAction?.startsWith('history-') ? (
+            <div className="flex flex-col items-center py-10 gap-4">
+               <Spin size="large" />
+               <Text type="secondary">Fetching audit trail...</Text>
+            </div>
+          ) : documentHistory.length > 0 ? (
+            <div className="space-y-4">
+              {documentHistory.map((item, index) => (
+                <div key={item.id || index} className="p-4 rounded-xl bg-gray-50 border border-gray-100 flex gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                      item.status === 'verified' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {item.status === 'verified' ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                    </div>
+                    {index !== documentHistory.length - 1 && <div className="w-[1px] h-full bg-gray-200 my-1" />}
+                  </div>
+                  <div className="flex-grow">
+                    <div className="flex justify-between items-center mb-1">
+                      <Tag color={getStatusColor(item.status)} className="text-[10px] m-0 border-none px-2 rounded-lg uppercase font-bold">
+                        {item.status}
+                      </Tag>
+                      <Text type="secondary" className="text-[10px]">
+                        {dayjs(item.created_at).format("MMM D, YYYY • hh:mm A")}
+                      </Text>
+                    </div>
+                    {item.reason && (
+                      <div className="bg-white p-2 rounded-lg border border-gray-100 mt-2">
+                        <Text className="text-xs text-gray-600 italic">"{item.reason}"</Text>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10 opacity-50 flex flex-col items-center gap-2">
+              <HistoryOutlined style={{ fontSize: 32 }} />
+              <Text>No prior history found for this document.</Text>
+            </div>
+          )}
+        </div>
       </Modal>
     </Drawer>
   );

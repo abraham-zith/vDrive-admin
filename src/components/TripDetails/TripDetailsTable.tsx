@@ -1101,14 +1101,14 @@ const TripDetailsTable: React.FC<Props> = ({ data, isSuperAdmin = false }) => {
           loading: driverLoading,
           className: `!h-11 !px-8 !rounded-2xl !font-black !italic !text-xs !tracking-tight !shadow-lg !transition-all !duration-300 !transform !hover:scale-[1.03] !active:scale-95 !border-none
             ${((activeAction === "ASSIGN_DRIVER" && !selectedDriver) ||
-                (activeAction === "ADJUST_FARE" && !adjustedFare) ||
-                (activeAction === "CANCEL_TRIP" && cancelStep === 1 && !cancelReason) ||
-                (activeAction === "CANCEL_TRIP" && cancelStep === 1 && cancelReason === "OTHER" && !cancelNotes.trim()))
-                ? '!bg-slate-100 !text-slate-400 !shadow-none !cursor-not-allowed hover:!scale-100'
-                : activeAction === 'ASSIGN_DRIVER' ? '!bg-indigo-500 hover:!bg-indigo-600' :
-                  activeAction === 'TRIGGER_DRIVER' ? '!bg-amber-500 hover:!bg-amber-600' :
-                    activeAction === 'CANCEL_TRIP' ? '!bg-rose-600 !text-white hover:!bg-rose-700' :
-                      '!bg-slate-900 hover:!bg-slate-800'}`
+              (activeAction === "ADJUST_FARE" && !adjustedFare) ||
+              (activeAction === "CANCEL_TRIP" && cancelStep === 1 && !cancelReason) ||
+              (activeAction === "CANCEL_TRIP" && cancelStep === 1 && cancelReason === "OTHER" && !cancelNotes.trim()))
+              ? '!bg-slate-100 !text-slate-400 !shadow-none !cursor-not-allowed hover:!scale-100'
+              : activeAction === 'ASSIGN_DRIVER' ? '!bg-indigo-500 hover:!bg-indigo-600' :
+                activeAction === 'TRIGGER_DRIVER' ? '!bg-amber-500 hover:!bg-amber-600' :
+                  activeAction === 'CANCEL_TRIP' ? '!bg-rose-600 !text-white hover:!bg-rose-700' :
+                    '!bg-slate-900 hover:!bg-slate-800'}`
         }}
         cancelButtonProps={{
           className: "!h-11 !px-6 !rounded-2xl !font-bold !text-xs !border-none !bg-slate-100 !text-slate-500 hover:!bg-slate-200 !hover:text-slate-600 !transition-all !duration-300"

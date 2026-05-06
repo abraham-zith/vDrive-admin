@@ -36,7 +36,7 @@ import {
 import type { FilterDropdownProps } from "antd/es/table/interface";
 import type { InputRef, TableColumnType } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
-import DriverDetails from "../DriverDetails/DriverDetails";
+import DriverDetails, { getMediaUrl } from "../DriverDetails/DriverDetails";
 import { useGetHeight } from "../../utilities/customheightWidth";
 interface DriverTableProps {
   data: Driver[];
@@ -274,10 +274,10 @@ const DriverTable = ({ data }: DriverTableProps) => {
       render: (_, record) => (
         <div className="flex items-center gap-3">
           <Avatar
-            src={record.profilePicUrl || record.profile_pic_url}
+            src={getMediaUrl(record.profilePicUrl || record.profile_pic_url)}
             size={38}
             style={{
-              background: record.profilePicUrl || record.profile_pic_url
+              background: (record.profilePicUrl || record.profile_pic_url)
                 ? undefined
                 : "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
               boxShadow: "0 4px 12px rgba(99, 102, 241, 0.2)"
@@ -334,7 +334,7 @@ const DriverTable = ({ data }: DriverTableProps) => {
         let config = { color: "#10b981", bg: "#ecfdf5", border: "#a7f3d0" }; // active
         if (status === "inactive") config = { color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" };
         if (status === "suspended") config = { color: "#f97316", bg: "#fff7ed", border: "#fed7aa" };
-        if (status === "pending") config = { color: "#6366f1", bg: "#eef2ff", border: "#c7d2fe" };
+        if (status === "pending" || status === "pending_verification") config = { color: "#6366f1", bg: "#eef2ff", border: "#c7d2fe" };
         if (status === "blocked") config = { color: "#ef4444", bg: "#fef2f2", border: "#fecaca" };
 
         return (

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { IoMdRefresh } from "react-icons/io";
-import { CarOutlined, FilterOutlined, CloseCircleOutlined } from "@ant-design/icons";
-import { Button, Select, DatePicker, Divider, Slider, Input, Spin } from "antd";
+import { CarOutlined, FilterOutlined, CloseCircleOutlined, SafetyCertificateOutlined, ExclamationCircleOutlined, EnvironmentOutlined } from "@ant-design/icons";
+import { Button, Select, DatePicker, Divider, Slider, Input, Spin, Tabs } from "antd";
 import DriverTable from "../components/DriverTable/DriverTable";
 import dayjs from "dayjs";
 import TitleBar from "../components/TitleBarCommon/TitleBar";
@@ -18,7 +18,7 @@ export interface Filters {
   joined_at: Date | null;
 }
 
-const STATUSES: DriverStatus[] = ["active", "inactive", "suspended", "pending", "blocked"];
+const STATUSES: DriverStatus[] = ["active", "inactive", "suspended", "pending", "pending_verification", "rejected", "blocked"];
 
 const Drivers = () => {
   const dispatch = useAppDispatch();
@@ -99,10 +99,21 @@ const Drivers = () => {
     setFilteredData(tempData);
   }, [DATA, filters]);
 
-  const { activeDrivers, restrictedDrivers } = useMemo(() => {
+  const { activeDrivers, pendingDrivers, restrictedDrivers } = useMemo(() => {
     return {
       activeDrivers: filteredData.filter(d => d.status === "active"),
-      restrictedDrivers: filteredData.filter(d => d.status !== "active"),
+      pendingDrivers: filteredData.filter(d => 
+        d.status === "pending" || 
+        d.status === "pending_verification" || 
+        d.onboarding_status === "DOCS_SUBMITTED" || 
+        d.onboarding_status === "DOCS_REJECTED"
+      ),
+      restrictedDrivers: filteredData.filter(d => 
+        d.status !== "active" && 
+        d.status !== "pending" && 
+        d.onboarding_status !== "DOCS_SUBMITTED" &&
+        d.onboarding_status !== "DOCS_REJECTED"
+      ),
     };
   }, [filteredData]);
 
@@ -238,7 +249,7 @@ const Drivers = () => {
           )}
         </div>
 
-        <div className="flex-grow overflow-y-auto flex flex-col gap-8 pb-20 pr-2">
+        <div className="flex-grow overflow-hidden flex flex-col pb-4">
           {loading && DATA.length === 0 ? (
             <div className="flex items-center justify-center p-20 bg-white rounded-3xl border border-slate-100">
               <Spin size="large" />
@@ -248,30 +259,112 @@ const Drivers = () => {
               {error}
             </div>
           ) : (
-            <>
-              <TableSection
-                title="Active Drivers"
-                icon={<CarOutlined />}
-                data={activeDrivers}
-                count={activeDrivers.length}
-                flexClass="h-[600px]"
-                extraClasses="border-emerald-500/20 shadow-lg shadow-emerald-500/5 ring-4 ring-emerald-500/5"
-                colorClass="bg-emerald-500 shadow-lg shadow-emerald-500/40"
-                bgColorClass="from-emerald-50 via-emerald-50/10"
-                borderColorClass="border-emerald-200 text-emerald-700 bg-emerald-100/50 font-black"
-              />
-
-              <TableSection
-                title="Restricted & Inactive Drivers"
-                icon={<CloseCircleOutlined />}
-                data={restrictedDrivers}
-                count={restrictedDrivers.length}
-                flexClass="h-[500px]"
-                colorClass="bg-slate-400"
-                bgColorClass="from-slate-50"
-                borderColorClass="border-slate-200 text-slate-500 bg-slate-50"
-              />
-            </>
+            <Tabs
+              defaultActiveKey="pending"
+              className="premium-driver-tabs"
+              items={[
+                {
+                  key: 'all',
+                  label: (
+                    <div className="flex items-center gap-2 px-1">
+                      <EnvironmentOutlined />
+                      <span>All Drivers</span>
+                      <div className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black min-w-[20px] text-center">
+                        {filteredData.length}
+                      </div>
+                    </div>
+                  ),
+                  children: (
+                    <TableSection
+                      title="Fleet Overview"
+                      icon={<EnvironmentOutlined />}
+                      data={filteredData}
+                      count={filteredData.length}
+                      flexClass="h-[calc(100vh-480px)]"
+                      colorClass="bg-indigo-600"
+                      bgColorClass="from-indigo-50"
+                      borderColorClass="border-indigo-200 text-indigo-700 bg-indigo-100/50 font-black"
+                    />
+                  ),
+                },
+                {
+                  key: 'pending',
+                  label: (
+                    <div className="flex items-center gap-2 px-1">
+                      <SafetyCertificateOutlined />
+                      <span>Awaiting Approval</span>
+                      {pendingDrivers.length > 0 && (
+                        <div className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[10px] font-black min-w-[20px] text-center">
+                          {pendingDrivers.length}
+                        </div>
+                      )}
+                    </div>
+                  ),
+                  children: (
+                    <TableSection
+                      title="Pending Verification"
+                      icon={<SafetyCertificateOutlined />}
+                      data={pendingDrivers}
+                      count={pendingDrivers.length}
+                      flexClass="h-[calc(100vh-480px)]"
+                      extraClasses="border-orange-500/20 shadow-lg shadow-orange-500/5 ring-4 ring-orange-500/5"
+                      colorClass="bg-orange-500 shadow-lg shadow-orange-500/40"
+                      bgColorClass="from-orange-50 via-orange-50/10"
+                      borderColorClass="border-orange-200 text-orange-700 bg-orange-100/50 font-black"
+                    />
+                  ),
+                },
+                {
+                  key: 'active',
+                  label: (
+                    <div className="flex items-center gap-2 px-1">
+                      <CarOutlined />
+                      <span>Active Drivers</span>
+                      <div className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-600 text-[10px] font-black min-w-[20px] text-center">
+                        {activeDrivers.length}
+                      </div>
+                    </div>
+                  ),
+                  children: (
+                    <TableSection
+                      title="Verified & Active"
+                      icon={<CarOutlined />}
+                      data={activeDrivers}
+                      count={activeDrivers.length}
+                      flexClass="h-[calc(100vh-480px)]"
+                      extraClasses="border-emerald-500/20 shadow-lg shadow-emerald-500/5 ring-4 ring-emerald-500/5"
+                      colorClass="bg-emerald-500 shadow-lg shadow-emerald-500/40"
+                      bgColorClass="from-emerald-50 via-emerald-50/10"
+                      borderColorClass="border-emerald-200 text-emerald-700 bg-emerald-100/50 font-black"
+                    />
+                  ),
+                },
+                {
+                  key: 'restricted',
+                  label: (
+                    <div className="flex items-center gap-2 px-1">
+                      <ExclamationCircleOutlined />
+                      <span>Restricted & Rejected</span>
+                      <div className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black min-w-[20px] text-center">
+                        {restrictedDrivers.length}
+                      </div>
+                    </div>
+                  ),
+                  children: (
+                    <TableSection
+                      title="Suspended / Blocked / Rejected"
+                      icon={<CloseCircleOutlined />}
+                      data={restrictedDrivers}
+                      count={restrictedDrivers.length}
+                      flexClass="h-[calc(100vh-480px)]"
+                      colorClass="bg-slate-400"
+                      bgColorClass="from-slate-50"
+                      borderColorClass="border-slate-200 text-slate-500 bg-slate-50"
+                    />
+                  ),
+                },
+              ]}
+            />
           )}
         </div>
       </div>

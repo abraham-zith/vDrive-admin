@@ -6,6 +6,8 @@ export type DriverStatus =
   | "inactive"
   | "suspended"
   | "pending"
+  | "pending_verification"
+  | "rejected"
   | "blocked";
 
 export type DriverRole = "premium" | "elite" | "normal";
@@ -205,7 +207,6 @@ export const updateDocumentStatus = createAsyncThunk(
   "drivers/updateDocumentStatus",
   async (
     {
-      driver_id,
       document_id,
       status,
       reason,
@@ -219,13 +220,41 @@ export const updateDocumentStatus = createAsyncThunk(
   ) => {
     try {
       const response = await axiosIns.patch(
-        `/api/drivers/${driver_id}/documents/${document_id}/status`,
+        `/api/drivers/documents/verify/${document_id}`,
         { status, reason },
       );
       return response.data?.data || response.data;
     } catch (err: any) {
       return rejectWithValue(
         err.response?.data?.message || "Failed to update document status",
+      );
+    }
+  },
+);
+
+export const bulkVerifyDocuments = createAsyncThunk(
+  "drivers/bulkVerifyDocuments",
+  async (driver_id: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosIns.patch(`/api/drivers/documents/bulk-verify/${driver_id}`);
+      return response.data?.data || response.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to bulk verify documents",
+      );
+    }
+  },
+);
+
+export const fetchDocumentHistory = createAsyncThunk(
+  "drivers/fetchDocumentHistory",
+  async (document_id: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosIns.get(`/api/drivers/documents/history/${document_id}`);
+      return response.data?.data || response.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch document history",
       );
     }
   },
@@ -242,6 +271,20 @@ export const resetDriverPassword = createAsyncThunk(
     } catch (err: any) {
       return rejectWithValue(
         err.response?.data?.message || "Failed to reset password",
+      );
+    }
+  },
+);
+
+export const verifyDriverAccount = createAsyncThunk(
+  "drivers/verifyDriverAccount",
+  async (driver_id: string, { rejectWithValue }) => {
+    try {
+      const response = await axiosIns.post(`/api/drivers/admin-verify/${driver_id}`);
+      return response.data?.data || response.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to verify driver account",
       );
     }
   },
@@ -300,6 +343,28 @@ const driverSlice = createSlice({
         });
         if (index !== -1) {
           state.drivers[index] = updatedDriver;
+        }
+      })
+      .addCase(bulkVerifyDocuments.fulfilled, (state, action) => {
+        const updatedDriver = action.payload;
+        const index = state.drivers.findIndex((d) => {
+          const dId = d.driverId || d.driver_id || d.id;
+          const uId = updatedDriver.driverId || updatedDriver.driver_id || updatedDriver.id;
+          return dId === uId;
+        });
+        if (index !== -1) {
+          state.drivers[index] = updatedDriver;
+        }
+      })
+      .addCase(verifyDriverAccount.fulfilled, (state, action) => {
+        const updatedDriver = action.payload;
+        const index = state.drivers.findIndex((d) => {
+          const dId = d.driverId || d.driver_id || d.id;
+          const uId = updatedDriver.driverId || updatedDriver.driver_id || updatedDriver.id;
+          return dId === uId;
+        });
+        if (index !== -1) {
+          state.drivers[index] = { ...state.drivers[index], ...updatedDriver };
         }
       });
   },

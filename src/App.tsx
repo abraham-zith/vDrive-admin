@@ -9,6 +9,7 @@ import {
   EnvironmentOutlined,
   ArrowRightOutlined,
   TableOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import {
@@ -42,6 +43,7 @@ import { useSocket } from "./hooks/useSocket";
 import { notification } from "antd";
 import { useAdminTripAlert } from "./hooks/useAdminTripAlert";
 import { useUserAlert } from "./hooks/useUserAlert";
+import { useTripVerificationAlert } from "./hooks/useTripVerificationAlert";
 import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
 import { MdOutlineAccountBalanceWallet } from "react-icons/md";
 import SosMonitor from "./components/SosMonitor/SosMonitor";
@@ -100,6 +102,7 @@ const ResetPassword = lazy(() => import("./login/ResetPassword"));
 const PricingCombinations = lazy(() => import("./pages/PricingCombinations"));
 const Coupons = lazy(() => import("./pages/Coupons"));
 const DriverReconciliation = lazy(() => import("./pages/DriverReconciliation"));
+const TripVerifications = lazy(() => import("./pages/TripVerifications"));
 
 // RBAC: Higher-order component to protect sensitive routes
 const RoleProtectedRoute = ({
@@ -347,6 +350,65 @@ const RootLayout: React.FC = () => {
 
   useUserAlert(handleNewUser);
 
+  const handleNewVerification = useCallback((data: any) => {
+    console.log("New trip verification requested", data);
+
+    const key = `verify-${data.tripId || Date.now()}`;
+
+    notification.warning({
+      key,
+      message: (
+        <span style={{ fontWeight: 600, fontSize: 14 }}>
+          📸 Action Required: Trip Verification
+        </span>
+      ),
+      description: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+            <CheckCircleOutlined style={{ color: '#fa8c16', marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 13, color: '#000', fontWeight: 500 }}>
+                Trip #{data.tripId || 'Unknown'} requires photo verification.
+              </div>
+              <div style={{ fontSize: 11, color: '#888' }}>
+                Driver #{data.driverId || 'N/A'} is waiting to start.
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div
+            onClick={() => {
+              notification.destroy(key);
+              navigate(`/trip-verifications`);
+            }}
+            style={{
+              marginTop: 6,
+              cursor: 'pointer',
+              color: '#3b82f6',
+              fontWeight: 600,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            Review Photos <ArrowRightOutlined />
+          </div>
+        </div>
+      ),
+      placement: 'topRight',
+      duration: 0, // Keep open until action taken
+      style: {
+        background: '#fff',
+        border: '1px solid #fa8c16',
+        borderRadius: 10,
+      },
+    });
+  }, [navigate]);
+
+  useTripVerificationAlert(handleNewVerification);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -407,6 +469,7 @@ const RootLayout: React.FC = () => {
     items.push(
       { label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>, key: "/InvoiceTemplates", icon: <IoReceiptOutline /> },
       { label: <Link to="/TripDetails">TripDetails</Link>, key: "/TripDetails", icon: <IoCarOutline /> },
+      { label: <Link to="/trip-verifications">Trip Verifications</Link>, key: "/trip-verifications", icon: <CheckCircleOutlined /> },
       { label: <Link to="/trip-transactions">Trip Transactions</Link>, key: "/trip-transactions", icon: <EnvironmentOutlined /> },
       { label: <Link to="/Deductions">Deduction Management</Link>, key: "/Deductions", icon: <MdOutlineMoneyOff /> },
       { label: <Link to="/RechargePlan">Recharge Plan</Link>, key: "/RechargePlan", icon: <MdOutlineAccountBalanceWallet /> },
@@ -703,6 +766,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <TripDetails />
+          </Suspense>
+        ),
+      },
+      {
+        path: "trip-verifications",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <TripVerifications />
           </Suspense>
         ),
       },
