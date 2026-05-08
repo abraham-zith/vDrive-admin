@@ -9,6 +9,7 @@ import {
   EnvironmentOutlined,
   ArrowRightOutlined,
   TableOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import {
@@ -103,6 +104,7 @@ const ResetPassword = lazy(() => import("./login/ResetPassword"));
 const PricingCombinations = lazy(() => import("./pages/PricingCombinations"));
 const Coupons = lazy(() => import("./pages/Coupons"));
 const DriverReconciliation = lazy(() => import("./pages/DriverReconciliation"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 
 // RBAC: Higher-order component to protect sensitive routes
 const RoleProtectedRoute = ({
@@ -415,7 +417,8 @@ const RootLayout: React.FC = () => {
       { label: <Link to="/RechargePlan">Recharge Plan</Link>, key: "/RechargePlan", icon: <MdOutlineAccountBalanceWallet /> },
       { label: <Link to="/taxes">Tax Management</Link>, key: "/taxes", icon: <DollarOutlined /> },
       // { label: <Link to="/pricing-combinations">Pricing Combinations</Link>, key: "/pricing-combinations", icon: <TableOutlined /> },
-      { label: <Link to="/coupons">Coupons</Link>, key: "/coupons", icon: <DollarOutlined /> }
+      { label: <Link to="/coupons">Coupons</Link>, key: "/coupons", icon: <DollarOutlined /> },
+      { label: <Link to="/notifications">Notifications</Link>, key: "/notifications", icon: <BellOutlined /> }
     );
 
     return items;
@@ -770,6 +773,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <DriverReconciliation />
+          </Suspense>
+        ),
+      },
+      {
+        path: "notifications",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Notifications />
           </Suspense>
         ),
       },
