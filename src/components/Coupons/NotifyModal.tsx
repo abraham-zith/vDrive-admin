@@ -22,7 +22,7 @@ const NotifyModal: React.FC<NotifyModalProps> = ({ visible, onCancel, coupon, on
   const { customers, loading: customersLoading } = useSelector((state: RootState) => state.customers);
   const { drivers, loading: driversLoading } = useSelector((state: RootState) => state.drivers);
   const [target, setTarget] = useState<string>("ALL");
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const isDriverPromotion = coupon.applicable_to === 'DRIVER' || typeof coupon.id === 'number';
@@ -40,8 +40,8 @@ const NotifyModal: React.FC<NotifyModalProps> = ({ visible, onCancel, coupon, on
   }, [visible, target, customers.length, drivers.length, dispatch, isDriverPromotion]);
 
   const handleSend = async () => {
-    if (target === "SPECIFIC" && !selectedUserId) {
-      message.warning("Please select a specific user");
+    if (target === "SPECIFIC" && selectedUserIds.length === 0) {
+      message.warning("Please select at least one specific user");
       return;
     }
 
@@ -53,7 +53,7 @@ const NotifyModal: React.FC<NotifyModalProps> = ({ visible, onCancel, coupon, on
 
       await axiosIns.post(endpoint, {
         target,
-        [isDriverPromotion ? 'driverId' : 'userId']: selectedUserId,
+        [isDriverPromotion ? 'driverIds' : 'userIds']: selectedUserIds,
       });
       message.success("Notification campaign queued successfully!");
       onSuccess();
@@ -179,11 +179,12 @@ const NotifyModal: React.FC<NotifyModalProps> = ({ visible, onCancel, coupon, on
           <div className="mb-8 animate-in fade-in slide-in-from-top-2 duration-500">
             <Text className="text-slate-400 font-black text-[10px] uppercase tracking-widest mb-3 block px-1">Identity Selection</Text>
             <Select
+              mode="multiple"
               showSearch
               placeholder={`Search ${isDriverPromotion ? 'Driver' : 'User'} identity...`}
               className="w-full premium-select-large"
               loading={currentLoading}
-              onChange={(val) => setSelectedUserId(val)}
+              onChange={(val) => setSelectedUserIds(val)}
               filterOption={(input, option) => {
                 const user = (currentAudience as any[]).find(u => (u.id || u.driver_id) === option?.key);
                 if (!user) return false;
