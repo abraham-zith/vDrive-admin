@@ -1,4 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense, useCallback } from "react";
+import { logger } from "./utils/logger";
+
 import {
   // TeamOutlined,
   UserOutlined,
@@ -9,6 +11,7 @@ import {
   EnvironmentOutlined,
   ArrowRightOutlined,
   TableOutlined,
+  CheckCircleOutlined,
   BellOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
@@ -43,10 +46,8 @@ import { useSocket } from "./hooks/useSocket";
 import { notification } from "antd";
 import { useAdminTripAlert } from "./hooks/useAdminTripAlert";
 import { useUserAlert } from "./hooks/useUserAlert";
-import {
-  // IoReceiptOutline, 
-  IoCarOutline
-} from "react-icons/io5";
+import { useTripVerificationAlert } from "./hooks/useTripVerificationAlert";
+import { IoReceiptOutline, IoCarOutline } from "react-icons/io5";
 import { MdOutlineAccountBalanceWallet } from "react-icons/md";
 import SosMonitor from "./components/SosMonitor/SosMonitor";
 
@@ -87,23 +88,24 @@ const RouteLoadingFallback = () => (
 
 // Lazy load heavy components for better bundle splitting
 const Users = lazy(() => import("./pages/Users"));
-const Customers = lazy(() => import("./pages/Customers"));
-const Admins = lazy(() => import("./pages/Admins"));
-const InvoiceTemplates = lazy(() => import("./pages/InvoiceTemplates"));
-const TripDetails = lazy(() => import("./pages/TripDetails"));
-const Drivers = lazy(() => import("./pages/Drivers"));
-const DriverPricing = lazy(() => import("./pages/DriverPricing"));
-const PricingAndFareRules = lazy(() => import("./pages/Pricing&FareRules"));
-const Deductions = lazy(() => import("./pages/Deductions"));
-const RechargePlan = lazy(() => import("./pages/RechargePlan"));
-const TripTransactions = lazy(() => import("./pages/TripTransactions"));
-const Tax = lazy(() => import("./pages/Tax"));
-const SignUp = lazy(() => import("./signup/Signup"));
-const Login = lazy(() => import("./login/Login"));
-const ResetPassword = lazy(() => import("./login/ResetPassword"));
-const PricingCombinations = lazy(() => import("./pages/PricingCombinations"));
-const Coupons = lazy(() => import("./pages/Coupons"));
-const DriverReconciliation = lazy(() => import("./pages/DriverReconciliation"));
+const Customers = lazy(() => import("./pages/Customers") as Promise<{ default: React.ComponentType<any> }>);
+const Admins = lazy(() => import("./pages/Admins") as Promise<{ default: React.ComponentType<any> }>);
+const InvoiceTemplates = lazy(() => import("./pages/InvoiceTemplates") as Promise<{ default: React.ComponentType<any> }>);
+const TripDetails = lazy(() => import("./pages/TripDetails") as Promise<{ default: React.ComponentType<any> }>);
+const Drivers = lazy(() => import("./pages/Drivers") as Promise<{ default: React.ComponentType<any> }>);
+const DriverPricing = lazy(() => import("./pages/DriverPricing") as Promise<{ default: React.ComponentType<any> }>);
+const PricingAndFareRules = lazy(() => import("./pages/Pricing&FareRules") as Promise<{ default: React.ComponentType<any> }>);
+const Deductions = lazy(() => import("./pages/Deductions") as Promise<{ default: React.ComponentType<any> }>);
+const RechargePlan = lazy(() => import("./pages/RechargePlan") as Promise<{ default: React.ComponentType<any> }>);
+const TripTransactions = lazy(() => import("./pages/TripTransactions") as Promise<{ default: React.ComponentType<any> }>);
+const Tax = lazy(() => import("./pages/Tax") as Promise<{ default: React.ComponentType<any> }>);
+const SignUp = lazy(() => import("./signup/Signup") as Promise<{ default: React.ComponentType<any> }>);
+const Login = lazy(() => import("./login/Login") as Promise<{ default: React.ComponentType<any> }>);
+const ResetPassword = lazy(() => import("./login/ResetPassword") as Promise<{ default: React.ComponentType<any> }>);
+const PricingCombinations = lazy(() => import("./pages/PricingCombinations") as Promise<{ default: React.ComponentType<any> }>);
+const Coupons = lazy(() => import("./pages/Coupons") as Promise<{ default: React.ComponentType<any> }>);
+const DriverReconciliation = lazy(() => import("./pages/DriverReconciliation") as Promise<{ default: React.ComponentType<any> }>);
+const TripVerifications = lazy(() => import("./pages/TripVerifications") as Promise<{ default: React.ComponentType<any> }>);
 const Notifications = lazy(() => import("./pages/Notifications"));
 
 // RBAC: Higher-order component to protect sensitive routes
@@ -140,15 +142,7 @@ const RoleProtectedRoute = ({
   return <>{children}</>;
 };
 
-// const PlaceholderContent: React.FC<{
-// title: string;
-// children?: React.ReactNode;
-// }> = ({ title, children }) => (
-// <div>
-// <h2 className="text-2xl font-semibold mb-4">{title}</h2>
-// {children || <p>Content for the {title.toLowerCase()} page.</p>}
-// </div>
-// );
+
 
 const { Content, Sider, Header } = Layout;
 
@@ -224,7 +218,7 @@ const RootLayout: React.FC = () => {
 
 
   const handleNewTrip = useCallback((newTrip: any) => {
-    console.log("New trip received", newTrip);
+    logger.info("New trip received", newTrip);
 
     const key = `trip-${newTrip.id}`; // unique key per notification
 
@@ -293,7 +287,7 @@ const RootLayout: React.FC = () => {
   useAdminTripAlert(handleNewTrip);
 
   const handleNewUser = useCallback((newUser: any) => {
-    console.log("New user registered", newUser);
+    logger.info("New user registered", newUser);
 
     const key = `user-${newUser.id || Date.now()}`;
 
@@ -351,6 +345,65 @@ const RootLayout: React.FC = () => {
   }, [navigate]);
 
   useUserAlert(handleNewUser);
+
+  const handleNewVerification = useCallback((data: any) => {
+    logger.info("New trip verification requested", data);
+
+    const key = `verify-${data.tripId || Date.now()}`;
+
+    notification.warning({
+      key,
+      message: (
+        <span style={{ fontWeight: 600, fontSize: 14 }}>
+          📸 Action Required: Trip Verification
+        </span>
+      ),
+      description: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+            <CheckCircleOutlined style={{ color: '#fa8c16', marginTop: 2 }} />
+            <div>
+              <div style={{ fontSize: 13, color: '#000', fontWeight: 500 }}>
+                Trip #{data.tripId || 'Unknown'} requires photo verification.
+              </div>
+              <div style={{ fontSize: 11, color: '#888' }}>
+                Driver #{data.driverId || 'N/A'} is waiting to start.
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div
+            onClick={() => {
+              notification.destroy(key);
+              navigate(`/trip-verifications`);
+            }}
+            style={{
+              marginTop: 6,
+              cursor: 'pointer',
+              color: '#3b82f6',
+              fontWeight: 600,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            Review Photos <ArrowRightOutlined />
+          </div>
+        </div>
+      ),
+      placement: 'topRight',
+      duration: 0, // Keep open until action taken
+      style: {
+        background: '#fff',
+        border: '1px solid #fa8c16',
+        borderRadius: 10,
+      },
+    });
+  }, [navigate]);
+
+  useTripVerificationAlert(handleNewVerification);
 
   useEffect(() => {
     const handleResize = () => {
@@ -410,6 +463,9 @@ const RootLayout: React.FC = () => {
     }
 
     items.push(
+      { label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>, key: "/InvoiceTemplates", icon: <IoReceiptOutline /> },
+      { label: <Link to="/TripDetails">TripDetails</Link>, key: "/TripDetails", icon: <IoCarOutline /> },
+      { label: <Link to="/trip-verifications">Trip Verifications</Link>, key: "/trip-verifications", icon: <CheckCircleOutlined /> },
       // { label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>, key: "/InvoiceTemplates", icon: <IoReceiptOutline /> },
       { label: <Link to="/TripDetails">Trip Details</Link>, key: "/TripDetails", icon: <IoCarOutline /> },
       { label: <Link to="/trip-transactions">Trip Transactions</Link>, key: "/trip-transactions", icon: <EnvironmentOutlined /> },
@@ -709,6 +765,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <TripDetails />
+          </Suspense>
+        ),
+      },
+      {
+        path: "trip-verifications",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <TripVerifications />
           </Suspense>
         ),
       },
