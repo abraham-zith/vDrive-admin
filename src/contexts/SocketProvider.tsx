@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import { io, Socket } from "socket.io-client";
 import { SocketContext } from "./SocketContext";
 import { useAppSelector } from "../store/hooks";
+import { logger } from "../utils/logger";
+
 
 interface SocketProviderProps {
   children: ReactNode;
@@ -56,7 +58,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       });
 
       socketRef.current.onAny((eventName, ...args) => {
-        console.log(`Incoming Event: ${eventName}`, args);
+        logger.debug(`Incoming Event: ${eventName}`, args);
       });
 
       socketRef.current.on("disconnect", () => {
@@ -66,7 +68,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       });
 
       socketRef.current.on("connect_error", (err) => {
-        console.error("Socket connection error:", err);
+        logger.error("Socket connection error:", err);
         setIsConnected(false);
         setSocketId(null);
         delete axiosIns.defaults.headers.common["x-socket-id"];
