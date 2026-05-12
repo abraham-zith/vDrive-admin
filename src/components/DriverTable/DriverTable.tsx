@@ -115,11 +115,26 @@ const DriverTable = ({ data }: DriverTableProps) => {
         })).unwrap();
         message.success(`Driver ${statusAction} successfully.`);
         setStatusModalOpen(false);
+        setStatusReason("");
       } catch (err) {
         message.error("Failed to update driver status.");
       }
     }
   };
+
+  const BLOCK_REASONS = [
+    "Serious safety violation or physical altercation.",
+    "Fraudulent activity or trip manipulation detected.",
+    "Sharing account with unauthorized persons.",
+    "Repeat offenses after multiple suspensions."
+  ];
+
+  const SUSPEND_REASONS = [
+    "Pending investigation of a recent customer complaint.",
+    "Low completion rate consistently below threshold.",
+    "Vehicle maintenance or document audit required.",
+    "Inappropriate behavior reported by passenger."
+  ];
   const handleSearch = (
     selectedKeys: string[],
     confirm: FilterDropdownProps["confirm"],
@@ -622,7 +637,19 @@ const DriverTable = ({ data }: DriverTableProps) => {
               placeholder={`Enter the reason for ${statusAction}...`}
               value={statusReason}
               onChange={(e) => setStatusReason(e.target.value)}
+              className="rounded-xl"
             />
+            <div className="flex flex-wrap gap-1 mt-2">
+              {(statusAction === "blocked" ? BLOCK_REASONS : SUSPEND_REASONS).map((reason, idx) => (
+                <Tag 
+                  key={idx}
+                  className="cursor-pointer hover:border-blue-400 transition-all m-0 px-2 py-0.5 text-[10px] rounded-md bg-slate-50 text-slate-500 font-medium"
+                  onClick={() => setStatusReason(reason)}
+                >
+                  {reason}
+                </Tag>
+              ))}
+            </div>
           </div>
         </div>
       </Modal>

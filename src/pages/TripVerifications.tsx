@@ -14,7 +14,7 @@ import {
   Row,
   Col,
 } from "antd";
-import { CheckOutlined, CloseOutlined, EyeOutlined } from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, EyeOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 import axiosIns from "../api/axios";
 import dayjs from "dayjs";
 
@@ -40,7 +40,10 @@ const TripVerifications: React.FC = () => {
   const [data, setData] = useState<TripVerification[]>([]);
   const [loading, setLoading] = useState(false);
   const [comparisonModalVisible, setComparisonModalVisible] = useState(false);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [selectedVerification, setSelectedVerification] = useState<any>(null);
+  const [verificationHistory, setVerificationHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [rejectingImage, setRejectingImage] = useState<"selfie" | "car" | null>(null);
   const [form] = Form.useForm();
 
@@ -75,6 +78,21 @@ const TripVerifications: React.FC = () => {
       }
     } catch (error: any) {
       message.error("Failed to fetch verification details");
+    }
+  };
+
+  const openHistoryModal = async (record: TripVerification) => {
+    setHistoryLoading(true);
+    try {
+      const res = await axiosIns.get(`/api/trip-verification/history/${record.id}`);
+      if (res.data?.success) {
+        setVerificationHistory(res.data.data || []);
+        setHistoryModalVisible(true);
+      }
+    } catch (error: any) {
+      message.error("Failed to fetch verification history");
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
@@ -116,6 +134,28 @@ const TripVerifications: React.FC = () => {
       }
     } catch (error: any) {
       message.error(error?.response?.data?.message || "Failed to update verification");
+    }
+  };
+
+  // Single-click approve both selfie + car
+  const handleApproveAll = async () => {
+    if (!selectedVerification) return;
+
+    try {
+      const res = await axiosIns.put(`/api/trip-verification/verify-granular/${selectedVerification.id}`, {
+        selfie_status: "approved",
+        car_image_status: "approved",
+      });
+
+      if (res.data?.success) {
+        message.success("✅ Both selfie & vehicle approved — trip starting!");
+        setComparisonModalVisible(false);
+        setRejectingImage(null);
+        form.resetFields();
+        fetchPendingVerifications();
+      }
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || "Failed to approve verification");
     }
   };
 
@@ -162,13 +202,21 @@ const TripVerifications: React.FC = () => {
       title: "Action",
       key: "action",
       render: (_: any, record: TripVerification) => (
-        <Button
-          type="primary"
-          icon={<EyeOutlined />}
-          onClick={() => openComparisonModal(record)}
-        >
-          Review
-        </Button>
+        <Space>
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => openComparisonModal(record)}
+          >
+            Review
+          </Button>
+          <Button
+            icon={<EyeOutlined />}
+            onClick={() => openHistoryModal(record)}
+          >
+            History
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -219,6 +267,31 @@ const TripVerifications: React.FC = () => {
                 </Col>
               </Row>
             </div>
+
+            {/* Approve All Banner — only when both are still pending */}
+            {selectedVerification.selfie_status === "pending" && selectedVerification.car_image_status === "pending" && (
+              <div className="mb-4 p-4 rounded-xl border-2 border-green-200 bg-green-50" style={{ textAlign: 'center' }}>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<SafetyCertificateOutlined />}
+                  onClick={handleApproveAll}
+                  style={{
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    border: 'none',
+                    borderRadius: 12,
+                    height: 48,
+                    fontSize: 16,
+                    fontWeight: 600,
+                    paddingInline: 40,
+                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                  }}
+                >
+                  Approve Both &amp; Start Trip
+                </Button>
+                <div style={{ marginTop: 8, color: '#6B7280', fontSize: 12 }}>Or review individually below</div>
+              </div>
+            )}
 
             <Row gutter={24}>
               {/* Identity Verification (Selfie) */}
@@ -355,6 +428,82 @@ const TripVerifications: React.FC = () => {
             </Row>
           </div>
         )}
+      </Modal>
+
+      {/* History Modal */}
+      <Modal
+        title="Verification Audit History"
+        open={historyModalVisible}
+        onCancel={() => setHistoryModalVisible(false)}
+        width={900}
+        footer={[
+          <Button key="close" onClick={() => setHistoryModalVisible(false)}>
+            Close
+          </Button>
+        ]}
+      >
+        <Table
+          dataSource={verificationHistory}
+          loading={historyLoading}
+          rowKey="id"
+          pagination={false}
+          columns={[
+            {
+              title: "Time",
+              dataIndex: "event_timestamp",
+              key: "event_timestamp",
+              width: 180,
+              render: (text: string) => dayjs(text).format("MMM D, YYYY HH:mm:ss"),
+            },
+            {
+              title: "Event",
+              dataIndex: "event_type",
+              key: "event_type",
+              render: (type: string) => (
+                <Tag color={
+                  type === 'initial_submission' ? 'blue' : 
+                  type === 'reupload' ? 'orange' : 
+                  'purple'
+                }>
+                  {type.replace('_', ' ').toUpperCase()}
+                </Tag>
+              ),
+            },
+            {
+              title: "Images",
+              key: "images",
+              render: (_: any, record: any) => (
+                <Space>
+                  <Image src={record.selfie_url} width={50} height={50} className="rounded object-cover" />
+                  {record.car_image_url && <Image src={record.car_image_url} width={80} height={50} className="rounded object-cover" />}
+                </Space>
+              ),
+            },
+            {
+              title: "Status",
+              key: "status",
+              render: (_: any, record: any) => (
+                <div>
+                  <div className="flex gap-1 mb-1">
+                    <Tag color={record.selfie_status === 'approved' ? 'green' : record.selfie_status === 'rejected' ? 'red' : 'default'}>
+                      S: {record.selfie_status}
+                    </Tag>
+                    <Tag color={record.car_image_status === 'approved' ? 'green' : record.car_image_status === 'rejected' ? 'red' : 'default'}>
+                      C: {record.car_image_status}
+                    </Tag>
+                  </div>
+                  {record.remarks && <div className="text-xs text-gray-500 italic">"{record.remarks}"</div>}
+                </div>
+              ),
+            },
+            {
+              title: "Reviewer",
+              dataIndex: "admin_id",
+              key: "admin_id",
+              render: (id: string) => id ? <Text type="secondary" style={{ fontSize: '12px' }}>Admin ID: {id.split('-')[0]}...</Text> : '-',
+            }
+          ]}
+        />
       </Modal>
     </div>
   );

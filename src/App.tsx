@@ -87,24 +87,24 @@ const RouteLoadingFallback = () => (
 
 // Lazy load heavy components for better bundle splitting
 const Users = lazy(() => import("./pages/Users"));
-const Customers = lazy(() => import("./pages/Customers"));
-const Admins = lazy(() => import("./pages/Admins"));
-const InvoiceTemplates = lazy(() => import("./pages/InvoiceTemplates"));
-const TripDetails = lazy(() => import("./pages/TripDetails"));
-const Drivers = lazy(() => import("./pages/Drivers"));
-const DriverPricing = lazy(() => import("./pages/DriverPricing"));
-const PricingAndFareRules = lazy(() => import("./pages/Pricing&FareRules"));
-const Deductions = lazy(() => import("./pages/Deductions"));
-const RechargePlan = lazy(() => import("./pages/RechargePlan"));
-const TripTransactions = lazy(() => import("./pages/TripTransactions"));
-const Tax = lazy(() => import("./pages/Tax"));
-const SignUp = lazy(() => import("./signup/Signup"));
-const Login = lazy(() => import("./login/Login"));
-const ResetPassword = lazy(() => import("./login/ResetPassword"));
-const PricingCombinations = lazy(() => import("./pages/PricingCombinations"));
-const Coupons = lazy(() => import("./pages/Coupons"));
-const DriverReconciliation = lazy(() => import("./pages/DriverReconciliation"));
-const TripVerifications = lazy(() => import("./pages/TripVerifications"));
+const Customers = lazy(() => import("./pages/Customers") as Promise<{ default: React.ComponentType<any> }>);
+const Admins = lazy(() => import("./pages/Admins") as Promise<{ default: React.ComponentType<any> }>);
+const InvoiceTemplates = lazy(() => import("./pages/InvoiceTemplates") as Promise<{ default: React.ComponentType<any> }>);
+const TripDetails = lazy(() => import("./pages/TripDetails") as Promise<{ default: React.ComponentType<any> }>);
+const Drivers = lazy(() => import("./pages/Drivers") as Promise<{ default: React.ComponentType<any> }>);
+const DriverPricing = lazy(() => import("./pages/DriverPricing") as Promise<{ default: React.ComponentType<any> }>);
+const PricingAndFareRules = lazy(() => import("./pages/Pricing&FareRules") as Promise<{ default: React.ComponentType<any> }>);
+const Deductions = lazy(() => import("./pages/Deductions") as Promise<{ default: React.ComponentType<any> }>);
+const RechargePlan = lazy(() => import("./pages/RechargePlan") as Promise<{ default: React.ComponentType<any> }>);
+const TripTransactions = lazy(() => import("./pages/TripTransactions") as Promise<{ default: React.ComponentType<any> }>);
+const Tax = lazy(() => import("./pages/Tax") as Promise<{ default: React.ComponentType<any> }>);
+const SignUp = lazy(() => import("./signup/Signup") as Promise<{ default: React.ComponentType<any> }>);
+const Login = lazy(() => import("./login/Login") as Promise<{ default: React.ComponentType<any> }>);
+const ResetPassword = lazy(() => import("./login/ResetPassword") as Promise<{ default: React.ComponentType<any> }>);
+const PricingCombinations = lazy(() => import("./pages/PricingCombinations") as Promise<{ default: React.ComponentType<any> }>);
+const Coupons = lazy(() => import("./pages/Coupons") as Promise<{ default: React.ComponentType<any> }>);
+const DriverReconciliation = lazy(() => import("./pages/DriverReconciliation") as Promise<{ default: React.ComponentType<any> }>);
+const TripVerifications = lazy(() => import("./pages/TripVerifications") as Promise<{ default: React.ComponentType<any> }>);
 
 // RBAC: Higher-order component to protect sensitive routes
 const RoleProtectedRoute = ({

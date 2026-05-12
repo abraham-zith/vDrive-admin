@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   Drawer,
   Tag,
@@ -7,7 +7,6 @@ import {
   Space,
   Tooltip,
   Avatar,
-  Divider,
   Rate,
   Modal,
   Form,
@@ -17,6 +16,8 @@ import {
   Radio,
   message,
   Spin,
+  Progress,
+  Image,
 } from "antd";
 import dayjs from "dayjs";
 import type { Driver, DriverStatus } from "../../store/slices/driverSlice";
@@ -27,9 +28,10 @@ import {
   updateDocumentStatus,
   bulkVerifyDocuments,
   fetchDocumentHistory,
-  resetDriverPassword,
   verifyDriverAccount,
 } from "../../store/slices/driverSlice";
+import axiosIns from "../../api/axios";
+import { calculatePerformanceMetrics, type PerformanceMetrics } from "../../utilities/performanceUtils";
 const { Text, Title } = Typography;
 import {
   UserOutlined,
@@ -47,13 +49,11 @@ import {
   DownloadOutlined,
   EyeOutlined,
   StopOutlined,
-  SendOutlined,
   SafetyCertificateOutlined,
   CalendarOutlined,
   EnvironmentOutlined,
   WalletOutlined,
   RocketOutlined,
-  ExclamationCircleOutlined,
   HistoryOutlined,
 } from "@ant-design/icons";
 import { capitalize } from "../../utilities/capitalize";
@@ -77,12 +77,6 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
   onClose,
   open,
 }) => {
-  const actionLabels: Record<string, string> = {
-    trip_started: "Trip Started",
-    trip_completed: "Trip Completed",
-    trip_cancelled: "Trip Cancelled",
-  };
-
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
   const [activeKey, setActiveKey] = useState("1");
@@ -102,6 +96,126 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [historyModalDoc, setHistoryModalDoc] = useState<{ id: string; type: string } | null>(null);
   const [documentHistory, setDocumentHistory] = useState<any[]>([]);
+
+  // Dynamic Performance State
+  type Period = 'Today' | 'Week' | 'Month';
+  const [perfPeriod, setPerfPeriod] = useState<Period>('Week');
+  const [dynamicMetrics, setDynamicMetrics] = useState<PerformanceMetrics | null>(null);
+  const [isPerfLoading, setIsPerfLoading] = useState(false);
+  
+  // Activity History State
+  const [rideHistory, setRideHistory] = useState<any[]>([]);
+  const [historyPeriod, setHistoryPeriod] = useState<Period>('Week');
+  const [historyStatus, setHistoryStatus] = useState<string>('all');
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [historyMetrics, setHistoryMetrics] = useState<PerformanceMetrics | null>(null);
+
+  // Status Action State
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [statusAction, setStatusAction] = useState<DriverStatus | null>(null);
+  const [statusReason, setStatusReason] = useState("");
+
+  const BLOCK_REASONS = [
+    "Serious safety violation or physical altercation.",
+    "Fraudulent activity or trip manipulation detected.",
+    "Sharing account with unauthorized persons.",
+    "Repeat offenses after multiple suspensions."
+  ];
+
+  const SUSPEND_REASONS = [
+    "Pending investigation of a recent customer complaint.",
+    "Low completion rate consistently below threshold.",
+    "Vehicle maintenance or document audit required.",
+    "Inappropriate behavior reported by passenger."
+  ];
+
+  const getDatesForPeriod = useCallback((p: Period) => {
+    const to = new Date();
+    const from = new Date();
+    if (p === 'Today') {
+      from.setHours(0, 0, 0, 0);
+    } else if (p === 'Week') {
+      from.setDate(to.getDate() - 7);
+    } else if (p === 'Month') {
+      from.setDate(to.getDate() - 30);
+    }
+    return { 
+      from: from.toISOString().split('T')[0], 
+      to: to.toISOString().split('T')[0] 
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!driver || activeKey !== "4") return; // Only fetch if on performance tab
+
+    const fetchPerformance = async () => {
+      setIsPerfLoading(true);
+      try {
+        const driverId = driver.driverId || driver.driver_id || driver.id || "";
+        const dates = getDatesForPeriod(perfPeriod);
+        
+        // Fetch ride activity
+        const activityRes = await axiosIns.get(`/api/drivers/activity/${driverId}`, {
+          params: { from: dates.from, to: dates.to }
+        });
+        
+        const rides = Array.isArray(activityRes.data?.data) ? activityRes.data.data : [];
+        const metrics = calculatePerformanceMetrics(rides);
+        
+        // Fetch today overview for more accurate online time if period is 'Today'
+        if (perfPeriod === 'Today') {
+          try {
+            const overviewRes = await axiosIns.get(`/api/drivers/today-overview/${driverId}`);
+            if (overviewRes.data?.data?.onlineMinutes !== undefined) {
+              metrics.onlineMinutes = overviewRes.data.data.onlineMinutes;
+            }
+          } catch (e) {
+            console.error("Failed to fetch today overview", e);
+          }
+        }
+        
+        setDynamicMetrics(metrics);
+      } catch (err) {
+        console.error("Failed to fetch performance data", err);
+      } finally {
+        setIsPerfLoading(false);
+      }
+    };
+
+    fetchPerformance();
+  }, [driver, activeKey, perfPeriod, getDatesForPeriod]);
+
+  // Fetch Ride History
+  useEffect(() => {
+    if (!driver || activeKey !== "7") return;
+
+    const fetchHistory = async () => {
+      setIsHistoryLoading(true);
+      try {
+        const driverId = driver.driverId || driver.driver_id || driver.id || "";
+        const dates = getDatesForPeriod(historyPeriod);
+        
+        const params: any = { 
+          from: dates.from, 
+          to: dates.to 
+        };
+        if (historyStatus !== 'all') params.status = historyStatus;
+
+        const res = await axiosIns.get(`/api/drivers/activity/${driverId}`, { params });
+        const rides = Array.isArray(res.data?.data) ? res.data.data : [];
+        setRideHistory(rides);
+        
+        // Calculate metrics for the selected period
+        setHistoryMetrics(calculatePerformanceMetrics(rides));
+      } catch (err) {
+        console.error("Failed to fetch ride history", err);
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    };
+
+    fetchHistory();
+  }, [driver, activeKey, historyPeriod, historyStatus, getDatesForPeriod]);
 
   const REJECTION_TEMPLATES = [
     { label: "Image is blurry or unreadable", value: "The uploaded image is blurry, too dark, or unreadable. Please upload a clear, well-lit photo." },
@@ -144,57 +258,59 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
   const handleStatusUpdate = (status: DriverStatus) => {
     if (!driver) return;
     
-    const onConfirm = async (reason?: string) => {
-      if ((status === "rejected" || status === "blocked") && !reason?.trim()) {
-        message.error("Please provide a reason for this action");
-        return;
-      }
-
-      setLoadingAction(status);
-      try {
-        await dispatch(
-          updateDriverStatus({ 
-            driver_id: driver.driverId || driver.driver_id || driver.id || "", 
-            status,
-            status_reason: reason 
-          }),
-        ).unwrap();
-
-        message.success(`Driver ${status} successfully`);
-      } catch (err: any) {
-        message.error(err || `Failed to ${status} driver`);
-      } finally {
-        setLoadingAction(null);
-      }
-    };
-
-    if (status === "rejected" || status === "blocked") {
-      let reason = "";
-      Modal.confirm({
-        title: `${capitalize(status)} Driver Profile`,
-        icon: <ExclamationCircleOutlined />,
-        content: (
-          <div className="mt-4">
-            <p className="text-slate-600 mb-2">Please provide a mandatory reason for this action. This will be visible to the driver.</p>
-            <Input.TextArea 
-              rows={4} 
-              onChange={(e) => { reason = e.target.value }}
-              placeholder="e.g., Documents are unclear, background check failed, etc."
-              className="mt-2 rounded-xl"
-            />
-          </div>
-        ),
-        okText: "Confirm Action",
-        okButtonProps: { danger: true, className: "rounded-lg" },
-        cancelButtonProps: { className: "rounded-lg" },
-        onOk: () => onConfirm(reason),
-      });
+    if (status === "blocked" || status === "suspended" || status === "rejected") {
+      setStatusAction(status);
+      setStatusReason("");
+      setStatusModalOpen(true);
     } else {
       Modal.confirm({
         title: `${capitalize(status)} Driver`,
         content: `Are you sure you want to change this driver's status to ${status}?`,
-        onOk: () => onConfirm(),
+        onOk: async () => {
+          setLoadingAction(status);
+          try {
+            await dispatch(
+              updateDriverStatus({ 
+                driver_id: driver.driverId || driver.driver_id || driver.id || "", 
+                status 
+              }),
+            ).unwrap();
+            message.success(`Driver ${status} successfully`);
+          } catch (err: any) {
+            message.error(err || `Failed to ${status} driver`);
+          } finally {
+            setLoadingAction(null);
+          }
+        },
       });
+    }
+  };
+
+  const handleStatusSubmit = async () => {
+    if (!driver || !statusAction) return;
+    
+    if ((statusAction === "rejected" || statusAction === "blocked" || statusAction === "suspended") && !statusReason?.trim()) {
+      message.error("Please provide a reason for this action");
+      return;
+    }
+
+    setLoadingAction(statusAction);
+    try {
+      await dispatch(
+        updateDriverStatus({ 
+          driver_id: driver.driverId || driver.driver_id || driver.id || "", 
+          status: statusAction,
+          status_reason: statusReason 
+        }),
+      ).unwrap();
+
+      message.success(`Driver ${statusAction} successfully`);
+      setStatusModalOpen(false);
+      setStatusReason("");
+    } catch (err: any) {
+      message.error(err || `Failed to ${statusAction} driver`);
+    } finally {
+      setLoadingAction(null);
     }
   };
 
@@ -217,36 +333,20 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
     });
   };
 
-  const handleResetPassword = () => {
-    if (!driver) return;
-    Modal.confirm({
-      title: "Reset Password",
-      content: "Are you sure you want to send a password reset link?",
-      onOk: async () => {
-        setLoadingAction("reset-password");
-        try {
-          await dispatch(resetDriverPassword(driver.driverId || driver.driver_id || driver.id || "")).unwrap();
-          message.success("Password reset link sent");
-        } catch (err: any) {
-          message.error(err || "Failed to send reset link");
-        } finally {
-          setLoadingAction(null);
-        }
-      },
-    });
-  };
-
-
   const handleUpdateProfile = async (values: any) => {
     if (!driver) return;
     setLoadingAction("update-profile");
     try {
+      // Auto-compute full_name from first_name + last_name
+      const fullName = `${values.first_name || ''} ${values.last_name || ''}`.trim();
+
       await dispatch(
         updateDriverProfile({
           driver_id: driver.driverId || driver.driver_id || driver.id || "",
           data: {
             ...values,
-            dob: values.dob ? values.dob.toISOString() : undefined,
+            full_name: fullName,
+            date_of_birth: values.date_of_birth ? values.date_of_birth.toISOString() : undefined,
           },
         }),
       ).unwrap();
@@ -358,7 +458,7 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
                 ...driver,
                 first_name: firstName,
                 last_name: lastName,
-                dob: (driver?.dob || driver?.date_of_birth) ? dayjs(driver.dob || driver.date_of_birth) : null,
+                date_of_birth: (driver?.dob || driver?.date_of_birth) ? dayjs(driver.dob || driver.date_of_birth) : null,
               });
               setIsEditModalOpen(true);
             }}
@@ -692,65 +792,132 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
   const performance = (
     <div className="space-y-6">
       <div className="content-card p-6">
-        <Title level={4} className="mb-6 flex items-center gap-2 text-gray-800">
-           <BarChartOutlined className="text-orange-500" /> Performance Statistics
-        </Title>
+        <div className="flex justify-between items-center mb-6">
+          <Title level={4} className="m-0 flex items-center gap-2 text-gray-800">
+             <BarChartOutlined className="text-blue-500" /> Performance Analytics
+          </Title>
+          <Radio.Group 
+            value={perfPeriod} 
+            onChange={(e) => setPerfPeriod(e.target.value)}
+            buttonStyle="solid"
+            size="small"
+            className="period-toggle"
+          >
+            <Radio.Button value="Today">Today</Radio.Button>
+            <Radio.Button value="Week">Week</Radio.Button>
+            <Radio.Button value="Month">Month</Radio.Button>
+          </Radio.Group>
+        </div>
         
-        <div className="stats-container mb-6">
-           <div className="stat-box">
-              <Text type="secondary" className="info-label text-[10px]">Average Rating</Text>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="text-3xl font-extrabold text-gray-800">{(driver?.performance?.average_rating || 0).toFixed(1)}</span>
-                <Rate
-                  disabled
-                  allowHalf
-                  defaultValue={driver?.performance?.average_rating || 0}
-                  style={{ fontSize: 14 }}
-                />
-              </div>
-           </div>
-           
-           <div className="stat-box">
-              <Text type="secondary" className="info-label text-[10px]">Total Trips</Text>
-              <div className="mt-1">
-                <span className="text-3xl font-extrabold text-blue-600">{driver?.performance?.total_trips || 0}</span>
-                <span className="text-[10px] text-gray-400 ml-2">Trips completed</span>
-              </div>
-           </div>
-        </div>
+        {isPerfLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Spin size="large" />
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col items-center justify-center mb-8">
+               <div className="perf-score-container">
+                 <Progress 
+                   type="dashboard" 
+                   percent={dynamicMetrics?.completionRate || 0} 
+                   strokeColor={{ "0%": "#2563EB", "100%": "#3B82F6" }}
+                   width={160}
+                   strokeWidth={10}
+                   gapDegree={60}
+                   format={(percent) => (
+                     <div className="flex flex-col items-center">
+                       <span className="text-3xl font-extrabold text-gray-800">{percent}%</span>
+                       <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Score</span>
+                     </div>
+                   )}
+                 />
+               </div>
+               <Text type="secondary" className="mt-4 text-center text-sm px-8 max-w-xs mx-auto">
+                 Overall performance based on accepted and completed trips for the selected period.
+               </Text>
+            </div>
 
-        <div className="stat-box bg-red-50/50 border-red-100 flex items-center justify-between mb-6">
-           <div>
-              <Text type="secondary" className="info-label text-[10px] text-red-400">Cancellations</Text>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-red-600">{driver?.performance?.cancellations || 0}</span>
-                <span className="text-xs text-red-400 font-medium">
-                  ({(driver?.performance?.total_trips || 0) > 0
-                    ? (
-                        ((driver?.performance?.cancellations || 0) /
-                          (driver?.performance?.total_trips || 1)) *
-                        100
-                      )?.toFixed(1)
-                    : "0.0"}%)
-                </span>
-              </div>
-           </div>
-           <CloseCircleOutlined className="text-red-200 text-3xl" />
-        </div>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+               <div className="stat-box perf-metric-card bg-emerald-50 border-emerald-100 flex items-center gap-3 p-4">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <WalletOutlined className="text-emerald-600 text-lg" />
+                  </div>
+                  <div>
+                    <Text type="secondary" className="info-label text-[10px] text-emerald-600">Earnings</Text>
+                    <div className="text-xl font-bold text-emerald-800 mt-0.5 perf-stat-value">
+                      ₹{(dynamicMetrics?.totalEarnings || 0).toLocaleString('en-IN')}
+                    </div>
+                  </div>
+               </div>
 
-        <div className="content-card p-4 bg-gray-50 flex items-center gap-3 shadow-none border-dashed">
-           <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-              <ClockCircleOutlined className="text-gray-400" />
-           </div>
-           <div>
-              <Text type="secondary" className="text-[10px] font-bold block uppercase tracking-tight">Last Active</Text>
-              <Text className="text-sm font-medium text-gray-600">
-                {driver?.performance?.last_active
-                  ? dayjs(driver?.performance?.last_active)?.format("MMM D, YYYY • hh:mm A")
-                  : "N/A"}
-              </Text>
-           </div>
-        </div>
+               <div className="stat-box perf-metric-card bg-blue-50 border-blue-100 flex items-center gap-3 p-4">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <ClockCircleOutlined className="text-blue-600 text-lg" />
+                  </div>
+                  <div>
+                    <Text type="secondary" className="info-label text-[10px] text-blue-600">Online Time</Text>
+                    <div className="text-xl font-bold text-blue-800 mt-0.5 perf-stat-value">
+                      {((dynamicMetrics?.onlineMinutes || 0) / 60).toFixed(1)}h
+                    </div>
+                  </div>
+               </div>
+
+               <div className="stat-box perf-metric-card bg-amber-50 border-amber-100 flex items-center gap-3 p-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                    <UserOutlined className="text-amber-600 text-lg" />
+                  </div>
+                  <div>
+                    <Text type="secondary" className="info-label text-[10px] text-amber-600">Rating</Text>
+                    <div className="text-xl font-bold text-amber-800 mt-0.5 flex items-center gap-1 perf-stat-value">
+                      {Number(dynamicMetrics?.rating || driver?.rating || 0).toFixed(1)}
+                      <Rate disabled allowHalf value={Number(dynamicMetrics?.rating || driver?.rating || 0)} style={{ fontSize: 12, marginLeft: 4 }} />
+                    </div>
+                  </div>
+               </div>
+
+               <div className="stat-box perf-metric-card bg-purple-50 border-purple-100 flex items-center gap-3 p-4">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <CheckCircleOutlined className="text-purple-600 text-lg" />
+                  </div>
+                  <div>
+                    <Text type="secondary" className="info-label text-[10px] text-purple-600">Acceptance</Text>
+                    <div className="text-xl font-bold text-purple-800 mt-0.5 perf-stat-value">
+                      {dynamicMetrics?.acceptanceRate || 0}%
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="perf-summary-bar mb-6">
+              <div className="perf-summary-item">
+                <Text type="secondary" className="text-[10px] uppercase font-bold block mb-1">Total</Text>
+                <Text className="text-lg font-bold text-gray-700 perf-stat-value">{dynamicMetrics?.totalTrips || 0}</Text>
+              </div>
+              <div className="perf-summary-item">
+                <Text type="secondary" className="text-[10px] uppercase font-bold text-green-600 block mb-1">Completed</Text>
+                <Text className="text-lg font-bold text-green-600 perf-stat-value">{dynamicMetrics?.completedTrips || 0}</Text>
+              </div>
+              <div className="perf-summary-item">
+                <Text type="secondary" className="text-[10px] uppercase font-bold text-red-500 block mb-1">Cancelled</Text>
+                <Text className="text-lg font-bold text-red-500 perf-stat-value">{dynamicMetrics?.cancelledTrips || 0}</Text>
+              </div>
+            </div>
+
+            <div className="content-card p-4 bg-gray-50 flex items-center gap-3 shadow-none border-dashed mt-auto">
+               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                  <ClockCircleOutlined className="text-gray-400" />
+               </div>
+               <div>
+                  <Text type="secondary" className="text-[10px] font-bold block uppercase tracking-tight">Last Active</Text>
+                  <Text className="text-sm font-medium text-gray-600">
+                    {driver?.performance?.last_active
+                      ? dayjs(driver?.performance?.last_active)?.format("MMM D, YYYY • hh:mm A")
+                      : "N/A"}
+                  </Text>
+               </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -858,40 +1025,127 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
   const activity = (
     <div className="space-y-6">
       <div className="content-card p-6">
-        <Title level={4} className="mb-6 flex items-center gap-2 text-gray-800">
-           <LineChartOutlined className="text-blue-500" /> Activity Log
-        </Title>
-        <div className="space-y-4">
-          {(driver?.activity_logs || driver?.activityLogs)?.map((log: any, index: number) => (
-            <div key={log?.log_id || index} className="relative pl-8 pb-6 last:pb-0">
-              {index !== ((driver?.activity_logs || driver?.activityLogs)?.length ?? 0) - 1 && (
-                <div className="absolute left-[11px] top-6 bottom-0 w-[2px] bg-gray-100"></div>
-              )}
-              <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-blue-50 border-2 border-white shadow-sm flex items-center justify-center z-10">
-                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-              </div>
-              <div className="flex justify-between items-start">
-                <div>
-                  <Text strong className="text-gray-800 block">{actionLabels[log?.action] || log?.action}</Text>
-                  <Text type="secondary" className="text-sm block mt-1">
-                    {log?.details}
-                  </Text>
-                </div>
-                <div className="text-right">
-                  <Text type="secondary" className="text-[10px] whitespace-nowrap bg-gray-50 px-2 py-1 rounded">
-                    <ClockCircleOutlined className="mr-1" />
-                    {dayjs(log?.created_at).format("MMM D, hh:mm A")}
-                  </Text>
-                </div>
-              </div>
-            </div>
-          ))}
-          {(!driver?.activity_logs && !driver?.activityLogs || ((driver?.activity_logs || driver?.activityLogs)?.length ?? 0) === 0) && (
-            <div className="text-center py-8 text-gray-400">
-               <span className="italic">No activity logs found for this driver.</span>
-            </div>
-          )}
+        <div className="flex justify-between items-center mb-6">
+          <Title level={4} className="m-0 flex items-center gap-2 text-gray-800">
+             <LineChartOutlined className="text-blue-500" /> Ride Activity
+          </Title>
+          <div className="flex gap-2">
+            <Select 
+              size="small" 
+              value={historyStatus} 
+              onChange={setHistoryStatus}
+              className="w-32"
+              options={[
+                { label: 'All Status', value: 'all' },
+                { label: 'Completed', value: 'Completed' },
+                { label: 'Cancelled', value: 'Cancelled' },
+              ]}
+            />
+            <Radio.Group 
+              value={historyPeriod} 
+              onChange={(e) => setHistoryPeriod(e.target.value)}
+              buttonStyle="solid"
+              size="small"
+              className="period-toggle"
+            >
+              <Radio.Button value="Today">Today</Radio.Button>
+              <Radio.Button value="Week">Week</Radio.Button>
+              <Radio.Button value="Month">Month</Radio.Button>
+            </Radio.Group>
+          </div>
         </div>
+
+        {isHistoryLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Spin size="large" />
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Activity Summary Header */}
+            <div className="grid grid-cols-3 gap-3 mb-2">
+              <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <Text type="secondary" className="text-[10px] uppercase font-bold block">Total Trips</Text>
+                <Text className="text-lg font-bold text-gray-800">{historyMetrics?.totalTrips || 0}</Text>
+              </div>
+              <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                <Text type="secondary" className="text-[10px] uppercase font-bold block text-emerald-600">Earnings</Text>
+                <Text className="text-lg font-bold text-emerald-700">₹{(historyMetrics?.totalEarnings || 0).toLocaleString()}</Text>
+              </div>
+              <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                <Text type="secondary" className="text-[10px] uppercase font-bold block text-blue-600">Success Rate</Text>
+                <Text className="text-lg font-bold text-blue-700">{historyMetrics?.completionRate || 0}%</Text>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {rideHistory.length > 0 ? (
+                rideHistory.map((trip: any) => (
+                  <div key={trip.id} className="trip-card bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <Text type="secondary" className="text-[10px] font-mono block">
+                          #{trip.trip_code || trip.id?.toString().slice(-6).toUpperCase()} • {trip.date}
+                        </Text>
+                        <Text strong className="text-gray-800">{trip.time}</Text>
+                      </div>
+                      <Tag color={trip.status === 'Completed' ? 'success' : 'error'} className="m-0 px-3 rounded-full font-bold text-[10px]">
+                        {trip.status.toUpperCase()}
+                      </Tag>
+                    </div>
+
+                    <div className="relative pl-6 py-1 space-y-3">
+                      <div className="absolute left-1.5 top-2.5 bottom-2.5 w-[1.5px] bg-gray-100 dashed-line"></div>
+                      
+                      <div className="relative">
+                        <div className="absolute -left-[22px] top-1.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-sm"></div>
+                        <Text className="text-sm text-gray-700 line-clamp-1">{trip.pickup}</Text>
+                      </div>
+                      
+                      <div className="relative">
+                        <div className="absolute -left-[22px] top-1.5 w-3 h-3 rounded-full bg-red-500 border-2 border-white shadow-sm"></div>
+                        <Text className="text-sm text-gray-700 line-clamp-1">{trip.drop}</Text>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-50">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <RocketOutlined className="text-gray-400 text-xs" />
+                          <Text type="secondary" className="text-xs">{trip.distance}</Text>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <UserOutlined className="text-gray-400 text-xs" />
+                          <Text type="secondary" className="text-xs">{trip.customer?.name}</Text>
+                        </div>
+                      </div>
+                      <Text className={`text-lg font-black ${trip.status === 'Cancelled' ? 'text-gray-400 line-through' : 'text-emerald-600'}`}>
+                        ₹{trip.amount?.toLocaleString()}
+                      </Text>
+                    </div>
+                    
+                    {trip.customer?.rating && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <Rate disabled allowHalf value={trip.customer.rating} style={{ fontSize: 10 }} />
+                        {trip.customer.feedback && (
+                          <Text type="secondary" className="text-[10px] italic overflow-hidden text-ellipsis whitespace-nowrap max-w-[200px]">
+                            "{trip.customer.feedback}"
+                          </Text>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
+                    <HistoryOutlined style={{ fontSize: 32, color: "#cbd5e1" }} />
+                  </div>
+                  <Text type="secondary" className="font-medium">No ride activity found for this period.</Text>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -978,9 +1232,6 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
           >
             Reject Profile
           </Button>
-          <Button icon={<SendOutlined />} onClick={handleResetPassword} className="h-10 px-6 rounded-xl">
-            Reset Password
-          </Button>
         </Space>
       );
     }
@@ -998,9 +1249,6 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
               className="h-10 px-6 rounded-xl"
             >
               Activate Driver
-            </Button>
-            <Button icon={<SendOutlined />} onClick={handleResetPassword} className="h-10 px-6 rounded-xl">
-              Reset Password
             </Button>
           </Space>
         );
@@ -1029,20 +1277,13 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
                 Suspend
               </Button>
             </Space>
-            <Button
-              type="default"
-              icon={<SendOutlined />}
-              onClick={handleResetPassword}
-              className="h-10 px-6 rounded-xl"
-            >
-              Reset Password
-            </Button>
           </div>
         );
     }
   };
   return (
-    <Drawer
+    <>
+      <Drawer
       title={null}
       placement="right"
       width={720}
@@ -1055,12 +1296,16 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
       <div className="driver-details-header">
         <div className="flex items-center justify-between relative z-10">
           <div className="flex items-center gap-6">
-            <div className="driver-avatar-wrapper">
-              <Avatar
-                size={100}
+            <div className="driver-avatar-wrapper overflow-hidden rounded-full border-4 border-white/20 shadow-xl group cursor-pointer">
+              <Image
+                width={100}
+                height={100}
                 src={getMediaUrl(driver?.profilePicUrl || driver?.profile_pic_url)}
-                icon={<UserOutlined />}
-                className="border-2 border-white/50"
+                className="object-cover"
+                preview={{
+                  mask: <div className="text-[10px] font-bold">PREVIEW</div>
+                }}
+                fallback="https://ui-avatars.com/api/?name=${encodeURIComponent(driver?.full_name || 'Driver')}&background=6366f1&color=fff"
               />
             </div>
             <div className="text-white">
@@ -1148,7 +1393,7 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
                 {key === "4" && "STATS"}
                 {key === "5" && "WALLET"}
                 {key === "6" && "PLAN"}
-                {key === "7" && "LOGS"}
+                {key === "7" && "ACTIVITY"}
               </span>
             </div>
           ))}
@@ -1161,92 +1406,159 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
+      {/* Edit Profile Modal - Redesigned to match screenshot */}
       <Modal
-        title="Edit Driver Profile"
         open={isEditModalOpen}
         onCancel={() => setIsEditModalOpen(false)}
-        onOk={() => form.submit()}
-        confirmLoading={loadingAction === "update-profile"}
-        width={720}
-        className="premium-modal"
+        footer={null}
+        width={1200}
+        centered
+        closable={false}
+        className="screenshot-style-modal"
+        bodyStyle={{ padding: 0, overflow: 'hidden' }}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleUpdateProfile}
-          initialValues={driver || {}}
-        >
-          <div className="grid grid-cols-2 gap-x-6">
-            <Form.Item
-              name="first_name"
-              label="First Name"
-              rules={[{ required: true, message: "Please enter first name" }]}
-            >
-              <Input prefix={<UserOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="John" />
-            </Form.Item>
-            <Form.Item
-              name="last_name"
-              label="Last Name"
-              rules={[{ required: true, message: "Please enter last name" }]}
-            >
-              <Input prefix={<UserOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="Doe" />
-            </Form.Item>
-            <Form.Item
-              name="email"
-              label="Email"
-              rules={[
-                { required: true, message: "Please enter email" },
-                { type: "email", message: "Please enter a valid email" },
-              ]}
-            >
-              <Input prefix={<MailOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="john.doe@example.com" />
-            </Form.Item>
-            <Form.Item
-              name="phone_number"
-              label="Phone Number"
-              rules={[{ required: true, message: "Please enter phone number" }]}
-            >
-              <Input prefix={<PhoneOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="+1 234 567 890" />
-            </Form.Item>
-            <Form.Item name="dob" label="Date of Birth">
-              <DatePicker prefix={<CalendarOutlined className="text-gray-300" />} className="w-full rounded-xl" size="large" />
-            </Form.Item>
-            <Form.Item name="role" label="Role">
-              <Select prefix={<RocketOutlined className="text-gray-300" />} size="large" className="rounded-xl">
-                <Select.Option value="normal">Normal</Select.Option>
-                <Select.Option value="premium">Premium</Select.Option>
-                <Select.Option value="elite">Elite</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="gender" label="Gender">
-              <Radio.Group className="mt-2">
-                <Radio value="male">Male</Radio>
-                <Radio value="female">Female</Radio>
-                <Radio value="other">Other</Radio>
-              </Radio.Group>
-            </Form.Item>
+        <div className="flex h-[560px]">
+          {/* Left Sidebar - Purple */}
+          <div className="w-[280px] bg-[#9c6cf2] px-8 py-8 flex flex-col justify-between text-white relative overflow-hidden flex-shrink-0">
+            <div className="relative z-10">
+              <span className="text-[9px] font-bold tracking-[0.2em] opacity-70 uppercase">Account</span>
+              <h2 className="text-xl font-bold mt-1 mb-2 leading-tight">Edit your profile</h2>
+              <p className="text-[11px] opacity-80 leading-relaxed font-medium">
+                Keep your details fresh — it helps us deliver a more tailored experience.
+              </p>
+
+              <div className="flex flex-col items-center mt-10">
+                <div className="relative">
+                  <Avatar 
+                    size={100} 
+                    src={getMediaUrl(driver?.profilePicUrl || driver?.profile_pic_url)}
+                    className="bg-[#b492f5] border-[3px] border-[#b492f5]/30 text-2xl font-bold shadow-2xl"
+                  >
+                    {driver?.first_name?.charAt(0)}{driver?.last_name?.charAt(0)}
+                  </Avatar>
+                  <div className="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:scale-105 transition-transform">
+                    <EditOutlined className="text-[#9c6cf2] text-sm" />
+                  </div>
+                </div>
+                <div className="mt-4 text-center">
+                  <h3 className="text-base font-bold m-0">{driver?.first_name} {driver?.last_name}</h3>
+                  <span className="text-[10px] opacity-70 font-medium capitalize">{driver?.role || 'Normal'} member</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Background decorative circle */}
+            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+
+            <div className="relative z-10 flex items-center gap-2 text-[9px] opacity-70 font-bold tracking-tight">
+              <SafetyCertificateOutlined className="text-white" />
+              Your information is encrypted & private.
+            </div>
           </div>
 
-          <Divider orientation={"left" as any} className="text-gray-400 font-bold uppercase text-[10px] tracking-widest">Address Information</Divider>
-          <Form.Item name={["address", "street"]} label="Street">
-            <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="123 Main St" />
-          </Form.Item>
-          <div className="grid grid-cols-2 gap-x-6">
-            <Form.Item name={["address", "city"]} label="City">
-              <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="New York" />
-            </Form.Item>
-            <Form.Item name={["address", "state"]} label="State">
-              <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="NY" />
-            </Form.Item>
-            <Form.Item name={["address", "pincode"]} label="Pincode">
-              <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="10001" />
-            </Form.Item>
-            <Form.Item name={["address", "country"]} label="Country">
-              <Input prefix={<EnvironmentOutlined className="text-gray-300" />} size="large" className="rounded-xl" placeholder="USA" />
-            </Form.Item>
+          {/* Right Content Area */}
+          <div className="flex-1 bg-white flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-bold text-[#1e293b] m-0">Personal information</h2>
+                <p className="text-xs text-slate-400 mt-0.5 font-medium">Update your details below</p>
+              </div>
+              <Button 
+                type="text" 
+                icon={<CloseOutlined />} 
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={handleUpdateProfile}
+                initialValues={driver || {}}
+                className="screenshot-form"
+              >
+                <div className="mb-5">
+                  <span className="text-[9px] font-black text-slate-400 tracking-[0.12em] uppercase block mb-4">Basic Details</span>
+                  <div className="grid grid-cols-4 gap-3">
+                    <Form.Item name="first_name" label="First Name" className="col-span-2">
+                      <Input prefix={<UserOutlined />} placeholder="First Name" />
+                    </Form.Item>
+                    <Form.Item name="last_name" label="Last Name" className="col-span-2">
+                      <Input prefix={<UserOutlined />} placeholder="Last Name" />
+                    </Form.Item>
+                    <Form.Item name="email" label="Email Address" className="col-span-2">
+                      <Input prefix={<MailOutlined />} placeholder="you@example.com" />
+                    </Form.Item>
+                    <Form.Item name="phone_number" label="Phone Number" className="col-span-1">
+                      <Input prefix={<PhoneOutlined />} placeholder="+91 98765 43210" />
+                    </Form.Item>
+                    <Form.Item name="date_of_birth" label="Date of Birth" className="col-span-1">
+                      <DatePicker className="w-full" placeholder="dd/mm/yyyy" />
+                    </Form.Item>
+                    <Form.Item name="gender" label="Gender" className="col-span-2">
+                      <Select placeholder="Select gender">
+                        <Select.Option value="male">Male</Select.Option>
+                        <Select.Option value="female">Female</Select.Option>
+                        <Select.Option value="other">Other</Select.Option>
+                      </Select>
+                    </Form.Item>
+                    <Form.Item name="role" label="Membership" className="col-span-2">
+                      <Select placeholder="Select role">
+                        <Select.Option value="normal">Normal</Select.Option>
+                        <Select.Option value="premium">Premium</Select.Option>
+                        <Select.Option value="elite">Elite</Select.Option>
+                      </Select>
+                    </Form.Item>
+                  </div>
+                </div>
+
+                <div className="mb-2">
+                  <span className="text-[9px] font-black text-slate-400 tracking-[0.12em] uppercase block mb-4">Address</span>
+                  <div className="grid grid-cols-4 gap-3">
+                    <Form.Item name={["address", "street"]} label="Street" className="col-span-4">
+                      <Input prefix={<EnvironmentOutlined />} placeholder="221B Baker Street" />
+                    </Form.Item>
+                    <Form.Item name={["address", "city"]} label="City" className="col-span-1">
+                      <Input prefix={<EnvironmentOutlined />} placeholder="Mumbai" />
+                    </Form.Item>
+                    <Form.Item name={["address", "state"]} label="State" className="col-span-1">
+                      <Input prefix={<EnvironmentOutlined />} placeholder="Maharashtra" />
+                    </Form.Item>
+                    <Form.Item name={["address", "pincode"]} label="PIN Code" className="col-span-1">
+                      <Input prefix={<span className="text-slate-400 font-bold ml-1 mr-1">#</span>} placeholder="400001" />
+                    </Form.Item>
+                    <Form.Item name={["address", "country"]} label="Country" className="col-span-1">
+                      <Input prefix={<EnvironmentOutlined />} placeholder="India" />
+                    </Form.Item>
+                  </div>
+                </div>
+              </Form>
+            </div>
+
+            <div className="px-6 py-3 border-t border-gray-100 flex justify-between items-center bg-gray-50/30">
+              <span className="text-[11px] text-slate-400 font-medium">Changes will be saved to your account.</span>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="rounded-lg h-9 px-6 font-semibold text-xs border-gray-200 text-slate-600 hover:text-slate-800"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="primary" 
+                  onClick={() => form.submit()}
+                  loading={loadingAction === "update-profile"}
+                  className="bg-[#9c6cf2] hover:bg-[#8a5bd9] border-none rounded-lg h-9 px-6 font-semibold text-xs flex items-center gap-1.5"
+                >
+                  <DownloadOutlined />
+                  Save changes
+                </Button>
+              </div>
+            </div>
           </div>
-        </Form>
+        </div>
       </Modal>
 
       {/* Document Preview Modal */}
@@ -1396,7 +1708,60 @@ const DriverDetails: React.FC<DriverDetailsProps> = ({
           )}
         </div>
       </Modal>
-    </Drawer>
+      </Drawer>
+
+      <Modal
+        title={
+          <span className="flex items-center gap-2">
+            {statusAction === "blocked" ? <StopOutlined className="text-red-500" /> : <SyncOutlined className="text-orange-500" />}
+            {statusAction === "blocked" ? "Block Driver Account" : statusAction === "suspended" ? "Suspend Driver Account" : "Reject Driver Profile"}
+          </span>
+        }
+        open={statusModalOpen}
+        onOk={handleStatusSubmit}
+        onCancel={() => setStatusModalOpen(false)}
+        okText={statusAction === "blocked" ? "Block Driver" : statusAction === "suspended" ? "Suspend Driver" : "Reject Profile"}
+        confirmLoading={loadingAction === statusAction}
+        okButtonProps={{ 
+          danger: statusAction === "blocked" || statusAction === "rejected", 
+          className: statusAction === "suspended" ? "bg-orange-500 hover:bg-orange-600 border-none" : "rounded-xl",
+          style: { borderRadius: '12px' }
+        }}
+        cancelButtonProps={{ className: "rounded-xl" }}
+        className="premium-modal"
+      >
+        <div className="py-4">
+          <p className="mb-4 text-slate-600 text-sm">
+            You are about to {statusAction === "blocked" ? "permanently block" : statusAction === "suspended" ? "temporarily suspend" : "reject"}{" "}
+            <span className="font-bold text-slate-800">{driver?.full_name}</span>. 
+            The driver will be notified immediately.
+          </p>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Reason <span className="text-red-500">*</span>
+            </label>
+            <Input.TextArea
+              rows={3}
+              placeholder={`Enter the reason for ${statusAction}...`}
+              value={statusReason}
+              onChange={(e) => setStatusReason(e.target.value)}
+              className="rounded-xl border-gray-200"
+            />
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {(statusAction === "blocked" ? BLOCK_REASONS : SUSPEND_REASONS).map((reason, idx) => (
+                <Tag 
+                  key={idx}
+                  className="cursor-pointer hover:border-blue-400 hover:text-blue-600 transition-all m-0 px-3 py-1 text-[10px] rounded-full bg-slate-50 border-slate-100 text-slate-500 font-bold uppercase tracking-tight"
+                  onClick={() => setStatusReason(reason)}
+                >
+                  {reason}
+                </Tag>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 };
 

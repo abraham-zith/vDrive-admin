@@ -34,6 +34,8 @@ const Dashboard = () => {
     totalCancellationsToday: 0,
     pendingVerifications: 0,
     documentExpiryAlerts: 0,
+    complianceHealth: 0,
+    lastSyncAt: new Date().toISOString(),
     trends: {
       users: "0%",
       drivers: "0%",
