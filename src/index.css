@@ -83,3 +83,62 @@ p {
 .ant-menu-item-selected::after {
   display: none !important;
 }
+/* Premium UI Utilities */
+.premium-select-large .ant-select-selector {
+  height: 56px !important;
+  border-radius: 20px !important;
+  border: 1px solid #f1f5f9 !important;
+  padding: 0 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  font-weight: 600 !important;
+  background: #fff !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05) !important;
+  transition: all 0.3s ease !important;
+}
+
+.premium-select-large.ant-select-focused .ant-select-selector {
+  border-color: #6366f1 !important;
+  box-shadow: 0 10px 15px -3px rgb(99 102 241 / 0.1) !important;
+}
+
+.premium-modal .ant-modal-content {
+  border-radius: 32px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.premium-modal .ant-modal-header {
+  padding: 32px 32px 0 32px !important;
+  border-bottom: none !important;
+  background: #fff !important;
+}
+
+.premium-modal .ant-modal-body {
+  padding: 0 32px !important;
+}
+
+.premium-modal .ant-modal-footer {
+  padding: 24px 32px 32px 32px !important;
+  border-top: 1px solid #f8fafc !important;
+  margin-top: 0 !important;
+}
+
+.premium-table .ant-table {
+  background: transparent !important;
+}
+
+.premium-table .ant-table-thead > tr > th {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 16px 24px !important;
+}
+
+.premium-table .ant-table-tbody > tr > td {
+  padding: 20px 24px !important;
+  border-bottom: 1px solid #f8fafc !important;
+}
+
+.premium-table .ant-table-tbody > tr:hover > td {
+  background: #fdfeff !important;
+}

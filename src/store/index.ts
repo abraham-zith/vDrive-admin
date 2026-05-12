@@ -13,6 +13,8 @@ import adminReducer from "./slices/adminSlice";
 import driverReducer from "./slices/driverSlice";
 import couponReducer from "./slices/couponSlice";
 import referralReducer from "./slices/referralSlice";
+import promoReducer from "./slices/promoSlice";
+import notificationReducer from "./slices/notificationSlice";
 
 export const store = configureStore({
   reducer: {
@@ -30,6 +32,8 @@ export const store = configureStore({
     sos: sosReducer,
     coupon: couponReducer,
     referral: referralReducer,
+    promo: promoReducer,
+    notification: notificationReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

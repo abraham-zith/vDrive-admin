@@ -18,6 +18,9 @@ export interface Coupon {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  notify_status?: 'NONE' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  notify_sent_at?: string;
+  notify_count?: number;
 }
 
 export type CouponPayload = Omit<Coupon, "id" | "created_at" | "updated_at">;

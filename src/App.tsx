@@ -2,7 +2,7 @@ import React, { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import { logger } from "./utils/logger";
 
 import {
-  TeamOutlined,
+  // TeamOutlined,
   UserOutlined,
   HomeOutlined,
   LogoutOutlined,
@@ -12,6 +12,7 @@ import {
   ArrowRightOutlined,
   TableOutlined,
   CheckCircleOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import {
@@ -105,6 +106,7 @@ const PricingCombinations = lazy(() => import("./pages/PricingCombinations") as 
 const Coupons = lazy(() => import("./pages/Coupons") as Promise<{ default: React.ComponentType<any> }>);
 const DriverReconciliation = lazy(() => import("./pages/DriverReconciliation") as Promise<{ default: React.ComponentType<any> }>);
 const TripVerifications = lazy(() => import("./pages/TripVerifications") as Promise<{ default: React.ComponentType<any> }>);
+const Notifications = lazy(() => import("./pages/Notifications"));
 
 // RBAC: Higher-order component to protect sensitive routes
 const RoleProtectedRoute = ({
@@ -448,7 +450,7 @@ const RootLayout: React.FC = () => {
   const menuItems = React.useMemo(() => {
     const items: MenuProps["items"] = [
       { label: <Link to="/">Dashboard</Link>, key: "/", icon: <HomeOutlined /> },
-      { label: <Link to="/users">Users</Link>, key: "/users", icon: <TeamOutlined /> },
+      // { label: <Link to="/users">Users</Link>, key: "/users", icon: <TeamOutlined /> },
       { label: <Link to="/customers">Customers</Link>, key: "/customers", icon: <UserOutlined /> },
       { label: <Link to="/PricingAndFareRules">Pricing And Fare Rules</Link>, key: "/PricingAndFareRules", icon: <DollarOutlined /> },
       { label: <Link to="/drivers">Drivers</Link>, key: "/drivers", icon: <PiSteeringWheel /> },
@@ -464,12 +466,15 @@ const RootLayout: React.FC = () => {
       { label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>, key: "/InvoiceTemplates", icon: <IoReceiptOutline /> },
       { label: <Link to="/TripDetails">TripDetails</Link>, key: "/TripDetails", icon: <IoCarOutline /> },
       { label: <Link to="/trip-verifications">Trip Verifications</Link>, key: "/trip-verifications", icon: <CheckCircleOutlined /> },
+      // { label: <Link to="/InvoiceTemplates">InvoiceTemplates</Link>, key: "/InvoiceTemplates", icon: <IoReceiptOutline /> },
+      { label: <Link to="/TripDetails">Trip Details</Link>, key: "/TripDetails", icon: <IoCarOutline /> },
       { label: <Link to="/trip-transactions">Trip Transactions</Link>, key: "/trip-transactions", icon: <EnvironmentOutlined /> },
       { label: <Link to="/Deductions">Deduction Management</Link>, key: "/Deductions", icon: <MdOutlineMoneyOff /> },
       { label: <Link to="/RechargePlan">Recharge Plan</Link>, key: "/RechargePlan", icon: <MdOutlineAccountBalanceWallet /> },
       { label: <Link to="/taxes">Tax Management</Link>, key: "/taxes", icon: <DollarOutlined /> },
-      { label: <Link to="/pricing-combinations">Pricing Combinations</Link>, key: "/pricing-combinations", icon: <TableOutlined /> },
-      { label: <Link to="/coupons">Coupons</Link>, key: "/coupons", icon: <DollarOutlined /> }
+      // { label: <Link to="/pricing-combinations">Pricing Combinations</Link>, key: "/pricing-combinations", icon: <TableOutlined /> },
+      { label: <Link to="/coupons">Coupons</Link>, key: "/coupons", icon: <DollarOutlined /> },
+      { label: <Link to="/notifications">Notifications</Link>, key: "/notifications", icon: <BellOutlined /> }
     );
 
     return items;
@@ -832,6 +837,14 @@ const router = createBrowserRouter([
         element: (
           <Suspense fallback={<RouteLoadingFallback />}>
             <DriverReconciliation />
+          </Suspense>
+        ),
+      },
+      {
+        path: "notifications",
+        element: (
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Notifications />
           </Suspense>
         ),
       },

@@ -44,14 +44,12 @@ export const fetchCustomers = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const response = await axiosIns.get("/api/users");
-            logger.debug("fetchCustomers raw response:", response.data); 
-            
             const candidate = response.data?.data || response.data?.users || response.data;
-            
+
             if (Array.isArray(candidate)) {
                 return candidate;
             }
-            
+
             // If data is nested one level deeper: response.data.data.users
             if (response.data?.data && Array.isArray(response.data.data.users)) {
                 return response.data.data.users;
@@ -70,7 +68,7 @@ export const deleteCustomer = createAsyncThunk(
     async (id: string, { rejectWithValue }) => {
         try {
             await axiosIns.delete(`/api/users/${id}`);
-            return id; 
+            return id;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message ?? "Failed to delete customer");
         }
@@ -81,14 +79,14 @@ export const blockCustomer = createAsyncThunk(
     "customers/block",
     async ({ id, reason }: { id: string; reason: string }, { rejectWithValue }) => {
         try {
-            const response = await axiosIns.patch(`/api/users/block/${id}`, { reason });
+            const response = await axiosIns.patch(`/api/users/block/${id}`, { notes: reason });
             const updatedFromPatch = response.data?.data || response.data;
-            
+
             // If patch returns the full object, use it. Otherwise try re-fetching.
             if (updatedFromPatch && updatedFromPatch.id) return updatedFromPatch;
-            
+
             const refetched = await refetchCustomer(id);
-            return refetched || { id, status: 'blocked' } as any; 
+            return refetched || { id, status: 'blocked' } as any;
         } catch (error: any) {
             return rejectWithValue(error.response?.data?.message ?? "Failed to block customer");
         }
@@ -101,9 +99,9 @@ export const unblockCustomer = createAsyncThunk(
         try {
             const response = await axiosIns.patch(`/api/users/unblock/${id}`);
             const updatedFromPatch = response.data?.data || response.data;
-            
+
             if (updatedFromPatch && updatedFromPatch.id) return updatedFromPatch;
-            
+
             const refetched = await refetchCustomer(id);
             return refetched || { id, status: 'active' } as any;
         } catch (error: any) {
@@ -116,11 +114,11 @@ export const disableCustomer = createAsyncThunk(
     "customers/disable",
     async ({ id, reason }: { id: string; reason: string }, { rejectWithValue }) => {
         try {
-            const response = await axiosIns.patch(`/api/users/suspend/${id}`, { reason });
+            const response = await axiosIns.patch(`/api/users/suspend/${id}`, { notes: reason });
             const updatedFromPatch = response.data?.data || response.data;
-            
+
             if (updatedFromPatch && updatedFromPatch.id) return updatedFromPatch;
-            
+
             const refetched = await refetchCustomer(id);
             return refetched || { id, status: 'suspended' } as any;
         } catch (error: any) {
@@ -135,9 +133,9 @@ export const enableCustomer = createAsyncThunk(
         try {
             const response = await axiosIns.patch(`/api/users/enable/${id}`);
             const updatedFromPatch = response.data?.data || response.data;
-            
+
             if (updatedFromPatch && updatedFromPatch.id) return updatedFromPatch;
-            
+
             const refetched = await refetchCustomer(id);
             return refetched || { id, status: 'active' } as any;
 
